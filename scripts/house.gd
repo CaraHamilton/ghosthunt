@@ -60,9 +60,15 @@ const DECOR := [
 	[Rect2(212, 300, 60, 32), Color("f2f2f2"), true],   # bathtub
 ]
 
-## Where the player can start, and the area ghosts may spawn in.
+## Where the player starts.
 const PLAYER_START := Vector2(160, 100)
-const SPAWN_AREA := Rect2(32, 48, 576, 320)
+
+## Pathfinding grid used by ghosts so they walk around walls and furniture.
+const NAV_CELL := 8
+## How far (px) paths keep away from solids, so the ghost's body fits.
+const NAV_MARGIN := 5.0
+
+var _grid: AStarGrid2D
 
 
 func _ready() -> void:
@@ -72,18 +78,57 @@ func _ready() -> void:
 	body.collision_layer = 1
 	body.collision_mask = 0
 	add_child(body)
-	var solids: Array[Rect2] = []
-	solids.append_array(WALLS)
-	for d in DECOR:
-		if d[2]:
-			solids.append(d[0])
-	for r in solids:
+	for r in _solid_rects():
 		var shape := CollisionShape2D.new()
 		var rect := RectangleShape2D.new()
 		rect.size = r.size
 		shape.shape = rect
 		shape.position = r.get_center()
 		body.add_child(shape)
+
+
+func _solid_rects() -> Array[Rect2]:
+	var solids: Array[Rect2] = []
+	solids.append_array(WALLS)
+	for d in DECOR:
+		if d[2]:
+			solids.append(d[0])
+	return solids
+
+
+## Builds the pathfinding grid. `extra_solids` are other obstacles placed in
+## the scene (e.g. hiding-spot furniture footprints).
+func build_navigation(extra_solids: Array[Rect2]) -> void:
+	_grid = AStarGrid2D.new()
+	_grid.region = Rect2i(0, 0, ceili(SIZE.x / NAV_CELL), ceili(SIZE.y / NAV_CELL))
+	_grid.cell_size = Vector2(NAV_CELL, NAV_CELL)
+	_grid.offset = Vector2(NAV_CELL, NAV_CELL) / 2.0  # path points at cell centres
+	_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	_grid.update()
+
+	var solids := _solid_rects()
+	solids.append_array(extra_solids)
+	for r in solids:
+		var grown := r.grow(NAV_MARGIN)
+		var from := Vector2i((grown.position / NAV_CELL).floor())
+		var to := Vector2i((grown.end / NAV_CELL).ceil())
+		_grid.fill_solid_region(Rect2i(from, to - from).intersection(_grid.region))
+
+
+## Path of points from `from` towards `to`. If `to` can't be reached exactly
+## (e.g. the player is hugging a wall), the path ends as close as possible.
+func get_nav_path(from: Vector2, to: Vector2) -> PackedVector2Array:
+	return _grid.get_point_path(_to_cell(from), _to_cell(to), true)
+
+
+func is_walkable(point: Vector2) -> bool:
+	var cell := Vector2i((point / NAV_CELL).floor())
+	return _grid.is_in_boundsv(cell) and not _grid.is_point_solid(cell)
+
+
+func _to_cell(point: Vector2) -> Vector2i:
+	var cell := Vector2i((point / NAV_CELL).floor())
+	return cell.clamp(_grid.region.position, _grid.region.end - Vector2i.ONE)
 
 
 func _draw() -> void:

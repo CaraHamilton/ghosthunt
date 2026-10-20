@@ -31,6 +31,7 @@ var _prompt: Label
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
+	add_to_group("hiding_spots")
 	collision_layer = 1
 	collision_mask = 0
 
@@ -73,6 +74,12 @@ func set_occupied(value: bool) -> void:
 	occupied = value
 	_prompt.text = "[E] Leave" if occupied else "[E] Hide"
 	queue_redraw()
+
+
+## The furniture's solid area on the floor, in global coordinates.
+func get_footprint() -> Rect2:
+	var size: Vector2 = SIZES[kind]
+	return Rect2(global_position + Vector2(-size.x / 2.0, -size.y), size)
 
 
 ## Where the player reappears when leaving: just in front of the furniture.
