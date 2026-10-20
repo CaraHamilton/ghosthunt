@@ -29,12 +29,18 @@ var ghosts_escaped := 0
 var wave := 0
 var is_game_over := false
 var _ghost: Ghost = null
+## The type of ghost haunting the house this game. Every appearance is the
+## same ghost, so the player can learn its type by watching how it behaves.
+var ghost_type: GhostBehavior.Type
 var _base_darkness: Color
 
 
 func _ready() -> void:
 	randomize()
 	_base_darkness = darkness.color
+	ghost_type = GhostBehavior.random_type()
+	if OS.is_debug_build():
+		print("[debug] This house is haunted by a %s" % GhostBehavior.type_name(ghost_type))
 	player.global_position = house.PLAYER_START
 	var furniture: Array[Rect2] = []
 	for spot in get_tree().get_nodes_in_group("hiding_spots"):
@@ -78,6 +84,7 @@ func _spawn_ghost() -> void:
 	_ghost = GhostScene.instantiate() as Ghost
 	_ghost.player = player
 	_ghost.house = house
+	_ghost.set_type(ghost_type)
 	_ghost.chase_speed = minf(base_ghost_speed + ghost_speed_per_wave * (wave - 1), player.run_speed - 8.0)
 	_ghost.global_position = _pick_spawn_point()
 	_ghost.caught_player.connect(_on_ghost_caught_player)
@@ -171,3 +178,9 @@ func _show_message(text: String, duration: float) -> void:
 	await get_tree().create_timer(duration).timeout
 	if id == _message_id and not is_game_over:
 		message_label.visible = false
+
+
+## For the identification goal later: returns true if the player's guess
+## matches this game's ghost type.
+func is_correct_guess(guess: GhostBehavior.Type) -> bool:
+	return guess == ghost_type

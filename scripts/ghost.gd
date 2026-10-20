@@ -3,6 +3,10 @@ extends CharacterBody2D
 ## A ghost that fades in, hunts the player through the house (pathfinding
 ## around walls and furniture), and gives up and fades away if the player hides.
 ## The node's origin is the floor point under the ghost.
+##
+## What *kind* of ghost it is (Demon, Banshee, Poltergeist) lives in
+## `behavior` - see scripts/ghost_types/. Every ghost looks the same, so the
+## player has to work out the type from how it behaves.
 
 signal caught_player
 signal vanished
@@ -10,6 +14,7 @@ signal vanished
 enum State { APPEARING, CHASING, SEARCHING, VANISHING }
 
 @export var chase_speed := 62.0
+@export var search_speed_factor := 0.4
 @export var appear_time := 1.2
 @export var search_time := 3.0
 @export var catch_radius := 10.0
@@ -18,6 +23,8 @@ enum State { APPEARING, CHASING, SEARCHING, VANISHING }
 
 var player: Player
 var house: House
+var type: GhostBehavior.Type
+var behavior: GhostBehavior
 var state := State.APPEARING
 
 var _state_time := 0.0
@@ -28,41 +35,56 @@ var _repath_timer := 0.0
 var _t := 0.0
 
 
+## Call before adding the ghost to the scene.
+func set_type(new_type: GhostBehavior.Type) -> void:
+	type = new_type
+	behavior = GhostBehavior.create(new_type)
+	behavior.ghost = self
+
+
 func _ready() -> void:
 	modulate.a = 0.0
 	z_index = 10  # always float above furniture
+	if behavior == null:
+		set_type(GhostBehavior.random_type())
+	behavior.on_spawned()
 
 
 func _physics_process(delta: float) -> void:
 	_t += delta
 	_state_time += delta
+	behavior.process(delta)
 
 	match state:
 		State.APPEARING:
 			modulate.a = clampf(_state_time / appear_time, 0.0, 1.0) * 0.85
 			if _state_time >= appear_time:
-				_set_state(State.CHASING)
+				set_state(State.CHASING)
 
 		State.CHASING:
 			if player.is_hidden:
-				_set_state(State.SEARCHING)
+				set_state(State.SEARCHING)
 				# Prowl around the spot where the player was last seen.
 				_wander_target = _random_point_near(player.global_position, 40.0)
+				behavior.on_player_hid()
 			else:
-				_follow_path_to(player.global_position, chase_speed, delta, true)
+				_follow_path_to(player.global_position, behavior.get_chase_speed(chase_speed), delta, true)
 				if global_position.distance_to(player.global_position) < catch_radius:
+					behavior.on_caught_player()
 					caught_player.emit()
 					set_physics_process(false)
 
 		State.SEARCHING:
-			_follow_path_to(_wander_target, chase_speed * 0.4, delta, false)
+			var speed := behavior.get_search_speed(chase_speed * search_speed_factor)
+			_follow_path_to(_wander_target, speed, delta, false)
 			if global_position.distance_to(_wander_target) < 4.0:
 				_wander_target = _random_point_near(global_position, 50.0)
-			if not player.is_hidden and _state_time < search_time:
+			var give_up_time := behavior.get_search_time(search_time)
+			if not player.is_hidden and _state_time < give_up_time:
 				# Player came out too early - the hunt is back on!
-				_set_state(State.CHASING)
-			elif _state_time >= search_time:
-				_set_state(State.VANISHING)
+				set_state(State.CHASING)
+			elif _state_time >= give_up_time:
+				set_state(State.VANISHING)
 
 		State.VANISHING:
 			modulate.a = maxf(0.0, 0.85 - _state_time)
@@ -73,10 +95,14 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
-func _set_state(new_state: State) -> void:
+## Switches state. Ghost types can call this to force a state change.
+func set_state(new_state: State) -> void:
+	var old_state := state
 	state = new_state
 	_state_time = 0.0
 	_path_target = Vector2.INF
+	if old_state != new_state:
+		behavior.on_state_changed(old_state, new_state)
 
 
 ## Walks along a grid path towards `target`; collision stops it from ever
