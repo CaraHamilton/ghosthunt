@@ -14,6 +14,8 @@ const GhostScene := preload("res://scenes/ghost.tscn")
 @onready var world: Node2D = $World
 @onready var player: Player = $World/Player
 @onready var darkness: CanvasModulate = $Darkness
+@onready var temperatures: RoomTemperatures = $RoomTemperatures
+@onready var toolbar: Control = $HUD/Toolbar
 @onready var time_label: Label = $HUD/TimeLabel
 @onready var message_label: Label = $HUD/MessageLabel
 @onready var hide_overlay: ColorRect = $HUD/HideOverlay
@@ -43,6 +45,9 @@ func _ready() -> void:
 	game_over_panel.visible = false
 	hide_overlay.visible = false
 	_spawn_ghost()
+	temperatures.setup(house, ghost)
+	player.give_tool(Thermometer.new(house, temperatures))
+	toolbar.player = player
 	_show_message("Something feels wrong in this house...", 3.0)
 
 
@@ -102,6 +107,7 @@ func _on_ghost_caught_player() -> void:
 
 func _on_player_hidden_changed(is_hidden: bool) -> void:
 	hide_overlay.visible = is_hidden
+	toolbar.visible = not is_hidden
 
 
 func _flicker_lights() -> void:

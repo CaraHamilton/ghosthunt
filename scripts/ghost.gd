@@ -50,10 +50,13 @@ const VISIBLE_ALPHA := 0.85
 @export var wander_speed := 22.0
 ## While in its favourite room: chance (0-1) that the next wander trip goes
 ## out to another room.
-@export var roam_chance := 0.3
+@export var roam_chance := 0.25
 ## While outside its favourite room: chance (0-1) that the next wander trip
 ## heads back home (otherwise it keeps exploring other rooms).
-@export var return_home_chance := 0.6
+@export var return_home_chance := 0.7
+## After this many seconds away from its favourite room, the ghost always
+## heads home on its next wander trip.
+@export var max_time_away := 30.0
 @export var min_wander_pause := 1.0
 @export var max_wander_pause := 3.5
 
@@ -83,6 +86,7 @@ var _hunt_check_timer := 0.0
 var _wander_target := Vector2.INF
 var _wander_pause := 0.0
 var _stuck_time := 0.0
+var _time_away := 0.0
 var _path := PackedVector2Array()
 var _path_target := Vector2.INF
 var _repath_timer := 0.0
@@ -114,6 +118,7 @@ func _physics_process(delta: float) -> void:
 
 	match state:
 		State.IDLE:
+			_time_away = 0.0 if house.room_at(global_position) == favorite_room else _time_away + delta
 			_wander(delta)
 			_try_start_hunt(delta)
 
@@ -240,7 +245,7 @@ func _pick_wander_room() -> String:
 		if randf() < behavior.get_roam_chance(roam_chance):
 			return other_rooms.pick_random()
 		return favorite_room
-	if randf() < behavior.get_return_home_chance(return_home_chance):
+	if _time_away >= max_time_away or randf() < behavior.get_return_home_chance(return_home_chance):
 		return favorite_room
 	return other_rooms.pick_random()
 

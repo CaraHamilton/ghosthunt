@@ -4,6 +4,8 @@
 [ext_resource type="Script" uid="uid://dbpc2lxmhuu66" path="res://scripts/house.gd" id="2_house"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
 [ext_resource type="PackedScene" path="res://scenes/hiding_spot.tscn" id="4_spot"]
+[ext_resource type="Script" uid="uid://bvq5w3xo0rrhs" path="res://scripts/room_temperatures.gd" id="5_temps"]
+[ext_resource type="Script" uid="uid://ddkn5fotmn0va" path="res://scripts/toolbar.gd" id="6_toolbar"]
 
 [node name="Main" type="Node2D" unique_id=18073823]
 script = ExtResource("1_game")
@@ -50,6 +52,9 @@ position = Vector2(240, 270)
 [node name="Darkness" type="CanvasModulate" parent="." unique_id=388993979]
 color = Color(0.45, 0.42, 0.62, 1)
 
+[node name="RoomTemperatures" type="Node" parent="." unique_id=1162116692]
+script = ExtResource("5_temps")
+
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1354132517]
 
 [node name="HideOverlay" type="ColorRect" parent="HUD" unique_id=1183964133]
@@ -68,9 +73,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -300.0
-offset_top = -90.0
+offset_top = -170.0
 offset_right = 300.0
-offset_bottom = -50.0
+offset_bottom = -130.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_font_sizes/font_size = 26
@@ -100,6 +105,35 @@ theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_font_sizes/font_size = 30
+horizontal_alignment = 1
+
+[node name="Toolbar" type="Control" parent="HUD" unique_id=1677603526]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -152.0
+offset_top = -76.0
+offset_right = 152.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("6_toolbar")
+
+[node name="Readout" type="Label" parent="HUD/Toolbar" unique_id=1111702031]
+visible = false
+layout_mode = 0
+offset_left = -48.0
+offset_top = -60.0
+offset_right = 352.0
+offset_bottom = -12.0
+theme_override_colors/font_color = Color(0.75, 0.9, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 34
 horizontal_alignment = 1
 
 [node name="GameOver" type="Control" parent="HUD" unique_id=1744127591]

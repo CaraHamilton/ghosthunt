@@ -84,6 +84,12 @@ func get_return_home_chance(base_chance: float) -> float:
 	return base_chance
 
 
+## Temperature (°C) the ghost's current room cools towards. `base_temperature`
+## is colder for the favourite room than for rooms it is just passing through.
+func get_cold_temperature(base_temperature: float) -> float:
+	return base_temperature
+
+
 ## Speed used while chasing. `base_speed` already includes wave difficulty.
 func get_chase_speed(base_speed: float) -> float:
 	return base_speed
