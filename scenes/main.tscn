@@ -1,60 +1,58 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://hioc6pafgknv"]
 
-[ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
-[ext_resource type="Script" path="res://scripts/house.gd" id="2_house"]
+[ext_resource type="Script" uid="uid://dnuvgiw3bs5b4" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="Script" uid="uid://dbpc2lxmhuu66" path="res://scripts/house.gd" id="2_house"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
 [ext_resource type="PackedScene" path="res://scenes/hiding_spot.tscn" id="4_spot"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=18073823]
 script = ExtResource("1_game")
+debug_show_ghost = true
 
-[node name="House" type="Node2D" parent="."]
+[node name="House" type="Node2D" parent="." unique_id=1919625698]
 script = ExtResource("2_house")
 
-[node name="World" type="Node2D" parent="."]
+[node name="World" type="Node2D" parent="." unique_id=649530017]
 y_sort_enabled = true
 
-[node name="Player" parent="World" instance=ExtResource("3_player")]
+[node name="Player" parent="World" unique_id=1055623004 instance=ExtResource("3_player")]
 position = Vector2(160, 100)
 
-[node name="LivingRoomCloset" parent="World" instance=ExtResource("4_spot")]
+[node name="LivingRoomCloset" parent="World" unique_id=164778767 instance=ExtResource("4_spot")]
 position = Vector2(60, 44)
 kind = 1
 
-[node name="LivingRoomDresser" parent="World" instance=ExtResource("4_spot")]
+[node name="LivingRoomDresser" parent="World" unique_id=1203796325 instance=ExtResource("4_spot")]
 position = Vector2(250, 46)
 
-[node name="BedroomCloset" parent="World" instance=ExtResource("4_spot")]
+[node name="BedroomCloset" parent="World" unique_id=596638275 instance=ExtResource("4_spot")]
 position = Vector2(360, 44)
 kind = 1
 
-[node name="BedroomDresser" parent="World" instance=ExtResource("4_spot")]
+[node name="BedroomDresser" parent="World" unique_id=1271491126 instance=ExtResource("4_spot")]
 position = Vector2(480, 46)
 
-[node name="KitchenCupboard" parent="World" instance=ExtResource("4_spot")]
+[node name="KitchenCupboard" parent="World" unique_id=462704971 instance=ExtResource("4_spot")]
 position = Vector2(360, 220)
 kind = 2
 
-[node name="KitchenPantry" parent="World" instance=ExtResource("4_spot")]
+[node name="KitchenPantry" parent="World" unique_id=688638933 instance=ExtResource("4_spot")]
 position = Vector2(590, 220)
 kind = 1
 
-[node name="BathroomCupboard" parent="World" instance=ExtResource("4_spot")]
+[node name="BathroomCupboard" parent="World" unique_id=726334449 instance=ExtResource("4_spot")]
 position = Vector2(50, 268)
 kind = 2
 
-[node name="BathroomDresser" parent="World" instance=ExtResource("4_spot")]
+[node name="BathroomDresser" parent="World" unique_id=1935995160 instance=ExtResource("4_spot")]
 position = Vector2(240, 270)
 
-[node name="Darkness" type="CanvasModulate" parent="."]
+[node name="Darkness" type="CanvasModulate" parent="." unique_id=388993979]
 color = Color(0.45, 0.42, 0.62, 1)
 
-[node name="SpawnTimer" type="Timer" parent="."]
-one_shot = true
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1354132517]
 
-[node name="HUD" type="CanvasLayer" parent="."]
-
-[node name="HideOverlay" type="ColorRect" parent="HUD"]
+[node name="HideOverlay" type="ColorRect" parent="HUD" unique_id=1183964133]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -63,8 +61,8 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0.55)
 
-[node name="HideLabel" type="Label" parent="HUD/HideOverlay"]
-anchors_preset = 7
+[node name="HideLabel" type="Label" parent="HUD/HideOverlay" unique_id=703988289]
+layout_mode = 0
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
@@ -79,7 +77,7 @@ theme_override_font_sizes/font_size = 26
 text = "Hiding... hold your breath.  [E] to come out"
 horizontal_alignment = 1
 
-[node name="TimeLabel" type="Label" parent="HUD"]
+[node name="TimeLabel" type="Label" parent="HUD" unique_id=283126945]
 offset_left = 20.0
 offset_top = 16.0
 offset_right = 600.0
@@ -89,7 +87,7 @@ theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 22
 text = "Survived: 0s"
 
-[node name="MessageLabel" type="Label" parent="HUD"]
+[node name="MessageLabel" type="Label" parent="HUD" unique_id=1030001140]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -104,7 +102,7 @@ theme_override_constants/outline_size = 8
 theme_override_font_sizes/font_size = 30
 horizontal_alignment = 1
 
-[node name="GameOver" type="Control" parent="HUD"]
+[node name="GameOver" type="Control" parent="HUD" unique_id=1744127591]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -112,7 +110,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="HUD/GameOver"]
+[node name="Background" type="ColorRect" parent="HUD/GameOver" unique_id=1399198478]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -121,7 +119,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.02, 0.08, 0.8)
 
-[node name="Box" type="VBoxContainer" parent="HUD/GameOver"]
+[node name="Box" type="VBoxContainer" parent="HUD/GameOver" unique_id=2005635414]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -136,19 +134,19 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="HUD/GameOver/Box"]
+[node name="Title" type="Label" parent="HUD/GameOver/Box" unique_id=2009682650]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.3, 0.35, 1)
 theme_override_font_sizes/font_size = 56
 text = "THE GHOST GOT YOU"
 horizontal_alignment = 1
 
-[node name="Stats" type="Label" parent="HUD/GameOver/Box"]
+[node name="Stats" type="Label" parent="HUD/GameOver/Box" unique_id=849807148]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 horizontal_alignment = 1
 
-[node name="Hint" type="Label" parent="HUD/GameOver/Box"]
+[node name="Hint" type="Label" parent="HUD/GameOver/Box" unique_id=129456752]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
 theme_override_font_sizes/font_size = 20

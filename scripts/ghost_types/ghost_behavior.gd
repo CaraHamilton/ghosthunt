@@ -63,6 +63,27 @@ func on_caught_player() -> void:
 	pass
 
 
+## Chance (0-1) of starting a hunt on each check once off cooldown.
+## Return 0 to stop this ghost hunting on its own.
+func get_hunt_chance(base_chance: float) -> float:
+	return base_chance
+
+
+## Seconds after a hunt (and at the start) before the ghost may hunt again.
+func get_hunt_cooldown(base_cooldown: float) -> float:
+	return base_cooldown
+
+
+## Chance (0-1) that the ghost wanders out of its favourite room.
+func get_roam_chance(base_chance: float) -> float:
+	return base_chance
+
+
+## Chance (0-1) that a ghost outside its favourite room heads back home.
+func get_return_home_chance(base_chance: float) -> float:
+	return base_chance
+
+
 ## Speed used while chasing. `base_speed` already includes wave difficulty.
 func get_chase_speed(base_speed: float) -> float:
 	return base_speed

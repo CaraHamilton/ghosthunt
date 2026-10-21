@@ -1,34 +1,88 @@
 class_name Ghost
 extends CharacterBody2D
-## A ghost that fades in, hunts the player through the house (pathfinding
-## around walls and furniture), and gives up and fades away if the player hides.
-## The node's origin is the floor point under the ghost.
+## The ghost haunting the house. It is always somewhere in the house, but
+## usually invisible: it drifts around the house, keeps coming back to its
+## favourite room, and every so often decides to hunt. The ghost always knows
+## where the player is, so a hunt can start from anywhere in the house.
 ##
-## What *kind* of ghost it is (Demon, Banshee, Poltergeist) lives in
-## `behavior` - see scripts/ghost_types/. Every ghost looks the same, so the
-## player has to work out the type from how it behaves.
+## The player can always walk straight through the ghost, so they never feel
+## it while it is invisible. It only collides with walls and furniture. During
+## a hunt, touching the player means game over.
+##
+## The node's origin is the floor point under the ghost. What *kind* of ghost
+## it is (Demon, Banshee, Poltergeist) lives in `behavior` - see
+## scripts/ghost_types/. Every ghost looks the same, so the player has to work
+## out the type from how it behaves.
 
+signal hunt_started
+signal hunt_ended
 signal caught_player
-signal vanished
 
-enum State { APPEARING, CHASING, SEARCHING, VANISHING }
+enum State {
+	IDLE,          ## invisible, wandering (mostly around its favourite room)
+	APPEARING,     ## hunt just started: fading in (harmless)
+	CHASING,       ## visible, chasing the player
+	SEARCHING,     ## player hid - prowling around before giving up
+	VANISHING,     ## fading out at the end of a hunt
+	RETURNING,     ## invisible, heading back to its favourite room
+}
 
+const HUNT_STATES := [State.APPEARING, State.CHASING, State.SEARCHING, State.VANISHING]
+const WORLD_LAYER := 1
+const VISIBLE_ALPHA := 0.85
+
+@export_group("Hunting")
 @export var chase_speed := 62.0
-@export var search_speed_factor := 0.4
-@export var appear_time := 1.2
+## Chance (0-1) of starting a hunt each `hunt_check_interval` once the ghost
+## is off cooldown (and the player isn't hiding or too close).
+@export var hunt_chance := 0.15
+@export var hunt_check_interval := 1.0
+@export var min_hunt_cooldown := 6.0
+@export var max_hunt_cooldown := 14.0
+## The ghost won't start a hunt on its own if the player is closer than this.
+@export var min_hunt_distance := 64.0
+@export var appear_time := 1.0
 @export var search_time := 3.0
+@export var search_speed_factor := 0.4
 @export var catch_radius := 10.0
-## How often (seconds) the ghost recalculates its path to the player.
+
+@export_group("Wandering")
+@export var wander_speed := 22.0
+## While in its favourite room: chance (0-1) that the next wander trip goes
+## out to another room.
+@export var roam_chance := 0.3
+## While outside its favourite room: chance (0-1) that the next wander trip
+## heads back home (otherwise it keeps exploring other rooms).
+@export var return_home_chance := 0.6
+@export var min_wander_pause := 1.0
+@export var max_wander_pause := 3.5
+
+@export_group("Debug")
+## Draw the ghost faintly even while it's invisible.
+@export var debug_reveal := false
+
+@export_group("")
+## How often (seconds) the ghost recalculates its path to a moving target.
 @export var repath_interval := 0.25
 
 var player: Player
 var house: House
 var type: GhostBehavior.Type
 var behavior: GhostBehavior
-var state := State.APPEARING
+var favorite_room := ""
+var state := State.IDLE
+## True while the player can see the ghost (hunts now, other ghost events later).
+var is_manifested := false
+var is_hunting: bool:
+	get:
+		return state in HUNT_STATES
 
 var _state_time := 0.0
-var _wander_target := Vector2.ZERO
+var _hunt_cooldown := 0.0
+var _hunt_check_timer := 0.0
+var _wander_target := Vector2.INF
+var _wander_pause := 0.0
+var _stuck_time := 0.0
 var _path := PackedVector2Array()
 var _path_target := Vector2.INF
 var _repath_timer := 0.0
@@ -43,10 +97,13 @@ func set_type(new_type: GhostBehavior.Type) -> void:
 
 
 func _ready() -> void:
-	modulate.a = 0.0
 	z_index = 10  # always float above furniture
+	modulate.a = 0.0
 	if behavior == null:
 		set_type(GhostBehavior.random_type())
+	if favorite_room == "":
+		favorite_room = House.ROOMS.keys().pick_random()
+	_start_hunt_cooldown()
 	behavior.on_spawned()
 
 
@@ -56,8 +113,11 @@ func _physics_process(delta: float) -> void:
 	behavior.process(delta)
 
 	match state:
+		State.IDLE:
+			_wander(delta)
+			_try_start_hunt(delta)
+
 		State.APPEARING:
-			modulate.a = clampf(_state_time / appear_time, 0.0, 1.0) * 0.85
 			if _state_time >= appear_time:
 				set_state(State.CHASING)
 
@@ -84,14 +144,26 @@ func _physics_process(delta: float) -> void:
 				# Player came out too early - the hunt is back on!
 				set_state(State.CHASING)
 			elif _state_time >= give_up_time:
+				is_manifested = false
 				set_state(State.VANISHING)
 
 		State.VANISHING:
-			modulate.a = maxf(0.0, 0.85 - _state_time)
-			if modulate.a <= 0.0:
-				vanished.emit()
-				queue_free()
+			if modulate.a <= _hidden_alpha():
+				_start_hunt_cooldown()
+				_wander_target = house.random_point_in_room(favorite_room)
+				set_state(State.RETURNING)
+				hunt_ended.emit()
 
+		State.RETURNING:
+			_follow_path_to(_wander_target, wander_speed * 1.5, delta, false)
+			if global_position.distance_to(_wander_target) < 4.0:
+				_wander_target = Vector2.INF
+				_wander_pause = randf_range(min_wander_pause, max_wander_pause)
+				set_state(State.IDLE)
+			else:
+				_try_start_hunt(delta)
+
+	_update_fade(delta)
 	queue_redraw()
 
 
@@ -103,6 +175,83 @@ func set_state(new_state: State) -> void:
 	_path_target = Vector2.INF
 	if old_state != new_state:
 		behavior.on_state_changed(old_state, new_state)
+
+
+## Starts a hunt right away (ignores cooldown, distance and line of sight).
+func start_hunt() -> void:
+	if is_hunting:
+		return
+	is_manifested = true
+	set_state(State.APPEARING)
+	hunt_started.emit()
+
+
+## True if nothing solid is between the ghost and a non-hidden player.
+func can_see_player() -> bool:
+	if player.is_hidden:
+		return false
+	var query := PhysicsRayQueryParameters2D.create(global_position, player.global_position, WORLD_LAYER)
+	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+
+func _try_start_hunt(delta: float) -> void:
+	_hunt_cooldown -= delta
+	if _hunt_cooldown > 0.0:
+		return
+	_hunt_check_timer -= delta
+	if _hunt_check_timer > 0.0:
+		return
+	_hunt_check_timer = hunt_check_interval
+	if player.is_hidden:
+		return
+	var far_enough := global_position.distance_to(player.global_position) >= min_hunt_distance
+	if far_enough and randf() < behavior.get_hunt_chance(hunt_chance):
+		start_hunt()
+
+
+func _start_hunt_cooldown() -> void:
+	_hunt_cooldown = behavior.get_hunt_cooldown(randf_range(min_hunt_cooldown, max_hunt_cooldown))
+	_hunt_check_timer = 0.0
+
+
+## Drift between random points around the house, often heading back to the
+## favourite room.
+func _wander(delta: float) -> void:
+	if _wander_pause > 0.0:
+		_wander_pause -= delta
+		velocity = Vector2.ZERO
+		return
+	if _wander_target == Vector2.INF:
+		_wander_target = house.random_point_in_room(_pick_wander_room())
+
+	_follow_path_to(_wander_target, wander_speed, delta, false)
+	# Give up on a target we can't reach.
+	_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
+	if global_position.distance_to(_wander_target) < 4.0 or _stuck_time > 1.0:
+		_wander_target = Vector2.INF
+		_stuck_time = 0.0
+		_wander_pause = randf_range(min_wander_pause, max_wander_pause)
+
+
+func _pick_wander_room() -> String:
+	var other_rooms: Array = House.ROOMS.keys().filter(func(r): return r != favorite_room)
+	var at_home := house.room_at(global_position) == favorite_room
+	if at_home:
+		if randf() < behavior.get_roam_chance(roam_chance):
+			return other_rooms.pick_random()
+		return favorite_room
+	if randf() < behavior.get_return_home_chance(return_home_chance):
+		return favorite_room
+	return other_rooms.pick_random()
+
+
+func _update_fade(delta: float) -> void:
+	var target := VISIBLE_ALPHA if is_manifested else _hidden_alpha()
+	modulate.a = move_toward(modulate.a, target, VISIBLE_ALPHA / appear_time * delta)
+
+
+func _hidden_alpha() -> float:
+	return 0.25 if debug_reveal else 0.0
 
 
 ## Walks along a grid path towards `target`; collision stops it from ever

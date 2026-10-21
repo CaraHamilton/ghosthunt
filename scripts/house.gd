@@ -60,6 +60,14 @@ const DECOR := [
 	[Rect2(212, 300, 60, 32), Color("f2f2f2"), true],   # bathtub
 ]
 
+## Named rooms (floor area of each). The ghost picks one as its favourite.
+const ROOMS := {
+	"Living room": Rect2(16, 32, 288, 192),
+	"Bedroom": Rect2(320, 32, 304, 144),
+	"Kitchen": Rect2(320, 208, 304, 176),
+	"Bathroom": Rect2(16, 256, 288, 128),
+}
+
 ## Where the player starts.
 const PLAYER_START := Vector2(160, 100)
 
@@ -124,6 +132,24 @@ func get_nav_path(from: Vector2, to: Vector2) -> PackedVector2Array:
 func is_walkable(point: Vector2) -> bool:
 	var cell := Vector2i((point / NAV_CELL).floor())
 	return _grid.is_in_boundsv(cell) and not _grid.is_point_solid(cell)
+
+
+## A random walkable point inside the named room.
+func random_point_in_room(room: String) -> Vector2:
+	var r: Rect2 = ROOMS[room]
+	for i in 100:
+		var p := Vector2(randf_range(r.position.x, r.end.x), randf_range(r.position.y, r.end.y))
+		if is_walkable(p):
+			return p
+	return r.get_center()
+
+
+## Name of the room containing `point`, or "" if it's in a doorway/wall.
+func room_at(point: Vector2) -> String:
+	for room in ROOMS:
+		if ROOMS[room].has_point(point):
+			return room
+	return ""
 
 
 func _to_cell(point: Vector2) -> Vector2i:
