@@ -3,7 +3,12 @@ extends GhostBehavior
 ## Demon. Override GhostBehavior hooks here to give it its own behaviour.
 
 
-## Demons are the only ghost that pushes the EMF reader to 5: whenever any
+## Demons (and Wraiths) push the EMF reader to 5: whenever any
 ## other ghost would read 4 (player close by, or during a hunt), a demon reads 5.
 func get_emf_level(base_level: int) -> int:
 	return 5 if base_level >= 4 else base_level
+
+
+## Demons roll the tennis ball around when it's near them.
+func plays_with_ball() -> bool:
+	return true

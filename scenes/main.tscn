@@ -50,11 +50,19 @@ kind = 2
 [node name="BathroomDresser" parent="World" unique_id=1935995160 instance=ExtResource("4_spot")]
 position = Vector2(240, 270)
 
-[node name="KitchenSink" parent="World" instance=ExtResource("7_sink")]
+[node name="KitchenSink" parent="World" unique_id=1993787443 instance=ExtResource("7_sink")]
 position = Vector2(540, 222)
+footprint = Vector2(28, 14)
+solid = null
+player_can_use = true
+prompt_height = 40.0
 
-[node name="BathroomSink" parent="World" instance=ExtResource("7_sink")]
+[node name="BathroomSink" parent="World" unique_id=889503313 instance=ExtResource("7_sink")]
 position = Vector2(90, 270)
+footprint = Vector2(28, 14)
+solid = null
+player_can_use = true
+prompt_height = 40.0
 
 [node name="Darkness" type="CanvasModulate" parent="." unique_id=388993979]
 color = Color(0.45, 0.42, 0.62, 1)

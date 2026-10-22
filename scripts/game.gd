@@ -48,6 +48,7 @@ func _ready() -> void:
 	temperatures.setup(house, ghost)
 	player.give_tool(Thermometer.new(house, temperatures))
 	player.give_tool(EMFReader.new(house, ghost))
+	player.give_tool(TennisBallTool.new(house, world))
 	toolbar.player = player
 	_show_message("Something feels wrong in this house...", 3.0)
 

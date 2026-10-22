@@ -9,11 +9,15 @@ extends StaticBody2D
 ## `_on_ghost_interact()` and `_draw()`, and drop it in the World node.
 ## The node's origin is the bottom-centre of its footprint (for Y-sorting).
 
-## Solid area on the floor (width, depth). Also blocks ghost pathfinding.
+## Area on the floor (width, depth). If `solid`, it blocks movement and
+## ghost pathfinding.
 @export var footprint := Vector2(24, 12):
 	set(value):
 		footprint = value
 		queue_redraw()
+## Solid furniture blocks the player and ghost. Turn off for small loose
+## objects (like a ball) that should be walked over and can move around.
+@export var solid := true
 ## How close (px) the ghost must be to the footprint to interact.
 @export var ghost_reach := 20.0
 ## Chance (0-1) per ghost check that the ghost interacts while in reach.
@@ -37,15 +41,17 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	add_to_group("ghost_interactables")
-	add_to_group("nav_obstacles")
-	collision_layer = 1
 	collision_mask = 0
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = footprint
-	shape.shape = rect
-	shape.position = Vector2(0, -footprint.y / 2.0)
-	add_child(shape)
+	collision_layer = 0
+	if solid:
+		add_to_group("nav_obstacles")
+		collision_layer = 1
+		var shape := CollisionShape2D.new()
+		var rect := RectangleShape2D.new()
+		rect.size = footprint
+		shape.shape = rect
+		shape.position = Vector2(0, -footprint.y / 2.0)
+		add_child(shape)
 	if player_can_use:
 		_build_player_zone()
 
@@ -61,6 +67,12 @@ func is_in_ghost_reach(point: Vector2) -> bool:
 
 func can_ghost_interact() -> bool:
 	return _game_time() - _last_interaction_time >= cooldown
+
+
+## Whether this kind of ghost will ever touch this object (e.g. only some
+## ghost types play with the tennis ball). Override per interactable.
+func ghost_can_use(_ghost: Ghost) -> bool:
+	return true
 
 
 ## Called by the ghost. Don't override this - override _on_ghost_interact.
