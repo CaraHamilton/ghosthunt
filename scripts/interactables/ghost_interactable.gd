@@ -69,6 +69,12 @@ func ghost_interact(ghost: Ghost) -> void:
 	_on_ghost_interact(ghost)
 
 
+## Seconds since the ghost last touched this (INF if never). Used by the EMF
+## reader to pick up the ghost's traces.
+func seconds_since_ghost_interaction() -> float:
+	return _game_time() - _last_interaction_time
+
+
 ## A spot on the floor in front of this object where the ghost can stand
 ## to reach it.
 func get_ghost_stand_point() -> Vector2:
