@@ -1,12 +1,19 @@
 @tool
 class_name TennisBall
 extends GhostInteractable
-## A tennis ball the player places on the floor (with the Tennis Ball tool)
-## and picks back up with E. Only some ghost types play with it: when one is
-## close by, it (invisibly) knocks the ball rolling a couple of tiles.
-## Rolling balls bounce off walls and furniture.
+## A tennis ball lying on the floor - the world version of a TennisBallItem.
+## Spawned when the player drops the ball; E picks it back up. Only some
+## ghost types play with it: when one is close by, it (invisibly) knocks the
+## ball rolling a couple of tiles. Rolling balls bounce off walls and
+## furniture. Ghost traces (residue, last touch) are kept on `item` so they
+## survive being picked up.
 
-signal picked_up
+## The item this node represents (set before it's added to the scene).
+var item: TennisBallItem:
+	set(value):
+		item = value
+		has_residue = item.has_residue
+		_last_interaction_time = item.last_ghost_touch_time
 
 ## How far (px) a ghost's nudge rolls the ball.
 @export var min_roll_distance := 28.0
@@ -36,6 +43,9 @@ func ghost_can_use(ghost: Ghost) -> bool:
 
 
 func _on_ghost_interact(_ghost: Ghost) -> void:
+	if item:
+		item.has_residue = has_residue
+		item.last_ghost_touch_time = _last_interaction_time
 	var distance := randf_range(min_roll_distance, max_roll_distance)
 	var direction := Vector2.RIGHT.rotated(randf() * TAU)
 	# Start fast enough that friction brings it to rest after `distance`.
@@ -46,9 +56,10 @@ func describe_last_interaction() -> String:
 	return "rolled the tennis ball"
 
 
-func _on_player_interact(_player: Player) -> void:
-	_velocity = Vector2.ZERO
-	picked_up.emit()
+func _on_player_interact(player: Player) -> void:
+	if player.pick_up(item, self):
+		_velocity = Vector2.ZERO
+		queue_free()
 
 
 func get_player_prompt() -> String:
@@ -56,7 +67,11 @@ func get_player_prompt() -> String:
 
 
 func _physics_process(delta: float) -> void:
-	if Engine.is_editor_hint() or _velocity == Vector2.ZERO:
+	if Engine.is_editor_hint():
+		return
+	if item:
+		item.process_always(delta)
+	if _velocity == Vector2.ZERO:
 		return
 	var motion := _velocity * delta
 	var direction := _velocity.normalized()

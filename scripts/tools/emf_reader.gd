@@ -1,5 +1,5 @@
 class_name EMFReader
-extends Tool
+extends ItemInstance
 ## Electromagnetic field reader, 0-5. Usually reads 0.
 ##   1-3  the ghost is in the same room (stronger the closer it is), or the
 ##        player is next to something the ghost touched recently
@@ -14,7 +14,7 @@ var close_range := 56.0
 ## anywhere else in the room reads 1.
 var room_level_3_range := 100.0
 var room_level_2_range := 160.0
-## How close (px) to a touched object the player must be to pick it up.
+## How close (px) to a touched object the reader must be to pick it up.
 var trace_range := 32.0
 ## How long (s) a ghost's touch keeps showing on the reader. It fades:
 ## 3 at first, then 2, then 1.
@@ -26,57 +26,55 @@ var sample_interval := 0.2
 
 var level := 0
 
-var _house: House
-var _ghost: Ghost
 var _sample_timer := 0.0
 
 
-func _init(house: House, ghost: Ghost) -> void:
-	display_name = "EMF Reader"
-	_house = house
-	_ghost = ghost
-
-
-## Keeps sampling while put away, so pulling it out shows a live reading.
+## Keeps sampling wherever it is (pocket or floor), so it always has a live
+## reading for wherever it is.
 func process_always(delta: float) -> void:
 	_sample_timer -= delta
 	if _sample_timer > 0.0:
 		return
 	_sample_timer = sample_interval
-	level = clampi(_ghost.behavior.get_emf_level(_base_level()), 0, 5)
+	var game := Game.current
+	if game == null:
+		return
+	level = clampi(game.ghost.behavior.get_emf_level(_base_level(game)), 0, 5)
 
 
-func _base_level() -> int:
-	if _ghost.is_hunting:
+func _base_level(game: Game) -> int:
+	var ghost := game.ghost
+	var house := game.house
+	if ghost.is_hunting:
 		return 4
-	var pos := player.global_position
-	var dist := pos.distance_to(_ghost.global_position)
+	var pos := get_world_position()
+	var dist := pos.distance_to(ghost.global_position)
 	if dist <= close_range:
 		return 4
 
 	var result := 0
-	var player_room := _house.room_at(pos)
-	if player_room != "" and player_room == _house.room_at(_ghost.global_position):
+	var player_room := house.room_at(pos)
+	if player_room != "" and player_room == house.room_at(ghost.global_position):
 		if dist <= room_level_3_range:
 			result = 3
 		elif dist <= room_level_2_range:
 			result = 2
 		else:
 			result = 1
-	result = maxi(result, _trace_level(pos))
+	result = maxi(result, _trace_level(game, pos))
 
 	if result > 0 and randf() < flicker_chance:
 		result = clampi(result + (1 if randf() < 0.5 else -1), 1, 3)
 	return result
 
 
-## 1-3 if the player is next to something the ghost touched recently.
-func _trace_level(pos: Vector2) -> int:
+## 1-3 if the reader is next to something the ghost touched recently.
+func _trace_level(game: Game, pos: Vector2) -> int:
 	var best := 0
-	for item: GhostInteractable in player.get_tree().get_nodes_in_group("ghost_interactables"):
-		if not item.get_footprint().grow(trace_range).has_point(pos):
+	for obj: GhostInteractable in game.get_tree().get_nodes_in_group("ghost_interactables"):
+		if not obj.get_footprint().grow(trace_range).has_point(pos):
 			continue
-		var age := item.seconds_since_ghost_interaction()
+		var age := obj.seconds_since_ghost_interaction()
 		if age >= trace_duration:
 			continue
 		best = maxi(best, 3 - int(age / (trace_duration / 3.0)))
