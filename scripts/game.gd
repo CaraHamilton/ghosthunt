@@ -49,6 +49,7 @@ func _ready() -> void:
 	player.give_tool(Thermometer.new(house, temperatures))
 	player.give_tool(EMFReader.new(house, ghost))
 	player.give_tool(TennisBallTool.new(house, world))
+	player.give_tool(UVLight.new())
 	toolbar.player = player
 	_show_message("Something feels wrong in this house...", 3.0)
 

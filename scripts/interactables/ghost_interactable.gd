@@ -33,8 +33,21 @@ extends StaticBody2D
 ## How far above the origin the "[E] ..." prompt floats.
 @export var prompt_height := 36.0
 
+## Where the UV residue glow is centred, relative to the origin (e.g. on top
+## of a sink's counter). Set by each interactable.
+var residue_offset := Vector2(0, -8)
+## True once a residue-leaving ghost has touched this. Only visible under UV.
+var has_residue := false
+## Set by the UV light each frame while its beam is on this object.
+var uv_lit := false:
+	set(value):
+		uv_lit = value
+		if _residue_glow:
+			_residue_glow.visible = has_residue and uv_lit
+
 var _last_interaction_time := -INF
 var _prompt: Label
+var _residue_glow: ResidueGlow
 
 
 func _ready() -> void:
@@ -54,6 +67,10 @@ func _ready() -> void:
 		add_child(shape)
 	if player_can_use:
 		_build_player_zone()
+	_residue_glow = ResidueGlow.new()
+	_residue_glow.position = residue_offset
+	_residue_glow.visible = false
+	add_child(_residue_glow)
 
 
 ## The solid area on the floor, in global coordinates.
@@ -78,6 +95,8 @@ func ghost_can_use(_ghost: Ghost) -> bool:
 ## Called by the ghost. Don't override this - override _on_ghost_interact.
 func ghost_interact(ghost: Ghost) -> void:
 	_last_interaction_time = _game_time()
+	if ghost.behavior.leaves_uv_residue():
+		has_residue = true
 	_on_ghost_interact(ghost)
 
 

@@ -24,15 +24,11 @@ var _velocity := Vector2.ZERO
 var _spin := 0.0
 
 
+## Note: the ball's exported settings (footprint, solid, ghost_reach,
+## cooldown, prompt_height...) are set in scenes/tennis_ball.tscn, not here,
+## so the editor never copies stale values into other scenes.
 func _init() -> void:
-	footprint = Vector2(6, 4)
-	solid = false
-	ghost_reach = 24.0
-	ghost_interaction_chance = 0.35
-	cooldown = 8.0
-	player_can_use = true
-	player_reach = 10.0
-	prompt_height = 34.0  # above the player's head, since they stand right by it
+	residue_offset = Vector2(0, -RADIUS)
 
 
 func ghost_can_use(ghost: Ghost) -> bool:

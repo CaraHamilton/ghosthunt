@@ -103,6 +103,12 @@ func plays_with_ball() -> bool:
 	return false
 
 
+## Whether this ghost type leaves UV residue (a green glow only visible under
+## the UV light) on the things it interacts with.
+func leaves_uv_residue() -> bool:
+	return false
+
+
 ## Called right after the ghost interacts with something (e.g. a sink).
 func on_interacted(_item: GhostInteractable) -> void:
 	pass
