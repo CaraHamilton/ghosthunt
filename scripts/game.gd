@@ -47,6 +47,7 @@ func _ready() -> void:
 	_spawn_ghost()
 	temperatures.setup(house, ghost)
 	player.give_tool(Thermometer.new(house, temperatures))
+	player.give_tool(EMFReader.new(house, ghost))
 	toolbar.player = player
 	_show_message("Something feels wrong in this house...", 3.0)
 

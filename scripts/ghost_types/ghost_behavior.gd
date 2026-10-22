@@ -101,6 +101,12 @@ func on_interacted(_item: GhostInteractable) -> void:
 	pass
 
 
+## Final say on what the EMF reader shows (0-5). `base_level` is worked out
+## from distance, rooms and hunts, and never exceeds 4.
+func get_emf_level(base_level: int) -> int:
+	return base_level
+
+
 ## Speed used while chasing. `base_speed` already includes wave difficulty.
 func get_chase_speed(base_speed: float) -> float:
 	return base_speed
