@@ -32,6 +32,7 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	add_to_group("hiding_spots")
+	add_to_group("nav_obstacles")
 	collision_layer = 1
 	collision_mask = 0
 
@@ -87,16 +88,19 @@ func get_exit_position() -> Vector2:
 	return global_position + Vector2(0, 8)
 
 
+## The player shows the prompt only on the closest thing they can use.
+func set_prompt_visible(value: bool) -> void:
+	_prompt.visible = value
+
+
 func _on_body_entered(body: Node2D) -> void:
-	if body.has_method("register_spot"):
-		body.register_spot(self)
-		_prompt.visible = true
+	if body is Player:
+		body.register_interactable(self)
 
 
 func _on_body_exited(body: Node2D) -> void:
-	if body.has_method("unregister_spot"):
-		body.unregister_spot(self)
-		_prompt.visible = occupied
+	if body is Player:
+		body.unregister_interactable(self)
 
 
 # --- Placeholder art ------------------------------------------------------

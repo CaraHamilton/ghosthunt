@@ -38,8 +38,8 @@ func _ready() -> void:
 	_base_darkness = darkness.color
 	player.global_position = house.PLAYER_START
 	var furniture: Array[Rect2] = []
-	for spot in get_tree().get_nodes_in_group("hiding_spots"):
-		furniture.append(spot.get_footprint())
+	for obstacle in get_tree().get_nodes_in_group("nav_obstacles"):
+		furniture.append(obstacle.get_footprint())
 	house.build_navigation(furniture)
 	player.hidden_changed.connect(_on_player_hidden_changed)
 	game_over_panel.visible = false
@@ -80,6 +80,7 @@ func _spawn_ghost() -> void:
 	ghost.hunt_started.connect(_on_ghost_hunt_started)
 	ghost.hunt_ended.connect(_on_ghost_hunt_ended)
 	ghost.caught_player.connect(_on_ghost_caught_player)
+	ghost.interacted.connect(_on_ghost_interacted)
 	world.add_child(ghost)
 	if OS.is_debug_build():
 		print("[debug] This house is haunted by a %s whose favourite room is the %s" % [
@@ -94,6 +95,11 @@ func _on_ghost_hunt_started() -> void:
 
 func _on_ghost_hunt_ended() -> void:
 	_show_message("It's gone... for now.", 2.0)
+
+
+func _on_ghost_interacted(item: GhostInteractable) -> void:
+	if OS.is_debug_build():
+		print("[debug] The ghost %s" % item.describe_last_interaction())
 
 
 func _on_ghost_caught_player() -> void:
