@@ -4,3 +4,10 @@
 
 [node name="TennisBall" type="StaticBody2D"]
 script = ExtResource("1_ball")
+footprint = Vector2(6, 4)
+solid = false
+ghost_reach = 24.0
+cooldown = 8.0
+player_can_use = true
+player_reach = 10.0
+prompt_height = 34.0

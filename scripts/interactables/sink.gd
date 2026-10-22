@@ -16,10 +16,12 @@ const HEIGHT := 12.0  # how tall the cabinet front is drawn
 var _t := 0.0
 
 
+## Note: the sink's exported settings (footprint, player_can_use,
+## prompt_height...) are set in scenes/sink.tscn, not here. Setting exported
+## values in code makes the editor copy them into every scene that uses a
+## sink, where they can get out of date.
 func _init() -> void:
-	footprint = Vector2(28, 14)
-	player_can_use = true
-	prompt_height = footprint.y + HEIGHT + 14.0
+	residue_offset = Vector2(0, -HEIGHT - 7.0)  # on the counter
 
 
 func _process(delta: float) -> void:
