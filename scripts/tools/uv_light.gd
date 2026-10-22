@@ -1,7 +1,7 @@
 class_name UVLight
-extends Tool
+extends ItemInstance
 ## A UV flashlight. While held (F / left mouse) it shines a purple beam about
-## 3 tiles in front of the player, replacing their normal lantern glow. Any
+## 3 tiles in front of the holder, replacing their normal lantern glow. Any
 ## ghost residue (left by some ghost types on things they touch) inside the
 ## beam glows green.
 
@@ -14,16 +14,12 @@ var _beam: UVBeam
 var _lit: Array[GhostInteractable] = []
 
 
-func _init() -> void:
-	display_name = "UV Light"
-
-
 func start_use() -> void:
 	if _beam == null:
 		_beam = UVBeam.new()
 		_beam.beam_range = beam_range
 		_beam.beam_half_angle = beam_half_angle
-		player.add_child(_beam)
+		holder.add_child(_beam)
 	_beam.visible = true
 	_set_lantern(false)
 
@@ -39,9 +35,9 @@ func stop_use() -> void:
 
 
 func process_use(_delta: float) -> void:
-	_beam.rotation = player.facing.angle()
+	_beam.rotation = holder.facing.angle()
 	var now_lit: Array[GhostInteractable] = []
-	for item: GhostInteractable in player.get_tree().get_nodes_in_group("ghost_interactables"):
+	for item: GhostInteractable in holder.get_tree().get_nodes_in_group("ghost_interactables"):
 		if _in_beam(item):
 			now_lit.append(item)
 	for item in _lit:
@@ -53,21 +49,21 @@ func process_use(_delta: float) -> void:
 
 
 func _in_beam(item: GhostInteractable) -> bool:
-	var origin := player.global_position
+	var origin := holder.global_position
 	var target := item.get_footprint().get_center()
 	var to_item := target - origin
 	if to_item.length() > beam_range:
 		return false
-	if to_item.length() > 4.0 and absf(rad_to_deg(player.facing.angle_to(to_item))) > beam_half_angle:
+	if to_item.length() > 4.0 and absf(rad_to_deg(holder.facing.angle_to(to_item))) > beam_half_angle:
 		return false
 	# Walls (and other furniture) block the beam.
 	var query := PhysicsRayQueryParameters2D.create(origin, target, 1)
 	query.exclude = [item.get_rid()]
-	return player.get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+	return holder.get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 
 func _set_lantern(on: bool) -> void:
-	var lantern := player.get_node_or_null("Lantern")
+	var lantern := holder.get_node_or_null("Lantern")
 	if lantern:
 		lantern.visible = on
 

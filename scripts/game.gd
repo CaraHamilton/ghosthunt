@@ -1,8 +1,14 @@
+class_name Game
 extends Node2D
 ## Main game loop: places the house's ghost, reacts to its hunts, tracks
 ## survival time and handles game over / restart.
 
 const GhostScene := preload("res://scenes/ghost.tscn")
+## Items the player starts with, by id (see res://items/).
+const STARTING_ITEMS: Array[StringName] = [&"thermometer", &"emf_reader", &"tennis_ball", &"uv_light"]
+
+## The running game, so items can find the house, ghost, etc.
+static var current: Game
 
 @export var base_ghost_speed := 60.0
 ## Each hunt the ghost gets a little faster.
@@ -34,6 +40,7 @@ var _base_darkness: Color
 
 
 func _ready() -> void:
+	current = self
 	randomize()
 	_base_darkness = darkness.color
 	player.global_position = house.PLAYER_START
@@ -46,10 +53,8 @@ func _ready() -> void:
 	hide_overlay.visible = false
 	_spawn_ghost()
 	temperatures.setup(house, ghost)
-	player.give_tool(Thermometer.new(house, temperatures))
-	player.give_tool(EMFReader.new(house, ghost))
-	player.give_tool(TennisBallTool.new(house, world))
-	player.give_tool(UVLight.new())
+	for id in STARTING_ITEMS:
+		player.inventory.add_item(ItemDB.create(id))
 	toolbar.player = player
 	_show_message("Something feels wrong in this house...", 3.0)
 

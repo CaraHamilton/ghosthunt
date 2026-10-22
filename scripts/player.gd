@@ -2,13 +2,18 @@ class_name Player
 extends CharacterBody2D
 ## Top-down player. Walks with WASD/arrows, runs with Shift, and uses the
 ## closest nearby object with E/Space (hides in HidingSpots, toggles sinks,
-## etc. - only the closest one shows its prompt). Picks a toolbar slot with 1-5 or the mouse
-## wheel, and uses the selected tool while holding F / left mouse.
+## picks up items - only the closest one shows its prompt). Picks a toolbar
+## slot with 1-5 or the mouse wheel, uses the selected item while holding
+## F / left mouse, and drops it with Q.
 
 signal hidden_changed(is_hidden: bool)
-signal tools_changed
 
+## How many inventory slots the player has. The toolbar shows the first
+## TOOLBAR_SLOTS of them (all of them, for now).
+const INVENTORY_SIZE := 5
 const TOOLBAR_SLOTS := 5
+## How far in front of the player dropped items land (px).
+const DROP_DISTANCE := 10.0
 
 @export var walk_speed := 70.0
 @export var run_speed := 115.0
@@ -17,16 +22,15 @@ var is_hidden := false
 var is_dead := false
 var facing := Vector2.DOWN
 
-## Toolbar contents; empty slots are null.
-var tools: Array[Tool] = []
+var inventory := Inventory.new(INVENTORY_SIZE, self)
 var selected_slot := 0
-var is_using_tool := false
-var selected_tool: Tool:
+var is_using_item := false
+var selected_item: ItemInstance:
 	get:
-		return tools[selected_slot]
+		return inventory.get_item(selected_slot)
 
-## Things the player is standing next to and can use with E (HidingSpots and
-## player-usable GhostInteractables).
+## Things the player is standing next to and can use with E (HidingSpots,
+## player-usable GhostInteractables, items on the floor).
 var _nearby: Array[Node2D] = []
 ## The one the E key acts on right now (closest, or the spot we're hiding in).
 var _focused: Node2D = null
@@ -34,19 +38,15 @@ var _current_spot: HidingSpot = null
 var _walk_time := 0.0
 
 
-func _init() -> void:
-	tools.resize(TOOLBAR_SLOTS)
-
-
 func _physics_process(delta: float) -> void:
-	_update_tool_use(delta)
+	_update_item_use(delta)
 	_update_focus()
 	if is_dead or is_hidden:
 		velocity = Vector2.ZERO
 		return
 
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	if is_using_tool and selected_tool.blocks_movement:
+	if is_using_item and selected_item.blocks_movement:
 		input = Vector2.ZERO
 	var speed := run_speed if Input.is_action_pressed("run") else walk_speed
 	velocity = input * speed
@@ -73,13 +73,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("prev_tool"):
 		select_slot(posmod(selected_slot - 1, TOOLBAR_SLOTS))
 		return
+	if event.is_action_pressed("drop_item"):
+		if not is_hidden:
+			drop_selected()
+		return
 	if not event.is_action_pressed("interact"):
 		return
 	if is_hidden:
 		leave_hiding_spot()
 	elif _focused is HidingSpot:
 		enter_hiding_spot(_focused)
-	elif _focused is GhostInteractable:
+	elif _focused and _focused.has_method("player_interact"):
 		_focused.player_interact(self)
 	get_viewport().set_input_as_handled()
 
@@ -109,48 +113,63 @@ func die() -> void:
 	queue_redraw()
 
 
-## Puts a tool in the first empty toolbar slot (or `slot` if given).
-func give_tool(tool: Tool, slot := -1) -> void:
-	if slot < 0:
-		slot = tools.find(null)
-		if slot < 0:
-			push_warning("Toolbar is full, can't add %s" % tool.display_name)
-			return
-	tool.player = self
-	tools[slot] = tool
-	tools_changed.emit()
-
-
 func select_slot(slot: int) -> void:
 	if slot == selected_slot:
 		return
-	_set_using_tool(false)
+	_set_using_item(false)
 	selected_slot = slot
-	tools_changed.emit()
+	inventory.changed.emit()
 
 
-## Uses the selected tool while the use button is held.
-func _update_tool_use(delta: float) -> void:
-	var want := Input.is_action_pressed("use_tool") and selected_tool != null \
-		and not is_hidden and not is_dead
-	_set_using_tool(want)
-	if not is_dead:
-		for tool in tools:
-			if tool:
-				tool.process_always(delta)
-	if is_using_tool:
-		selected_tool.process_use(delta)
+## Picks up an item that's on the floor (`from_node` is its world node).
+## Returns false if there's no room.
+func pick_up(item: ItemInstance, from_node: Node2D) -> bool:
+	if not inventory.has_room_for(item):
+		return false
+	unregister_interactable(from_node)
+	if from_node == _focused:
+		_focused = null
+	inventory.add_item(item)
+	item.on_picked_up(self)
+	return true
 
 
-func _set_using_tool(value: bool) -> void:
-	if value == is_using_tool:
+## Drops the selected item (one of a stack) on the floor in front of us.
+func drop_selected() -> void:
+	if selected_item == null:
 		return
-	is_using_tool = value
-	if selected_tool:
+	_set_using_item(false)
+	var item := inventory.remove_from_slot(selected_slot, 1)
+	var spot := global_position + facing * DROP_DISTANCE
+	var game := Game.current
+	if not game.house.is_walkable(spot):
+		spot = global_position  # too close to a wall: drop it at our feet
+	ItemPickup.drop(item, game.world, spot)
+
+
+## Uses the selected item while the use button is held, and keeps every
+## carried item ticking (sensors keep measuring in your pocket).
+func _update_item_use(delta: float) -> void:
+	var want := Input.is_action_pressed("use_tool") and selected_item != null \
+		and not is_hidden and not is_dead
+	_set_using_item(want)
+	if not is_dead:
+		for item in inventory.items():
+			item.process_always(delta)
+	if is_using_item and selected_item:
+		selected_item.process_use(delta)
+
+
+func _set_using_item(value: bool) -> void:
+	if value == is_using_item:
+		return
+	is_using_item = value
+	var item := selected_item
+	if item:
 		if value:
-			selected_tool.start_use()
+			item.start_use()
 		else:
-			selected_tool.stop_use()
+			item.stop_use()
 	queue_redraw()
 
 
@@ -184,11 +203,13 @@ func _update_focus() -> void:
 func _closest_interactable() -> Node2D:
 	var best: Node2D = null
 	var best_dist := INF
-	for item in _nearby:
-		var d := global_position.distance_squared_to(item.global_position)
+	for thing in _nearby:
+		if not is_instance_valid(thing):
+			continue
+		var d := global_position.distance_squared_to(thing.global_position)
 		if d < best_dist:
 			best_dist = d
-			best = item
+			best = thing
 	return best
 
 
@@ -224,7 +245,7 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2(1.5, -16 + bob) + eye_off, Vector2(1, 2)), Color("2a2030"))
 
 	# Holding the active tool out in front (placeholder until there's art)
-	if is_using_tool:
+	if is_using_item:
 		var hand := Vector2(5 if facing.x >= 0 else -6, -10 + bob)
 		draw_rect(Rect2(hand, Vector2(1.5, 5)), Color("e8e8f0"))
 		draw_circle(hand + Vector2(0.75, 5.5), 1.3, Color("d8403a"))
