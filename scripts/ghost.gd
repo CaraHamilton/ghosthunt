@@ -17,6 +17,8 @@ extends CharacterBody2D
 signal hunt_started
 signal hunt_ended
 signal caught_player
+## Emitted when the ghost (invisibly) messes with something, e.g. a sink.
+signal interacted(item: GhostInteractable)
 
 enum State {
 	IDLE,          ## invisible, wandering (mostly around its favourite room)
@@ -60,6 +62,14 @@ const VISIBLE_ALPHA := 0.85
 @export var min_wander_pause := 1.0
 @export var max_wander_pause := 3.5
 
+@export_group("Interactions")
+## How often (seconds) the invisible ghost considers messing with nearby
+## objects. Each object's own `ghost_interaction_chance` is rolled per check.
+@export var interact_check_interval := 1.0
+## Chance (0-1) that a wander trip heads to an object (e.g. a sink) in the
+## chosen room instead of a random spot, so the ghost actually goes near them.
+@export var visit_object_chance := 0.35
+
 @export_group("Debug")
 ## Draw the ghost faintly even while it's invisible.
 @export var debug_reveal := false
@@ -87,6 +97,7 @@ var _wander_target := Vector2.INF
 var _wander_pause := 0.0
 var _stuck_time := 0.0
 var _time_away := 0.0
+var _interact_timer := 0.0
 var _path := PackedVector2Array()
 var _path_target := Vector2.INF
 var _repath_timer := 0.0
@@ -120,6 +131,7 @@ func _physics_process(delta: float) -> void:
 		State.IDLE:
 			_time_away = 0.0 if house.room_at(global_position) == favorite_room else _time_away + delta
 			_wander(delta)
+			_try_interact(delta)
 			_try_start_hunt(delta)
 
 		State.APPEARING:
@@ -166,6 +178,7 @@ func _physics_process(delta: float) -> void:
 				_wander_pause = randf_range(min_wander_pause, max_wander_pause)
 				set_state(State.IDLE)
 			else:
+				_try_interact(delta)
 				_try_start_hunt(delta)
 
 	_update_fade(delta)
@@ -214,6 +227,24 @@ func _try_start_hunt(delta: float) -> void:
 		start_hunt()
 
 
+## Every `interact_check_interval`, maybe mess with one nearby object.
+## Only called while the ghost is invisible and not hunting, so the player
+## sees the effect (e.g. a sink turning on) but never the ghost.
+func _try_interact(delta: float) -> void:
+	_interact_timer -= delta
+	if _interact_timer > 0.0:
+		return
+	_interact_timer = interact_check_interval
+	for item: GhostInteractable in get_tree().get_nodes_in_group("ghost_interactables"):
+		if not item.is_in_ghost_reach(global_position) or not item.can_ghost_interact():
+			continue
+		if randf() < behavior.get_interaction_chance(item, item.ghost_interaction_chance):
+			item.ghost_interact(self)
+			behavior.on_interacted(item)
+			interacted.emit(item)
+			return
+
+
 func _start_hunt_cooldown() -> void:
 	_hunt_cooldown = behavior.get_hunt_cooldown(randf_range(min_hunt_cooldown, max_hunt_cooldown))
 	_hunt_check_timer = 0.0
@@ -227,7 +258,12 @@ func _wander(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 	if _wander_target == Vector2.INF:
-		_wander_target = house.random_point_in_room(_pick_wander_room())
+		var room := _pick_wander_room()
+		_wander_target = house.random_point_in_room(room)
+		if randf() < visit_object_chance:
+			var spot := _object_stand_point_in(room)
+			if spot != Vector2.INF:
+				_wander_target = spot
 
 	_follow_path_to(_wander_target, wander_speed, delta, false)
 	# Give up on a target we can't reach.
@@ -236,6 +272,18 @@ func _wander(delta: float) -> void:
 		_wander_target = Vector2.INF
 		_stuck_time = 0.0
 		_wander_pause = randf_range(min_wander_pause, max_wander_pause)
+
+
+## A walkable spot next to a random interactable in `room`, or INF if the
+## room has none.
+func _object_stand_point_in(room: String) -> Vector2:
+	var items := get_tree().get_nodes_in_group("ghost_interactables").filter(
+		func(item): return house.room_at(item.get_footprint().get_center()) == room)
+	if items.is_empty():
+		return Vector2.INF
+	var item: GhostInteractable = items.pick_random()
+	var spot := item.get_ghost_stand_point()
+	return spot if house.is_walkable(spot) else _random_point_near(spot, 8.0)
 
 
 func _pick_wander_room() -> String:

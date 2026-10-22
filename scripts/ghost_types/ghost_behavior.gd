@@ -90,6 +90,17 @@ func get_cold_temperature(base_temperature: float) -> float:
 	return base_temperature
 
 
+## Chance (0-1) per check that the ghost interacts with `item` while near it
+## (e.g. a Poltergeist could mess with things far more often).
+func get_interaction_chance(_item: GhostInteractable, base_chance: float) -> float:
+	return base_chance
+
+
+## Called right after the ghost interacts with something (e.g. a sink).
+func on_interacted(_item: GhostInteractable) -> void:
+	pass
+
+
 ## Speed used while chasing. `base_speed` already includes wave difficulty.
 func get_chase_speed(base_speed: float) -> float:
 	return base_speed

@@ -1,7 +1,8 @@
 class_name Player
 extends CharacterBody2D
-## Top-down player. Walks with WASD/arrows, runs with Shift, and hides in
-## nearby HidingSpots with E/Space. Picks a toolbar slot with 1-5 or the mouse
+## Top-down player. Walks with WASD/arrows, runs with Shift, and uses the
+## closest nearby object with E/Space (hides in HidingSpots, toggles sinks,
+## etc. - only the closest one shows its prompt). Picks a toolbar slot with 1-5 or the mouse
 ## wheel, and uses the selected tool while holding F / left mouse.
 
 signal hidden_changed(is_hidden: bool)
@@ -24,8 +25,11 @@ var selected_tool: Tool:
 	get:
 		return tools[selected_slot]
 
-## Hiding spots the player is currently standing next to.
-var _nearby_spots: Array[HidingSpot] = []
+## Things the player is standing next to and can use with E (HidingSpots and
+## player-usable GhostInteractables).
+var _nearby: Array[Node2D] = []
+## The one the E key acts on right now (closest, or the spot we're hiding in).
+var _focused: Node2D = null
 var _current_spot: HidingSpot = null
 var _walk_time := 0.0
 
@@ -36,6 +40,7 @@ func _init() -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_tool_use(delta)
+	_update_focus()
 	if is_dead or is_hidden:
 		velocity = Vector2.ZERO
 		return
@@ -72,10 +77,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if is_hidden:
 		leave_hiding_spot()
-	else:
-		var spot := _closest_spot()
-		if spot:
-			enter_hiding_spot(spot)
+	elif _focused is HidingSpot:
+		enter_hiding_spot(_focused)
+	elif _focused is GhostInteractable:
+		_focused.player_interact(self)
 	get_viewport().set_input_as_handled()
 
 
@@ -149,23 +154,41 @@ func _set_using_tool(value: bool) -> void:
 	queue_redraw()
 
 
-func register_spot(spot: HidingSpot) -> void:
-	if spot not in _nearby_spots:
-		_nearby_spots.append(spot)
+## Called by objects' interaction zones when the player walks into range.
+## Each must have `set_prompt_visible(bool)`.
+func register_interactable(item: Node2D) -> void:
+	if item not in _nearby:
+		_nearby.append(item)
 
 
-func unregister_spot(spot: HidingSpot) -> void:
-	_nearby_spots.erase(spot)
+func unregister_interactable(item: Node2D) -> void:
+	_nearby.erase(item)
 
 
-func _closest_spot() -> HidingSpot:
-	var best: HidingSpot = null
+## Picks which nearby object E acts on and shows only that one's prompt.
+func _update_focus() -> void:
+	var target: Node2D = null
+	if is_hidden:
+		target = _current_spot
+	elif not is_dead:
+		target = _closest_interactable()
+	if target == _focused:
+		return
+	if is_instance_valid(_focused):
+		_focused.set_prompt_visible(false)
+	_focused = target
+	if _focused:
+		_focused.set_prompt_visible(true)
+
+
+func _closest_interactable() -> Node2D:
+	var best: Node2D = null
 	var best_dist := INF
-	for spot in _nearby_spots:
-		var d := global_position.distance_squared_to(spot.global_position)
+	for item in _nearby:
+		var d := global_position.distance_squared_to(item.global_position)
 		if d < best_dist:
 			best_dist = d
-			best = spot
+			best = item
 	return best
 
 
