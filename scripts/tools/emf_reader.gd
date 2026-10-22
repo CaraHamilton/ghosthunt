@@ -4,8 +4,8 @@ extends Tool
 ##   1-3  the ghost is in the same room (stronger the closer it is), or the
 ##        player is next to something the ghost touched recently
 ##   4    the ghost is within a few tiles, or a hunt is happening anywhere
-##   5    only ever a Demon: whenever another ghost would read 4
-## The Demon rule lives in DemonBehavior.get_emf_level(), so ghost types
+##   5    only a Demon or Wraith: whenever another ghost would read 4
+## The 5 rule lives in each type's get_emf_level() (Demon, Wraith), so ghost types
 ## decide their own EMF quirks.
 
 ## Within this distance (px) of the ghost the reader shows 4 (~3.5 tiles).

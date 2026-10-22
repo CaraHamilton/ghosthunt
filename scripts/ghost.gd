@@ -10,7 +10,7 @@ extends CharacterBody2D
 ## a hunt, touching the player means game over.
 ##
 ## The node's origin is the floor point under the ghost. What *kind* of ghost
-## it is (Demon, Banshee, Poltergeist) lives in `behavior` - see
+## it is (Demon, Banshee, Poltergeist, Wraith) lives in `behavior` - see
 ## scripts/ghost_types/. Every ghost looks the same, so the player has to work
 ## out the type from how it behaves.
 
@@ -236,7 +236,8 @@ func _try_interact(delta: float) -> void:
 		return
 	_interact_timer = interact_check_interval
 	for item: GhostInteractable in get_tree().get_nodes_in_group("ghost_interactables"):
-		if not item.is_in_ghost_reach(global_position) or not item.can_ghost_interact():
+		if not item.ghost_can_use(self) or not item.is_in_ghost_reach(global_position) \
+				or not item.can_ghost_interact():
 			continue
 		if randf() < behavior.get_interaction_chance(item, item.ghost_interaction_chance):
 			item.ghost_interact(self)
@@ -278,7 +279,8 @@ func _wander(delta: float) -> void:
 ## room has none.
 func _object_stand_point_in(room: String) -> Vector2:
 	var items := get_tree().get_nodes_in_group("ghost_interactables").filter(
-		func(item): return house.room_at(item.get_footprint().get_center()) == room)
+		func(item): return item.ghost_can_use(self) \
+			and house.room_at(item.get_footprint().get_center()) == room)
 	if items.is_empty():
 		return Vector2.INF
 	var item: GhostInteractable = items.pick_random()

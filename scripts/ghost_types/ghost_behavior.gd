@@ -1,6 +1,6 @@
 class_name GhostBehavior
 extends RefCounted
-## Base class for type-specific ghost behaviour. Each ghost type (Demon,
+## Base class for type-specific ghost behaviour. Each ghost type (Demon, Wraith,
 ## Banshee, Poltergeist) extends this and overrides the hooks it cares about.
 ## The defaults do nothing, so every ghost currently acts the same.
 ##
@@ -8,7 +8,7 @@ extends RefCounted
 ## hook that doesn't exist yet, add it here with a do-nothing default and
 ## call it from ghost.gd.
 
-enum Type { DEMON, BANSHEE, POLTERGEIST }
+enum Type { DEMON, BANSHEE, POLTERGEIST, WRAITH }
 
 ## The ghost this behaviour drives. Set before `on_spawned()` is called.
 var ghost: Ghost
@@ -23,6 +23,8 @@ static func create(type: Type) -> GhostBehavior:
 			return BansheeBehavior.new()
 		Type.POLTERGEIST:
 			return PoltergeistBehavior.new()
+		Type.WRAITH:
+			return WraithBehavior.new()
 	push_error("Unknown ghost type: %s" % type)
 	return GhostBehavior.new()
 
@@ -94,6 +96,11 @@ func get_cold_temperature(base_temperature: float) -> float:
 ## (e.g. a Poltergeist could mess with things far more often).
 func get_interaction_chance(_item: GhostInteractable, base_chance: float) -> float:
 	return base_chance
+
+
+## Whether this ghost type plays with the tennis ball (rolls it around).
+func plays_with_ball() -> bool:
+	return false
 
 
 ## Called right after the ghost interacts with something (e.g. a sink).
