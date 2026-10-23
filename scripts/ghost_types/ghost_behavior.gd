@@ -37,6 +37,27 @@ static func type_name(type: Type) -> String:
 	return Type.keys()[type].capitalize()
 
 
+## The evidence a ghost type shows (for the journal).
+static func evidence_for(type: Type) -> Array[Evidence.Type]:
+	return create(type).get_evidence()
+
+
+## Which evidence this ghost type shows. Worked out from its own behaviour
+## hooks, so the journal always matches how the ghost really acts. Override
+## only if a type needs evidence the hooks can't express.
+func get_evidence() -> Array[Evidence.Type]:
+	var result: Array[Evidence.Type] = []
+	if get_cold_temperature(3.0, true) < 0.0:
+		result.append(Evidence.Type.FREEZING)
+	if get_emf_level(4) >= 5:
+		result.append(Evidence.Type.EMF_5)
+	if plays_with_ball():
+		result.append(Evidence.Type.TOY_INTERACTION)
+	if leaves_uv_residue():
+		result.append(Evidence.Type.UV_RESIDUE)
+	return result
+
+
 # --- Hooks: override these in a ghost type -------------------------------
 
 ## Called once, right after the ghost is added to the scene (it is still
