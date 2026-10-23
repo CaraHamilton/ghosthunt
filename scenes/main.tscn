@@ -11,7 +11,6 @@
 
 [node name="Main" type="Node2D" unique_id=18073823]
 script = ExtResource("1_game")
-debug_show_ghost = true
 
 [node name="House" type="Node2D" parent="." unique_id=1919625698]
 script = ExtResource("2_house")

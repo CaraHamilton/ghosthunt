@@ -54,3 +54,4 @@ shape = SubResource("CircleShape2D_ghost")
 position = Vector2(0, -16)
 sprite_frames = SubResource("SpriteFrames_74kp6")
 animation = &"float"
+autoplay = "float"
