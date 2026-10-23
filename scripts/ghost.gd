@@ -340,34 +340,8 @@ func _random_point_near(origin: Vector2, radius: float) -> Vector2:
 # --- Placeholder art ------------------------------------------------------
 
 func _draw() -> void:
-	var bob := sin(_t * 3.0) * 2.0
-	var body := Color(0.92, 0.95, 1.0)
-	var center := Vector2(0, -12 + bob)  # float above the floor point
 
 	# Faint shadow on the floor
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.4))
 	draw_circle(Vector2.ZERO, 7.0, Color(0, 0, 0, 0.2))
 	draw_set_transform(Vector2.ZERO)
-
-	# Round head + body
-	draw_circle(center + Vector2(0, -4), 9.0, body)
-	draw_rect(Rect2(center + Vector2(-9, -4), Vector2(18, 10)), body)
-	# Wavy tail
-	var pts := PackedVector2Array()
-	for i in 7:
-		var x := -9.0 + i * 3.0
-		var y := 6.0 + (2.5 if i % 2 == 0 else 0.0) + sin(_t * 6.0 + i) * 1.0
-		pts.append(center + Vector2(x, y))
-	pts.append(center + Vector2(9, 5))
-	pts.append(center + Vector2(-9, 5))
-	draw_colored_polygon(pts, body)
-
-	# Eyes and mouth - angrier while chasing
-	var eye := Color("1b1530")
-	if state == State.CHASING:
-		draw_rect(Rect2(center + Vector2(-5, -6), Vector2(3, 4)), eye)
-		draw_rect(Rect2(center + Vector2(2, -6), Vector2(3, 4)), eye)
-		draw_circle(center + Vector2(0, 1), 2.5, eye)
-	else:
-		draw_rect(Rect2(center + Vector2(-5, -5), Vector2(3, 2)), eye)
-		draw_rect(Rect2(center + Vector2(2, -5), Vector2(3, 2)), eye)

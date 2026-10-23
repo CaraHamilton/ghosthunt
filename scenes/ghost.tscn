@@ -1,15 +1,56 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://mnilp7or1via"]
 
-[ext_resource type="Script" path="res://scripts/ghost.gd" id="1_ghost"]
+[ext_resource type="Script" uid="uid://c3m5mnb6fukyl" path="res://scripts/ghost.gd" id="1_ghost"]
+[ext_resource type="Texture2D" uid="uid://dxx50umpf2fru" path="res://art/ghost.png" id="2_l5lq6"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ghost"]
 radius = 4.0
 
-[node name="Ghost" type="CharacterBody2D"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_bbnym"]
+atlas = ExtResource("2_l5lq6")
+region = Rect2(0, 0, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_veat2"]
+atlas = ExtResource("2_l5lq6")
+region = Rect2(16, 0, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5mfnq"]
+atlas = ExtResource("2_l5lq6")
+region = Rect2(32, 0, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lv6vd"]
+atlas = ExtResource("2_l5lq6")
+region = Rect2(48, 0, 16, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_74kp6"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bbnym")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_veat2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5mfnq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lv6vd")
+}],
+"loop": 1,
+"name": &"float",
+"speed": 5.0
+}]
+
+[node name="Ghost" type="CharacterBody2D" unique_id=311754552]
 collision_layer = 0
-collision_mask = 1
 motion_mode = 1
 script = ExtResource("1_ghost")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=649594747]
 shape = SubResource("CircleShape2D_ghost")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=725816329]
+position = Vector2(0, -16)
+sprite_frames = SubResource("SpriteFrames_74kp6")
+animation = &"float"
