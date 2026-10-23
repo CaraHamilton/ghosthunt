@@ -21,6 +21,8 @@ const DROP_DISTANCE := 10.0
 var is_hidden := false
 var is_dead := false
 var facing := Vector2.DOWN
+## True while a window like the journal is open: no moving or using items.
+var in_menu := false
 
 var inventory := Inventory.new(INVENTORY_SIZE, self)
 var selected_slot := 0
@@ -36,6 +38,9 @@ var _nearby: Array[Node2D] = []
 var _focused: Node2D = null
 var _current_spot: HidingSpot = null
 var _walk_time := 0.0
+## After closing a menu, ignore the use button until it's released, so the
+## press that closed the journal doesn't instantly reopen it.
+var _use_blocked_until_release := false
 
 
 func _physics_process(delta: float) -> void:
@@ -46,7 +51,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	if is_using_item and selected_item.blocks_movement:
+	if in_menu or (is_using_item and selected_item.blocks_movement):
 		input = Vector2.ZERO
 	var speed := run_speed if Input.is_action_pressed("run") else walk_speed
 	velocity = input * speed
@@ -61,7 +66,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if is_dead:
+	if is_dead or in_menu:
 		return
 	for i in TOOLBAR_SLOTS:
 		if event.is_action_pressed("tool_slot_%d" % (i + 1)):
@@ -113,6 +118,13 @@ func die() -> void:
 	queue_redraw()
 
 
+## Called by windows like the journal when they open and close.
+func set_in_menu(value: bool) -> void:
+	in_menu = value
+	if not value:
+		_use_blocked_until_release = true
+
+
 func select_slot(slot: int) -> void:
 	if slot == selected_slot:
 		return
@@ -150,8 +162,11 @@ func drop_selected() -> void:
 ## Uses the selected item while the use button is held, and keeps every
 ## carried item ticking (sensors keep measuring in your pocket).
 func _update_item_use(delta: float) -> void:
-	var want := Input.is_action_pressed("use_tool") and selected_item != null \
-		and not is_hidden and not is_dead
+	var pressed := Input.is_action_pressed("use_tool")
+	if not pressed:
+		_use_blocked_until_release = false
+	var want := pressed and selected_item != null and not is_hidden and not is_dead \
+		and not in_menu and not _use_blocked_until_release
 	_set_using_item(want)
 	if not is_dead:
 		for item in inventory.items():

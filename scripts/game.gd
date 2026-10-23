@@ -5,7 +5,7 @@ extends Node2D
 
 const GhostScene := preload("res://scenes/ghost.tscn")
 ## Items the player starts with, by id (see res://items/).
-const STARTING_ITEMS: Array[StringName] = [&"thermometer", &"emf_reader", &"tennis_ball", &"uv_light"]
+const STARTING_ITEMS: Array[StringName] = [&"thermometer", &"emf_reader", &"tennis_ball", &"uv_light", &"journal"]
 
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
@@ -22,6 +22,7 @@ static var current: Game
 @onready var darkness: CanvasModulate = $Darkness
 @onready var temperatures: RoomTemperatures = $RoomTemperatures
 @onready var toolbar: Control = $HUD/Toolbar
+@onready var journal_panel: JournalPanel = $HUD/JournalPanel
 @onready var time_label: Label = $HUD/TimeLabel
 @onready var message_label: Label = $HUD/MessageLabel
 @onready var hide_overlay: ColorRect = $HUD/HideOverlay
@@ -112,6 +113,7 @@ func _on_ghost_interacted(item: GhostInteractable) -> void:
 
 func _on_ghost_caught_player() -> void:
 	is_game_over = true
+	journal_panel.close()
 	player.die()
 	hide_overlay.visible = false
 	message_label.visible = false
