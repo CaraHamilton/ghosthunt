@@ -86,9 +86,14 @@ func get_return_home_chance(base_chance: float) -> float:
 	return base_chance
 
 
+## What freezing ghost types (Banshee, Wraith) chill their favourite room
+## towards, in °C - cold enough that it reliably reads below zero.
+const FREEZING_TEMPERATURE := -8.0
+
+
 ## Temperature (°C) the ghost's current room cools towards. `base_temperature`
 ## is colder for the favourite room than for rooms it is just passing through.
-func get_cold_temperature(base_temperature: float) -> float:
+func get_cold_temperature(base_temperature: float, _is_favorite_room: bool) -> float:
 	return base_temperature
 
 

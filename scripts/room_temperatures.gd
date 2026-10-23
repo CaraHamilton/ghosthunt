@@ -68,8 +68,9 @@ func get_temperature(room: String) -> float:
 
 ## What a room cools towards while the ghost is in it.
 func _cold_target(room: String) -> float:
-	var cold := ghost_cold_temperature if room == ghost.favorite_room else passing_cold_temperature
-	return ghost.behavior.get_cold_temperature(cold)
+	var is_favorite := room == ghost.favorite_room
+	var cold := ghost_cold_temperature if is_favorite else passing_cold_temperature
+	return ghost.behavior.get_cold_temperature(cold, is_favorite)
 
 
 ## What a room warms back up to once the ghost leaves.
