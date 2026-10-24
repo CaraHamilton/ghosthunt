@@ -18,8 +18,9 @@ extends CharacterBody2D
 ## switches back to INVESTIGATING. Walls and furniture block its view.
 ##
 ## The player can always walk straight through the ghost, so they never feel
-## it while it is invisible. It only collides with walls and furniture. During
-## a hunt, touching the player means game over.
+## it while it is invisible. It only collides with walls and furniture.
+## Hunts only start once the player's sanity is low enough. During a hunt,
+## touching the player catches them (costing them sanity) and ends the hunt.
 ##
 ## The node's origin is the floor point under the ghost. What *kind* of ghost
 ## it is (Demon, Banshee, Poltergeist, Wraith) lives in `behavior` - see
@@ -73,12 +74,17 @@ const VISIBLE_ALPHA := 0.85
 @export var lose_sight_delay := 0.4
 ## Chance (0-1) of starting a hunt each `hunt_check_interval` once the ghost
 ## is off cooldown (and the player isn't too close).
-@export var hunt_chance := 0.15
+@export var hunt_chance := 0.08
 @export var hunt_check_interval := 1.0
-@export var min_hunt_cooldown := 6.0
-@export var max_hunt_cooldown := 14.0
+## Random wait (seconds) after each hunt - and from the moment the player's
+## sanity first drops low enough - before the ghost may hunt again.
+@export var min_hunt_cooldown := 20.0
+@export var max_hunt_cooldown := 45.0
 ## The ghost won't start a hunt on its own if the player is closer than this.
 @export var min_hunt_distance := 64.0
+## The ghost only starts hunts on its own once the player's sanity is below
+## this fraction of full (0.7 = 70%).
+@export_range(0.0, 1.0) var hunt_sanity_threshold := 0.7
 @export var appear_time := 1.0
 @export var catch_radius := 10.0
 
@@ -131,6 +137,10 @@ var last_seen_position := Vector2.INF
 
 var _state_time := 0.0
 var _hunt_cooldown := 0.0
+## True while the player's sanity is too high for hunts. Dropping below the
+## threshold starts a fresh cooldown, so a hunt never fires the instant it's
+## allowed - the ghost merely *can* hunt from then on.
+var _hunts_locked := true
 var _hunt_check_timer := 0.0
 var _wander_target := Vector2.INF
 var _wander_pause := 0.0
@@ -212,9 +222,7 @@ func _physics_process(delta: float) -> void:
 			if sees_player:
 				set_state(State.CHASING)
 			elif _state_time >= behavior.get_search_time(search_time):
-				# Didn't find them - the hunt is over.
-				is_manifested = false
-				set_state(State.VANISHING)
+				end_hunt()  # didn't find them - the hunt is over
 			else:
 				var speed := behavior.get_search_speed(player.walk_speed * search_speed_factor)
 				_follow_path_to(_wander_target, speed, delta, false)
@@ -308,14 +316,32 @@ func _start_search(center: Vector2) -> void:
 	set_state(State.SEARCHING)
 
 
+## Catching the player ends the hunt (the game takes away their sanity).
 func _check_catch() -> void:
 	if state in HUNT_STATES and global_position.distance_to(player.global_position) < catch_radius:
 		behavior.on_caught_player()
+		end_hunt()
 		caught_player.emit()
-		set_physics_process(false)
+
+
+## Ends the current hunt: the ghost fades out and heads back home.
+func end_hunt() -> void:
+	if not is_hunting or state == State.VANISHING:
+		return
+	is_manifested = false
+	set_state(State.VANISHING)
 
 
 func _try_start_hunt(delta: float) -> void:
+	if player.sanity_ratio >= behavior.get_hunt_sanity_threshold(hunt_sanity_threshold):
+		_hunts_locked = true  # the player's mind is still too strong
+		return
+	if _hunts_locked:
+		# Sanity just dropped low enough: hunts are now possible, but only
+		# after a fresh random wait.
+		_hunts_locked = false
+		_start_hunt_cooldown()
+		return
 	_hunt_cooldown -= delta
 	if _hunt_cooldown > 0.0:
 		return

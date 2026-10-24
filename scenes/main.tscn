@@ -9,8 +9,33 @@
 [ext_resource type="PackedScene" path="res://scenes/sink.tscn" id="7_sink"]
 [ext_resource type="PackedScene" path="res://scenes/journal_panel.tscn" id="8_journal"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sanity_bg"]
+bg_color = Color(0.07, 0.05, 0.09, 0.85)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.86, 0.8, 0.68, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sanity_fill"]
+bg_color = Color(0.45, 0.75, 0.95, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [node name="Main" type="Node2D" unique_id=18073823]
 script = ExtResource("1_game")
+debug_show_sanity_number = true
 
 [node name="House" type="Node2D" parent="." unique_id=1919625698]
 script = ExtResource("2_house")
@@ -74,6 +99,31 @@ theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 22
 text = "Survived: 0s"
 
+[node name="SanityBar" type="ProgressBar" parent="HUD" unique_id=1291647691]
+offset_left = 20.0
+offset_top = 54.0
+offset_right = 300.0
+offset_bottom = 82.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_sanity_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_sanity_fill")
+value = 100.0
+show_percentage = false
+
+[node name="SanityText" type="Label" parent="HUD/SanityBar" unique_id=638954970]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 16
+text = "Sanity"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="MessageLabel" type="Label" parent="HUD" unique_id=1030001140]
 anchors_preset = 5
 anchor_left = 0.5
@@ -117,6 +167,15 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_font_sizes/font_size = 34
 horizontal_alignment = 1
+
+[node name="HurtFlash" type="ColorRect" parent="HUD" unique_id=157651323]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.75, 0.05, 0.08, 0)
 
 [node name="JournalPanel" parent="HUD" unique_id=131208325 instance=ExtResource("8_journal")]
 
