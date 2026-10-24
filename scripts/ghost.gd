@@ -55,7 +55,7 @@ const VISIBLE_ALPHA := 0.85
 @export var chase_max_speed_factor := 1.15
 ## Seconds of unbroken sight to go from start speed to top speed. Losing
 ## sight (ending the chase) resets it - break line of sight quickly!
-@export var chase_ramp_time := 4.0
+@export var chase_ramp_time := 7.0
 ## Seconds the ghost freezes when it first spots the player (every time it
 ## switches into a chase) - a head start for the player. It can't catch
 ## anyone during this pause.
@@ -413,6 +413,16 @@ func _hidden_alpha() -> float:
 ## Walks along a grid path towards `target`; collision stops it from ever
 ## passing through walls even if the path is slightly off.
 func _follow_path_to(target: Vector2, speed: float, delta: float, moving_target: bool) -> void:
+	# If the ghost's body can slide straight there without hitting anything,
+	# skip the grid path and go direct (tighter chases, and it can squeeze
+	# into any gap its body physically fits).
+	var to_target := target - global_position
+	if to_target.length() > 0.5 and not test_move(global_transform, to_target):
+		_path_target = Vector2.INF  # re-plan if the straight line gets blocked
+		velocity = to_target.normalized() * speed
+		move_and_slide()
+		return
+
 	_repath_timer -= delta
 	var stale := moving_target and _repath_timer <= 0.0
 	if stale or not _path_target.is_equal_approx(target):

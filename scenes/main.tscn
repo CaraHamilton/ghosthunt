@@ -57,7 +57,7 @@ position = Vector2(540, 222)
 position = Vector2(90, 270)
 
 [node name="Darkness" type="CanvasModulate" parent="." unique_id=388993979]
-color = Color(0.45, 0.42, 0.62, 1)
+color = Color(0.09, 0.085, 0.15, 1)
 
 [node name="RoomTemperatures" type="Node" parent="." unique_id=1162116692]
 script = ExtResource("5_temps")
