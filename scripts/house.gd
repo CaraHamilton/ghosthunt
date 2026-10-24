@@ -150,6 +150,12 @@ func random_point_in_room(room: String) -> Vector2:
 	return r.get_center()
 
 
+## True if `point` is inside the house (any room, doorway or wall), false
+## if it's outside. Used e.g. to stop the player's sanity draining outdoors.
+func is_inside(point: Vector2) -> bool:
+	return Rect2(Vector2.ZERO, SIZE).has_point(point)
+
+
 ## Name of the room containing `point`, or "" if it's in a doorway/wall.
 func room_at(point: Vector2) -> String:
 	for room in ROOMS:

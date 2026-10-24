@@ -6,6 +6,13 @@ extends CharacterBody2D
 ## mouse wheel, uses the selected item while holding F / left mouse, and
 ## drops it with Q. There's nowhere to hide: during a hunt, run and break the
 ## ghost's line of sight.
+##
+## Sanity starts full and slowly drains while in the house (it stops, but
+## doesn't recover, outside). Being caught by the ghost costs a big chunk; at
+## 0 it's game over. Only restore_sanity() (e.g. medicine) brings it back up.
+
+## Emitted once when sanity hits 0.
+signal sanity_depleted
 
 ## How many inventory slots the player has. The toolbar shows the first
 ## TOOLBAR_SLOTS of them (all of them, for now).
@@ -17,6 +24,20 @@ const DROP_DISTANCE := 10.0
 @export var walk_speed := 70.0
 @export var run_speed := 115.0
 
+@export_group("Sanity")
+@export var max_sanity := 100.0
+## Sanity at the start of the game. Lower it to test hunts sooner.
+@export_range(0.0, 100.0) var start_sanity := 100.0
+## How much sanity drains per second just from being in the house
+## (0.15/s = full to empty in about 11 minutes).
+@export var sanity_drain_per_second := 0.15
+
+@export_group("")
+var sanity := 100.0
+## Sanity as a fraction of the maximum (0-1).
+var sanity_ratio: float:
+	get:
+		return sanity / max_sanity
 var is_dead := false
 var facing := Vector2.DOWN
 ## True while a window like the journal is open: no moving or using items.
@@ -40,7 +61,13 @@ var _walk_time := 0.0
 var _use_blocked_until_release := false
 
 
+func _ready() -> void:
+	sanity = minf(start_sanity, max_sanity)
+
+
 func _physics_process(delta: float) -> void:
+	if not is_dead and is_in_house():
+		lose_sanity(sanity_drain_per_second * delta)
 	_update_item_use(delta)
 	_update_focus()
 	if is_dead:
@@ -89,6 +116,28 @@ func die() -> void:
 	is_dead = true
 	velocity = Vector2.ZERO
 	queue_redraw()
+
+
+## True while the player is inside the house (sanity only drains in there).
+func is_in_house() -> bool:
+	var game := Game.current
+	return game == null or game.house.is_inside(global_position)
+
+
+## Gives sanity back, up to the maximum - for medicine and the like.
+func restore_sanity(amount: float) -> void:
+	if is_dead:
+		return
+	sanity = minf(max_sanity, sanity + amount)
+
+
+## Takes away sanity (it never goes below 0). Hitting 0 emits sanity_depleted.
+func lose_sanity(amount: float) -> void:
+	if sanity <= 0.0:
+		return
+	sanity = maxf(0.0, sanity - amount)
+	if sanity <= 0.0:
+		sanity_depleted.emit()
 
 
 ## Called by windows like the journal when they open and close.

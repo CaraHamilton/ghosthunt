@@ -93,6 +93,12 @@ func get_hunt_chance(base_chance: float) -> float:
 	return base_chance
 
 
+## Hunts only start once the player's sanity is below this fraction (0-1).
+## e.g. an aggressive ghost type could return 0.85 to hunt sooner.
+func get_hunt_sanity_threshold(base_threshold: float) -> float:
+	return base_threshold
+
+
 ## Seconds after a hunt (and at the start) before the ghost may hunt again.
 func get_hunt_cooldown(base_cooldown: float) -> float:
 	return base_cooldown
