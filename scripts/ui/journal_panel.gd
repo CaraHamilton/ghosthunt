@@ -64,8 +64,8 @@ func close() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Close if the journal isn't in hand any more (dropped, hiding, caught...).
-	if visible and (_player.selected_item != _journal or _player.is_hidden or _player.is_dead):
+	# Close if the journal isn't in hand any more (dropped, caught...).
+	if visible and (_player.selected_item != _journal or _player.is_dead):
 		close()
 
 

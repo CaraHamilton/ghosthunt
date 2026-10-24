@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dnuvgiw3bs5b4" path="res://scripts/game.gd" id="1_game"]
 [ext_resource type="Script" uid="uid://dbpc2lxmhuu66" path="res://scripts/house.gd" id="2_house"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
-[ext_resource type="PackedScene" path="res://scenes/hiding_spot.tscn" id="4_spot"]
+[ext_resource type="PackedScene" path="res://scenes/furniture.tscn" id="4_spot"]
 [ext_resource type="Script" uid="uid://bvq5w3xo0rrhs" path="res://scripts/room_temperatures.gd" id="5_temps"]
 [ext_resource type="Script" uid="uid://ddkn5fotmn0va" path="res://scripts/toolbar.gd" id="6_toolbar"]
 [ext_resource type="PackedScene" path="res://scenes/sink.tscn" id="7_sink"]
@@ -63,31 +63,6 @@ color = Color(0.45, 0.42, 0.62, 1)
 script = ExtResource("5_temps")
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1354132517]
-
-[node name="HideOverlay" type="ColorRect" parent="HUD" unique_id=1183964133]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0, 0, 0, 0.55)
-
-[node name="HideLabel" type="Label" parent="HUD/HideOverlay" unique_id=703988289]
-layout_mode = 0
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -300.0
-offset_top = -170.0
-offset_right = 300.0
-offset_bottom = -130.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_font_sizes/font_size = 26
-text = "Hiding... hold your breath.  [E] to come out"
-horizontal_alignment = 1
 
 [node name="TimeLabel" type="Label" parent="HUD" unique_id=283126945]
 offset_left = 20.0

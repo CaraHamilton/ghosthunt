@@ -105,7 +105,7 @@ func _solid_rects() -> Array[Rect2]:
 
 
 ## Builds the pathfinding grid. `extra_solids` are other obstacles placed in
-## the scene (e.g. hiding-spot furniture footprints).
+## the scene (e.g. furniture and sink footprints).
 func build_navigation(extra_solids: Array[Rect2]) -> void:
 	_grid = AStarGrid2D.new()
 	_grid.region = Rect2i(0, 0, ceili(SIZE.x / NAV_CELL), ceili(SIZE.y / NAV_CELL))
@@ -152,9 +152,23 @@ func room_at(point: Vector2) -> String:
 	return ""
 
 
+## The grid cell for a point. If that cell is blocked (e.g. the ghost is
+## brushing right up against furniture, inside the pathfinding margin), uses
+## the nearest open cell instead so a path can still be found.
 func _to_cell(point: Vector2) -> Vector2i:
 	var cell := Vector2i((point / NAV_CELL).floor())
-	return cell.clamp(_grid.region.position, _grid.region.end - Vector2i.ONE)
+	cell = cell.clamp(_grid.region.position, _grid.region.end - Vector2i.ONE)
+	if not _grid.is_point_solid(cell):
+		return cell
+	for r in range(1, 6):
+		for dx in range(-r, r + 1):
+			for dy in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue  # only check the ring at distance r
+				var c := cell + Vector2i(dx, dy)
+				if _grid.is_in_boundsv(c) and not _grid.is_point_solid(c):
+					return c
+	return cell
 
 
 func _draw() -> void:

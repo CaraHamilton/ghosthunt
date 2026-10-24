@@ -10,9 +10,6 @@ const STARTING_ITEMS: Array[StringName] = [&"thermometer", &"emf_reader", &"tenn
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
 
-@export var base_ghost_speed := 60.0
-## Each hunt the ghost gets a little faster.
-@export var ghost_speed_per_hunt := 4.0
 ## Debug: draw the ghost faintly while it's invisible.
 @export var debug_show_ghost := false
 
@@ -25,7 +22,6 @@ static var current: Game
 @onready var journal_panel: JournalPanel = $HUD/JournalPanel
 @onready var time_label: Label = $HUD/TimeLabel
 @onready var message_label: Label = $HUD/MessageLabel
-@onready var hide_overlay: ColorRect = $HUD/HideOverlay
 @onready var game_over_panel: Control = $HUD/GameOver
 @onready var game_over_stats: Label = $HUD/GameOver/Box/Stats
 
@@ -49,9 +45,7 @@ func _ready() -> void:
 	for obstacle in get_tree().get_nodes_in_group("nav_obstacles"):
 		furniture.append(obstacle.get_footprint())
 	house.build_navigation(furniture)
-	player.hidden_changed.connect(_on_player_hidden_changed)
 	game_over_panel.visible = false
-	hide_overlay.visible = false
 	_spawn_ghost()
 	temperatures.setup(house, ghost)
 	for id in STARTING_ITEMS:
@@ -77,7 +71,6 @@ func _spawn_ghost() -> void:
 	ghost.house = house
 	ghost.set_type(ghost_type)
 	ghost.favorite_room = House.ROOMS.keys().pick_random()
-	ghost.chase_speed = base_ghost_speed
 	ghost.debug_reveal = debug_show_ghost
 	# Don't start the ghost right on top of the player.
 	var start := house.random_point_in_room(ghost.favorite_room)
@@ -98,7 +91,6 @@ func _spawn_ghost() -> void:
 
 func _on_ghost_hunt_started() -> void:
 	hunts += 1
-	ghost.chase_speed = minf(base_ghost_speed + ghost_speed_per_hunt * (hunts - 1), player.run_speed - 8.0)
 	_flicker_lights()
 
 
@@ -115,15 +107,9 @@ func _on_ghost_caught_player() -> void:
 	is_game_over = true
 	journal_panel.close()
 	player.die()
-	hide_overlay.visible = false
 	message_label.visible = false
 	game_over_stats.text = "You survived %d seconds." % int(survived_time)
 	game_over_panel.visible = true
-
-
-func _on_player_hidden_changed(is_hidden: bool) -> void:
-	hide_overlay.visible = is_hidden
-	toolbar.visible = not is_hidden
 
 
 func _flicker_lights() -> void:

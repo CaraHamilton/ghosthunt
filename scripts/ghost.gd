@@ -2,8 +2,20 @@ class_name Ghost
 extends CharacterBody2D
 ## The ghost haunting the house. It is always somewhere in the house, but
 ## usually invisible: it drifts around the house, keeps coming back to its
-## favourite room, and every so often decides to hunt. The ghost always knows
-## where the player is, so a hunt can start from anywhere in the house.
+## favourite room, and every so often decides to hunt. A hunt can start from
+## anywhere in the house.
+##
+## During a hunt the ghost can only go after what it has seen:
+##   INVESTIGATING  walks (at the player's walking speed) to the last place
+##                  it saw the player - it remembers this even between hunts
+##   CHASING        it can see the player: straight for them. Starts a bit
+##                  slower than the player runs, speeds up the longer it
+##                  keeps sight of them, and resets when it loses them.
+##                  It pauses briefly on spotting the player (a head start)
+##   SEARCHING      reached the last-seen spot and the player isn't there:
+##                  prowls nearby until a timer runs out, then the hunt ends
+## Seeing the player at any point switches to CHASING; losing sight of them
+## switches back to INVESTIGATING. Walls and furniture block its view.
 ##
 ## The player can always walk straight through the ghost, so they never feel
 ## it while it is invisible. It only collides with walls and furniture. During
@@ -23,20 +35,44 @@ signal interacted(item: GhostInteractable)
 enum State {
 	IDLE,          ## invisible, wandering (mostly around its favourite room)
 	APPEARING,     ## hunt just started: fading in (harmless)
-	CHASING,       ## visible, chasing the player
-	SEARCHING,     ## player hid - prowling around before giving up
+	INVESTIGATING, ## hunt: walking to where it last saw the player
+	CHASING,       ## hunt: can see the player, going straight for them
+	SEARCHING,     ## hunt: prowling around the last-seen spot until time runs out
 	VANISHING,     ## fading out at the end of a hunt
 	RETURNING,     ## invisible, heading back to its favourite room
 }
 
-const HUNT_STATES := [State.APPEARING, State.CHASING, State.SEARCHING, State.VANISHING]
+const HUNT_STATES := [State.APPEARING, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
 const WORLD_LAYER := 1
 const VISIBLE_ALPHA := 0.85
 
 @export_group("Hunting")
-@export var chase_speed := 62.0
+## Chase speed when a chase begins, as a multiple of the player's RUN speed
+## (<1 = slower than you can run).
+@export var chase_start_speed_factor := 0.92
+## Top chase speed, reached after keeping sight of the player for
+## `chase_ramp_time` seconds (>1 = faster than you can run).
+@export var chase_max_speed_factor := 1.15
+## Seconds of unbroken sight to go from start speed to top speed. Losing
+## sight (ending the chase) resets it - break line of sight quickly!
+@export var chase_ramp_time := 4.0
+## Seconds the ghost freezes when it first spots the player (every time it
+## switches into a chase) - a head start for the player. It can't catch
+## anyone during this pause.
+@export var chase_start_delay := 0.5
+## Investigate speed as a multiple of the player's WALK speed.
+@export var investigate_speed_factor := 1.0
+## Search speed as a multiple of the player's WALK speed.
+@export var search_speed_factor := 0.6
+## Seconds the ghost searches around the last-seen spot before the hunt ends.
+@export var search_time := 10.0
+## How far (px) from the last-seen spot the ghost looks around while searching.
+@export var search_radius := 56.0
+## Seconds out of sight before a chase turns back into an investigation
+## (stops it flip-flopping when the player ducks past a corner).
+@export var lose_sight_delay := 0.4
 ## Chance (0-1) of starting a hunt each `hunt_check_interval` once the ghost
-## is off cooldown (and the player isn't hiding or too close).
+## is off cooldown (and the player isn't too close).
 @export var hunt_chance := 0.15
 @export var hunt_check_interval := 1.0
 @export var min_hunt_cooldown := 6.0
@@ -44,8 +80,6 @@ const VISIBLE_ALPHA := 0.85
 ## The ghost won't start a hunt on its own if the player is closer than this.
 @export var min_hunt_distance := 64.0
 @export var appear_time := 1.0
-@export var search_time := 3.0
-@export var search_speed_factor := 0.4
 @export var catch_radius := 10.0
 
 @export_group("Wandering")
@@ -89,6 +123,11 @@ var is_manifested := false
 var is_hunting: bool:
 	get:
 		return state in HUNT_STATES
+## True if the ghost can see the player this frame.
+var sees_player := false
+## Where the ghost last saw the player (INF if it never has). Remembered
+## between hunts too, while it's invisible.
+var last_seen_position := Vector2.INF
 
 var _state_time := 0.0
 var _hunt_cooldown := 0.0
@@ -98,6 +137,10 @@ var _wander_pause := 0.0
 var _stuck_time := 0.0
 var _time_away := 0.0
 var _interact_timer := 0.0
+var _out_of_sight_time := 0.0
+## Seconds the ghost has kept sight of the player in the current chase.
+var _chase_sight_time := 0.0
+var _search_center := Vector2.ZERO
 var _path := PackedVector2Array()
 var _path_target := Vector2.INF
 var _repath_timer := 0.0
@@ -126,6 +169,7 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	_state_time += delta
 	behavior.process(delta)
+	_update_sight()
 
 	match state:
 		State.IDLE:
@@ -135,34 +179,50 @@ func _physics_process(delta: float) -> void:
 			_try_start_hunt(delta)
 
 		State.APPEARING:
+			velocity = Vector2.ZERO
 			if _state_time >= appear_time:
+				_pursue()
+
+		State.INVESTIGATING:
+			if sees_player:
 				set_state(State.CHASING)
+			else:
+				var speed := behavior.get_investigate_speed(player.walk_speed * investigate_speed_factor)
+				_follow_path_to(last_seen_position, speed, delta, false)
+				_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
+				if global_position.distance_to(last_seen_position) < 6.0 or _stuck_time > 1.0:
+					_start_search(last_seen_position)
+				_check_catch()
 
 		State.CHASING:
-			if player.is_hidden:
-				set_state(State.SEARCHING)
-				# Prowl around the spot where the player was last seen.
-				_wander_target = _random_point_near(player.global_position, 40.0)
-				behavior.on_player_hid()
+			if _state_time < chase_start_delay:
+				# Just spotted the player: a brief pause before it gives chase.
+				velocity = Vector2.ZERO
 			else:
-				_follow_path_to(player.global_position, behavior.get_chase_speed(chase_speed), delta, true)
-				if global_position.distance_to(player.global_position) < catch_radius:
-					behavior.on_caught_player()
-					caught_player.emit()
-					set_physics_process(false)
+				if sees_player:
+					_chase_sight_time += delta
+				_follow_path_to(player.global_position, get_current_chase_speed(), delta, true)
+				_check_catch()
+			_out_of_sight_time = 0.0 if sees_player else _out_of_sight_time + delta
+			if _out_of_sight_time > lose_sight_delay and state == State.CHASING:
+				behavior.on_lost_sight_of_player()
+				set_state(State.INVESTIGATING)
 
 		State.SEARCHING:
-			var speed := behavior.get_search_speed(chase_speed * search_speed_factor)
-			_follow_path_to(_wander_target, speed, delta, false)
-			if global_position.distance_to(_wander_target) < 4.0:
-				_wander_target = _random_point_near(global_position, 50.0)
-			var give_up_time := behavior.get_search_time(search_time)
-			if not player.is_hidden and _state_time < give_up_time:
-				# Player came out too early - the hunt is back on!
+			if sees_player:
 				set_state(State.CHASING)
-			elif _state_time >= give_up_time:
+			elif _state_time >= behavior.get_search_time(search_time):
+				# Didn't find them - the hunt is over.
 				is_manifested = false
 				set_state(State.VANISHING)
+			else:
+				var speed := behavior.get_search_speed(player.walk_speed * search_speed_factor)
+				_follow_path_to(_wander_target, speed, delta, false)
+				_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
+				if global_position.distance_to(_wander_target) < 4.0 or _stuck_time > 1.0:
+					_stuck_time = 0.0
+					_wander_target = _random_point_near(_search_center, search_radius)
+				_check_catch()
 
 		State.VANISHING:
 			if modulate.a <= _hidden_alpha():
@@ -190,8 +250,13 @@ func set_state(new_state: State) -> void:
 	var old_state := state
 	state = new_state
 	_state_time = 0.0
+	_stuck_time = 0.0
+	_out_of_sight_time = 0.0
+	_chase_sight_time = 0.0  # every new chase starts at the slow start speed
 	_path_target = Vector2.INF
 	if old_state != new_state:
+		if OS.is_debug_build() and (new_state in HUNT_STATES or old_state in HUNT_STATES):
+			print("[debug] Ghost: %s -> %s" % [State.keys()[old_state], State.keys()[new_state]])
 		behavior.on_state_changed(old_state, new_state)
 
 
@@ -204,12 +269,50 @@ func start_hunt() -> void:
 	hunt_started.emit()
 
 
-## True if nothing solid is between the ghost and a non-hidden player.
+## Chase speed right now: starts a little slower than the player can run and
+## builds up the longer the ghost keeps sight of them.
+func get_current_chase_speed() -> float:
+	var ramp := clampf(_chase_sight_time / chase_ramp_time, 0.0, 1.0)
+	var factor := lerpf(chase_start_speed_factor, chase_max_speed_factor, ramp)
+	return behavior.get_chase_speed(player.run_speed * factor)
+
+
+## True if nothing solid (walls, furniture) is between the ghost and player.
 func can_see_player() -> bool:
-	if player.is_hidden:
-		return false
 	var query := PhysicsRayQueryParameters2D.create(global_position, player.global_position, WORLD_LAYER)
 	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+
+## Looks for the player and remembers where it last saw them.
+func _update_sight() -> void:
+	sees_player = not player.is_dead and can_see_player()
+	if sees_player:
+		last_seen_position = player.global_position
+
+
+## Once a hunt's fade-in is over: chase if it can see the player, otherwise
+## investigate where it last saw them - or, if it never has, search around
+## where it is.
+func _pursue() -> void:
+	if sees_player:
+		set_state(State.CHASING)
+	elif last_seen_position != Vector2.INF:
+		set_state(State.INVESTIGATING)
+	else:
+		_start_search(global_position)
+
+
+func _start_search(center: Vector2) -> void:
+	_search_center = center
+	_wander_target = _random_point_near(center, search_radius)
+	set_state(State.SEARCHING)
+
+
+func _check_catch() -> void:
+	if state in HUNT_STATES and global_position.distance_to(player.global_position) < catch_radius:
+		behavior.on_caught_player()
+		caught_player.emit()
+		set_physics_process(false)
 
 
 func _try_start_hunt(delta: float) -> void:
@@ -220,8 +323,6 @@ func _try_start_hunt(delta: float) -> void:
 	if _hunt_check_timer > 0.0:
 		return
 	_hunt_check_timer = hunt_check_interval
-	if player.is_hidden:
-		return
 	var far_enough := global_position.distance_to(player.global_position) >= min_hunt_distance
 	if far_enough and randf() < behavior.get_hunt_chance(hunt_chance):
 		start_hunt()

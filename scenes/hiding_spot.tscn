@@ -1,6 +1,0 @@
-[gd_scene format=3]
-
-[ext_resource type="Script" path="res://scripts/hiding_spot.gd" id="1_spot"]
-
-[node name="HidingSpot" type="StaticBody2D"]
-script = ExtResource("1_spot")
