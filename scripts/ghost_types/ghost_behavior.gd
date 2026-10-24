@@ -76,8 +76,9 @@ func on_state_changed(_old_state: Ghost.State, _new_state: Ghost.State) -> void:
 	pass
 
 
-## Called the moment the ghost notices the player has hidden.
-func on_player_hid() -> void:
+## Called during a hunt when the ghost loses sight of the player it was
+## chasing (it then goes to investigate where it last saw them).
+func on_lost_sight_of_player() -> void:
 	pass
 
 
@@ -146,16 +147,24 @@ func get_emf_level(base_level: int) -> int:
 	return base_level
 
 
-## Speed used while chasing. `base_speed` already includes wave difficulty.
+## Speed during a hunt while it can see the player and goes straight for
+## them. `base_speed` already includes the chase ramp-up (slower than the
+## player's run at first, faster after keeping sight of them for a while).
 func get_chase_speed(base_speed: float) -> float:
 	return base_speed
 
 
-## Speed used while searching for a hidden player.
+## Speed during a hunt while heading to where it last saw the player.
+## `base_speed` is the player's walking speed.
+func get_investigate_speed(base_speed: float) -> float:
+	return base_speed
+
+
+## Speed while searching around the last place it saw the player.
 func get_search_speed(base_speed: float) -> float:
 	return base_speed
 
 
-## How long the ghost searches for a hidden player before giving up.
+## How long the ghost searches before giving up and ending the hunt.
 func get_search_time(base_time: float) -> float:
 	return base_time

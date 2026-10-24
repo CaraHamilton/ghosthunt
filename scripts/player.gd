@@ -1,12 +1,11 @@
 class_name Player
 extends CharacterBody2D
 ## Top-down player. Walks with WASD/arrows, runs with Shift, and uses the
-## closest nearby object with E/Space (hides in HidingSpots, toggles sinks,
-## picks up items - only the closest one shows its prompt). Picks a toolbar
-## slot with 1-5 or the mouse wheel, uses the selected item while holding
-## F / left mouse, and drops it with Q.
-
-signal hidden_changed(is_hidden: bool)
+## closest nearby object with E/Space (toggles sinks, picks up items - only
+## the closest one shows its prompt). Picks a toolbar slot with 1-5 or the
+## mouse wheel, uses the selected item while holding F / left mouse, and
+## drops it with Q. There's nowhere to hide: during a hunt, run and break the
+## ghost's line of sight.
 
 ## How many inventory slots the player has. The toolbar shows the first
 ## TOOLBAR_SLOTS of them (all of them, for now).
@@ -18,7 +17,6 @@ const DROP_DISTANCE := 10.0
 @export var walk_speed := 70.0
 @export var run_speed := 115.0
 
-var is_hidden := false
 var is_dead := false
 var facing := Vector2.DOWN
 ## True while a window like the journal is open: no moving or using items.
@@ -31,12 +29,11 @@ var selected_item: ItemInstance:
 	get:
 		return inventory.get_item(selected_slot)
 
-## Things the player is standing next to and can use with E (HidingSpots,
-## player-usable GhostInteractables, items on the floor).
+## Things the player is standing next to and can use with E (player-usable
+## GhostInteractables like sinks, items on the floor).
 var _nearby: Array[Node2D] = []
-## The one the E key acts on right now (closest, or the spot we're hiding in).
+## The one the E key acts on right now (the closest).
 var _focused: Node2D = null
-var _current_spot: HidingSpot = null
 var _walk_time := 0.0
 ## After closing a menu, ignore the use button until it's released, so the
 ## press that closed the journal doesn't instantly reopen it.
@@ -46,7 +43,7 @@ var _use_blocked_until_release := false
 func _physics_process(delta: float) -> void:
 	_update_item_use(delta)
 	_update_focus()
-	if is_dead or is_hidden:
+	if is_dead:
 		velocity = Vector2.ZERO
 		return
 
@@ -79,37 +76,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		select_slot(posmod(selected_slot - 1, TOOLBAR_SLOTS))
 		return
 	if event.is_action_pressed("drop_item"):
-		if not is_hidden:
-			drop_selected()
+		drop_selected()
 		return
 	if not event.is_action_pressed("interact"):
 		return
-	if is_hidden:
-		leave_hiding_spot()
-	elif _focused is HidingSpot:
-		enter_hiding_spot(_focused)
-	elif _focused and _focused.has_method("player_interact"):
+	if _focused and _focused.has_method("player_interact"):
 		_focused.player_interact(self)
 	get_viewport().set_input_as_handled()
-
-
-func enter_hiding_spot(spot: HidingSpot) -> void:
-	_current_spot = spot
-	is_hidden = true
-	visible = false
-	spot.set_occupied(true)
-	hidden_changed.emit(true)
-
-
-func leave_hiding_spot() -> void:
-	if _current_spot:
-		_current_spot.set_occupied(false)
-		# Step out in front of the furniture.
-		global_position = _current_spot.get_exit_position()
-	_current_spot = null
-	is_hidden = false
-	visible = true
-	hidden_changed.emit(false)
 
 
 func die() -> void:
@@ -165,7 +138,7 @@ func _update_item_use(delta: float) -> void:
 	var pressed := Input.is_action_pressed("use_tool")
 	if not pressed:
 		_use_blocked_until_release = false
-	var want := pressed and selected_item != null and not is_hidden and not is_dead \
+	var want := pressed and selected_item != null and not is_dead \
 		and not in_menu and not _use_blocked_until_release
 	_set_using_item(want)
 	if not is_dead:
@@ -201,11 +174,7 @@ func unregister_interactable(item: Node2D) -> void:
 
 ## Picks which nearby object E acts on and shows only that one's prompt.
 func _update_focus() -> void:
-	var target: Node2D = null
-	if is_hidden:
-		target = _current_spot
-	elif not is_dead:
-		target = _closest_interactable()
+	var target: Node2D = null if is_dead else _closest_interactable()
 	if target == _focused:
 		return
 	if is_instance_valid(_focused):
