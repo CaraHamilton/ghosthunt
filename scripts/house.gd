@@ -72,9 +72,11 @@ const ROOMS := {
 const PLAYER_START := Vector2(160, 100)
 
 ## Pathfinding grid used by ghosts so they walk around walls and furniture.
-const NAV_CELL := 8
-## How far (px) paths keep away from solids, so the ghost's body fits.
-const NAV_MARGIN := 5.0
+## Small cells so the grid matches the real collision shapes closely: any gap
+## the player's body fits through, the ghost's same-sized body can path into.
+const NAV_CELL := 4
+## How far (px) paths keep away from solids - the ghost's collision radius.
+const NAV_MARGIN := 4.0
 
 var _grid: AStarGrid2D
 
@@ -117,9 +119,13 @@ func build_navigation(extra_solids: Array[Rect2]) -> void:
 	var solids := _solid_rects()
 	solids.append_array(extra_solids)
 	for r in solids:
+		# A cell is blocked only if the ghost's centre standing at the cell's
+		# centre would overlap the solid (i.e. the centre is inside the solid
+		# grown by the ghost's radius).
 		var grown := r.grow(NAV_MARGIN)
-		var from := Vector2i((grown.position / NAV_CELL).floor())
-		var to := Vector2i((grown.end / NAV_CELL).ceil())
+		var half := NAV_CELL / 2.0
+		var from := Vector2i(((grown.position - Vector2(half, half)) / NAV_CELL).floor()) + Vector2i.ONE
+		var to := Vector2i(((grown.end - Vector2(half, half)) / NAV_CELL).ceil())
 		_grid.fill_solid_region(Rect2i(from, to - from).intersection(_grid.region))
 
 
