@@ -39,7 +39,7 @@ var _base := {}
 func setup(new_house: House, new_ghost: Ghost) -> void:
 	house = new_house
 	ghost = new_ghost
-	for room in House.ROOMS:
+	for room in house.get_room_names():
 		_base[room] = base_temperature + randf_range(-base_variation, base_variation)
 		_temps[room] = _base[room]
 	var fav: String = ghost.favorite_room
