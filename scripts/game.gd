@@ -18,6 +18,9 @@ static var current: Game
 ## Debug: show the exact sanity percentage on the sanity bar (players
 ## normally have to estimate it from the bar).
 @export var debug_show_sanity_number := false
+## Debug: start the game with sanity right at the point where the ghost is
+## allowed to hunt (its hunt_sanity_threshold), to test hunts without waiting.
+@export var debug_start_at_hunt_threshold := false
 
 @onready var house: House = $House
 @onready var world: Node2D = $World
@@ -65,6 +68,10 @@ func _ready() -> void:
 	game_over_panel.visible = false
 	player.sanity_depleted.connect(_on_player_sanity_depleted)
 	_spawn_ghost()
+	if debug_start_at_hunt_threshold:
+		# Just under the line where this ghost (type included) may start hunting.
+		var threshold := ghost.behavior.get_hunt_sanity_threshold(ghost.hunt_sanity_threshold)
+		player.sanity = player.max_sanity * threshold - 0.01
 	temperatures.setup(house, ghost)
 	for id in STARTING_ITEMS:
 		player.inventory.add_item(ItemDB.create(id))

@@ -74,7 +74,7 @@ const VISIBLE_ALPHA := 0.85
 @export var lose_sight_delay := 0.4
 ## Chance (0-1) of starting a hunt each `hunt_check_interval` once the ghost
 ## is off cooldown (and the player isn't too close).
-@export var hunt_chance := 0.08
+@export var hunt_chance := 0.2
 @export var hunt_check_interval := 1.0
 ## Random wait (seconds) after each hunt - and from the moment the player's
 ## sanity first drops low enough - before the ghost may hunt again.
@@ -83,8 +83,8 @@ const VISIBLE_ALPHA := 0.85
 ## The ghost won't start a hunt on its own if the player is closer than this.
 @export var min_hunt_distance := 64.0
 ## The ghost only starts hunts on its own once the player's sanity is below
-## this fraction of full (0.7 = 70%).
-@export_range(0.0, 1.0) var hunt_sanity_threshold := 0.7
+## this fraction of full (0.75 = 75%).
+@export_range(0.0, 1.0) var hunt_sanity_threshold := 0.75
 @export var appear_time := 1.0
 @export var catch_radius := 10.0
 
