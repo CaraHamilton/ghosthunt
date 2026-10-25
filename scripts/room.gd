@@ -8,6 +8,9 @@ extends ReferenceRect
 ## Put Room nodes under House/Rooms. The room's name is `room_name`, or the
 ## node's name if that's left empty. Cover only the floor of the room, not
 ## its walls; doorways between rooms can be left outside every room.
+##
+## Odd shapes (L-shaped rooms, bent hallways): use several boxes with the
+## SAME room_name - the game treats them as one room. Overlapping is fine.
 
 ## The name shown in debug output and used to tell rooms apart.
 @export var room_name := "":

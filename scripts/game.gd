@@ -51,6 +51,10 @@ var _base_darkness: Color
 func _ready() -> void:
 	current = self
 	randomize()
+	# Always on in the game. (Hide the Darkness and HUD nodes in the editor
+	# while painting the map - they cover/darken the editor view too.)
+	darkness.visible = true
+	$HUD.visible = true
 	_base_darkness = darkness.color
 	player.global_position = house.get_player_start()
 	_fit_camera_to_house()

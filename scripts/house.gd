@@ -67,10 +67,12 @@ func is_inside(point: Vector2) -> bool:
 	return _bounds.has_point(point)
 
 
+## Every room's name, once each (a room made of several boxes counts once).
 func get_room_names() -> Array[String]:
 	var names: Array[String] = []
 	for room in _rooms:
-		names.append(room.get_room_name())
+		if room.get_room_name() not in names:
+			names.append(room.get_room_name())
 	return names
 
 
@@ -82,25 +84,37 @@ func room_at(point: Vector2) -> String:
 	return ""
 
 
-## A random walkable point inside the named room.
+## A random walkable point inside the named room. For a room made of several
+## boxes, bigger boxes are picked more often so points spread evenly.
 func random_point_in_room(room_name: String) -> Vector2:
-	var room := _get_room(room_name)
-	if room == null:
+	var rects := _get_room_rects(room_name)
+	if rects.is_empty():
 		push_error("No room called '%s'" % room_name)
 		return get_player_start()
-	var r := room.get_world_rect()
+	var total_area := 0.0
+	for r in rects:
+		total_area += r.get_area()
 	for i in 100:
+		var pick := randf() * total_area
+		var r: Rect2 = rects[0]
+		for candidate in rects:
+			r = candidate
+			pick -= candidate.get_area()
+			if pick <= 0.0:
+				break
 		var p := Vector2(randf_range(r.position.x, r.end.x), randf_range(r.position.y, r.end.y))
 		if is_walkable(p):
 			return p
-	return r.get_center()
+	return rects[0].get_center()
 
 
-func _get_room(room_name: String) -> Room:
+## The boxes that make up a room (usually one; L-shaped rooms have several).
+func _get_room_rects(room_name: String) -> Array[Rect2]:
+	var rects: Array[Rect2] = []
 	for room in _rooms:
 		if room.get_room_name() == room_name:
-			return room
-	return null
+			rects.append(room.get_world_rect())
+	return rects
 
 
 # --- Pathfinding ----------------------------------------------------------------
