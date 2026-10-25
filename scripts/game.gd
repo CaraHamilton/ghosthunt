@@ -52,7 +52,8 @@ func _ready() -> void:
 	current = self
 	randomize()
 	_base_darkness = darkness.color
-	player.global_position = house.PLAYER_START
+	player.global_position = house.get_player_start()
+	_fit_camera_to_house()
 	var furniture: Array[Rect2] = []
 	for obstacle in get_tree().get_nodes_in_group("nav_obstacles"):
 		furniture.append(obstacle.get_footprint())
@@ -77,6 +78,16 @@ func _process(delta: float) -> void:
 	_update_sanity_bar()
 
 
+## Stops the camera scrolling far past the edges of the painted map.
+func _fit_camera_to_house() -> void:
+	var camera := player.get_node("Camera2D") as Camera2D
+	var area := house.get_bounds().grow(24.0)
+	camera.limit_left = floori(area.position.x)
+	camera.limit_top = floori(area.position.y)
+	camera.limit_right = ceili(area.end.x)
+	camera.limit_bottom = ceili(area.end.y)
+
+
 ## Places the ghost somewhere in its favourite room at the start of the game.
 func _spawn_ghost() -> void:
 	ghost_type = GhostBehavior.random_type()
@@ -84,7 +95,7 @@ func _spawn_ghost() -> void:
 	ghost.player = player
 	ghost.house = house
 	ghost.set_type(ghost_type)
-	ghost.favorite_room = House.ROOMS.keys().pick_random()
+	ghost.favorite_room = house.get_room_names().pick_random()
 	ghost.debug_reveal = debug_show_ghost
 	# Don't start the ghost right on top of the player.
 	var start := house.random_point_in_room(ghost.favorite_room)

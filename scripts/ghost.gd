@@ -170,7 +170,7 @@ func _ready() -> void:
 	if behavior == null:
 		set_type(GhostBehavior.random_type())
 	if favorite_room == "":
-		favorite_room = House.ROOMS.keys().pick_random()
+		favorite_room = house.get_room_names().pick_random()
 	_start_hunt_cooldown()
 	behavior.on_spawned()
 
@@ -416,7 +416,7 @@ func _object_stand_point_in(room: String) -> Vector2:
 
 
 func _pick_wander_room() -> String:
-	var other_rooms: Array = House.ROOMS.keys().filter(func(r): return r != favorite_room)
+	var other_rooms: Array = house.get_room_names().filter(func(r): return r != favorite_room)
 	var at_home := house.room_at(global_position) == favorite_room
 	if at_home:
 		if randf() < behavior.get_roam_chance(roam_chance):

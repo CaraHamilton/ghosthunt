@@ -1,75 +1,22 @@
 @tool
 class_name House
 extends Node2D
-## Draws the house (floors, walls, decor) and builds wall collision at runtime.
-## Everything is placeholder art built from rectangles; replace it with a
-## TileMapLayer once you have a tileset.
+## The house map. Everything about the layout lives in the scene, not here -
+## paint and arrange it in the editor:
 ##
-## Layout (pixels, 16px tiles):
-##   +-------------------+-------------------+
-##   |                   |     Bedroom       |
-##   |   Living room     =                   |
-##   |                   +-------- ---------+
-##   +------- ----------+                    |
-##   |    Bathroom       =     Kitchen       |
-##   +-------------------+-------------------+
-## ("=" and gaps are doorways)
-
-const SIZE := Vector2(640, 400)
-const WALL_TOP_HEIGHT := 16.0  # height of the visible "front face" of a wall
-
-## Solid wall rectangles.
-const WALLS: Array[Rect2] = [
-	# Outer walls
-	Rect2(0, 0, 640, 32),
-	Rect2(0, 384, 640, 16),
-	Rect2(0, 0, 16, 400),
-	Rect2(624, 0, 16, 400),
-	# Vertical wall between left and right halves (doors at y 96-144 and 288-336)
-	Rect2(304, 32, 16, 64),
-	Rect2(304, 144, 16, 144),
-	Rect2(304, 336, 16, 48),
-	# Bedroom / kitchen wall (door at x 448-496)
-	Rect2(320, 176, 128, 32),
-	Rect2(496, 176, 128, 32),
-	# Living room / bathroom wall (door at x 128-176)
-	Rect2(16, 224, 112, 32),
-	Rect2(176, 224, 128, 32),
-]
-
-## Floors: [rect, base colour, pattern]
-const FLOORS := [
-	[Rect2(16, 32, 288, 192), Color("b07a4f"), "planks"],   # living room
-	[Rect2(320, 32, 304, 144), Color("7d5b8c"), "carpet"],  # bedroom
-	[Rect2(320, 208, 304, 176), Color("d9cfb8"), "tiles"],  # kitchen
-	[Rect2(16, 256, 288, 128), Color("8fb3b8"), "tiles"],   # bathroom
-	# doorway floors
-	[Rect2(304, 96, 16, 48), Color("b07a4f"), "planks"],
-	[Rect2(304, 288, 16, 48), Color("d9cfb8"), "tiles"],
-	[Rect2(448, 176, 48, 32), Color("7d5b8c"), "carpet"],
-	[Rect2(128, 224, 48, 32), Color("b07a4f"), "planks"],
-]
-
-## Decor: [rect, colour, solid?]
-const DECOR := [
-	[Rect2(96, 110, 112, 64), Color("a8463c"), false],  # living room rug
-	[Rect2(110, 180, 84, 18), Color("4f6b3a"), true],   # couch
-	[Rect2(130, 120, 44, 22), Color("6e4a2f"), true],   # coffee table
-	[Rect2(540, 60, 44, 60), Color("e8e0d0"), true],    # bed
-	[Rect2(400, 280, 72, 40), Color("8a5a3b"), true],   # kitchen table
-	[Rect2(212, 300, 60, 32), Color("f2f2f2"), true],   # bathtub
-]
-
-## Named rooms (floor area of each). The ghost picks one as its favourite.
-const ROOMS := {
-	"Living room": Rect2(16, 32, 288, 192),
-	"Bedroom": Rect2(320, 32, 304, 144),
-	"Kitchen": Rect2(320, 208, 304, 176),
-	"Bathroom": Rect2(16, 256, 288, 128),
-}
-
-## Where the player starts.
-const PLAYER_START := Vector2(160, 100)
+##   House
+##   ├─ Floor        TileMapLayer: floor tiles (no collision)
+##   ├─ Walls        TileMapLayer: wall tiles. Tiles with a collision shape
+##   │               (TileSet → Paint → Physics Layer 0) block the player,
+##   │               the ghost, and the ghost's line of sight.
+##   ├─ Rooms        a Room (resizable box) per room: names the areas used for
+##   │               temperatures, the ghost's favourite room, the EMF reader...
+##   └─ PlayerStart  Marker2D where the player begins
+##
+## Furniture, sinks and props are scenes placed in the World node; they add
+## their own collision and tell the ghost's pathfinding about themselves.
+## This script also draws the dark "outside" behind the map and builds the
+## ghost's pathfinding grid from the wall tiles.
 
 ## Pathfinding grid used by ghosts so they walk around walls and furniture.
 ## Small cells so the grid matches the real collision shapes closely: any gap
@@ -77,46 +24,100 @@ const PLAYER_START := Vector2(160, 100)
 const NAV_CELL := 4
 ## How far (px) paths keep away from solids - the ghost's collision radius.
 const NAV_MARGIN := 4.0
+## Colour of the night outside the house (drawn behind the map).
+const OUTSIDE_COLOR := Color("1d2236")
 
+@onready var floor_layer: TileMapLayer = $Floor
+@onready var walls_layer: TileMapLayer = $Walls
+
+var _rooms: Array[Room] = []
+var _bounds := Rect2()
 var _grid: AStarGrid2D
 
 
 func _ready() -> void:
+	_bounds = _compute_bounds()
+	queue_redraw()
 	if Engine.is_editor_hint():
 		return
-	var body := StaticBody2D.new()
-	body.collision_layer = 1
-	body.collision_mask = 0
-	add_child(body)
-	for r in _solid_rects():
-		var shape := CollisionShape2D.new()
-		var rect := RectangleShape2D.new()
-		rect.size = r.size
-		shape.shape = rect
-		shape.position = r.get_center()
-		body.add_child(shape)
+	for child in get_node("Rooms").get_children():
+		if child is Room:
+			_rooms.append(child)
+	if _rooms.is_empty():
+		push_warning("House has no Room nodes under House/Rooms.")
 
 
-func _solid_rects() -> Array[Rect2]:
-	var solids: Array[Rect2] = []
-	solids.append_array(WALLS)
-	for d in DECOR:
-		if d[2]:
-			solids.append(d[0])
-	return solids
+# --- Layout queries -----------------------------------------------------------
+
+## The area covered by the painted map (floors and walls), in world space.
+func get_bounds() -> Rect2:
+	return _bounds
 
 
-## Builds the pathfinding grid. `extra_solids` are other obstacles placed in
-## the scene (e.g. furniture and sink footprints).
+## Where the player starts (the PlayerStart marker).
+func get_player_start() -> Vector2:
+	var marker := get_node_or_null("PlayerStart") as Node2D
+	return marker.global_position if marker else _bounds.get_center()
+
+
+## True if `point` is inside the house (any room, doorway or wall), false
+## if it's outside. Used e.g. to stop the player's sanity draining outdoors.
+## (Paint any future outdoor ground on its own layer, not Floor/Walls.)
+func is_inside(point: Vector2) -> bool:
+	return _bounds.has_point(point)
+
+
+func get_room_names() -> Array[String]:
+	var names: Array[String] = []
+	for room in _rooms:
+		names.append(room.get_room_name())
+	return names
+
+
+## Name of the room containing `point`, or "" if it's in a doorway/wall.
+func room_at(point: Vector2) -> String:
+	for room in _rooms:
+		if room.get_world_rect().has_point(point):
+			return room.get_room_name()
+	return ""
+
+
+## A random walkable point inside the named room.
+func random_point_in_room(room_name: String) -> Vector2:
+	var room := _get_room(room_name)
+	if room == null:
+		push_error("No room called '%s'" % room_name)
+		return get_player_start()
+	var r := room.get_world_rect()
+	for i in 100:
+		var p := Vector2(randf_range(r.position.x, r.end.x), randf_range(r.position.y, r.end.y))
+		if is_walkable(p):
+			return p
+	return r.get_center()
+
+
+func _get_room(room_name: String) -> Room:
+	for room in _rooms:
+		if room.get_room_name() == room_name:
+			return room
+	return null
+
+
+# --- Pathfinding ----------------------------------------------------------------
+
+## Builds the pathfinding grid from the solid wall tiles plus `extra_solids`
+## (furniture, sink and prop footprints).
 func build_navigation(extra_solids: Array[Rect2]) -> void:
+	var from := Vector2i((_bounds.position / NAV_CELL).floor())
+	var to := Vector2i((_bounds.end / NAV_CELL).ceil())
 	_grid = AStarGrid2D.new()
-	_grid.region = Rect2i(0, 0, ceili(SIZE.x / NAV_CELL), ceili(SIZE.y / NAV_CELL))
+	_grid.region = Rect2i(from, to - from)
 	_grid.cell_size = Vector2(NAV_CELL, NAV_CELL)
 	_grid.offset = Vector2(NAV_CELL, NAV_CELL) / 2.0  # path points at cell centres
 	_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	_grid.update()
 
-	var solids := _solid_rects()
+	var solids := _solid_wall_rects()
 	solids.append_array(extra_solids)
 	for r in solids:
 		# A cell is blocked only if the ghost's centre standing at the cell's
@@ -124,9 +125,9 @@ func build_navigation(extra_solids: Array[Rect2]) -> void:
 		# grown by the ghost's radius).
 		var grown := r.grow(NAV_MARGIN)
 		var half := NAV_CELL / 2.0
-		var from := Vector2i(((grown.position - Vector2(half, half)) / NAV_CELL).floor()) + Vector2i.ONE
-		var to := Vector2i(((grown.end - Vector2(half, half)) / NAV_CELL).ceil())
-		_grid.fill_solid_region(Rect2i(from, to - from).intersection(_grid.region))
+		var cell_from := Vector2i(((grown.position - Vector2(half, half)) / NAV_CELL).floor()) + Vector2i.ONE
+		var cell_to := Vector2i(((grown.end - Vector2(half, half)) / NAV_CELL).ceil())
+		_grid.fill_solid_region(Rect2i(cell_from, cell_to - cell_from).intersection(_grid.region))
 
 
 ## Path of points from `from` towards `to`. If `to` can't be reached exactly
@@ -140,28 +141,21 @@ func is_walkable(point: Vector2) -> bool:
 	return _grid.is_in_boundsv(cell) and not _grid.is_point_solid(cell)
 
 
-## A random walkable point inside the named room.
-func random_point_in_room(room: String) -> Vector2:
-	var r: Rect2 = ROOMS[room]
-	for i in 100:
-		var p := Vector2(randf_range(r.position.x, r.end.x), randf_range(r.position.y, r.end.y))
-		if is_walkable(p):
-			return p
-	return r.get_center()
-
-
-## True if `point` is inside the house (any room, doorway or wall), false
-## if it's outside. Used e.g. to stop the player's sanity draining outdoors.
-func is_inside(point: Vector2) -> bool:
-	return Rect2(Vector2.ZERO, SIZE).has_point(point)
-
-
-## Name of the room containing `point`, or "" if it's in a doorway/wall.
-func room_at(point: Vector2) -> String:
-	for room in ROOMS:
-		if ROOMS[room].has_point(point):
-			return room
-	return ""
+## World-space squares of every wall tile that has collision (so the ghost's
+## map always matches what actually blocks movement).
+func _solid_wall_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	var tile_set := walls_layer.tile_set
+	if tile_set == null or tile_set.get_physics_layers_count() == 0:
+		push_warning("Walls TileSet has no physics layer - walls won't block anything.")
+		return rects
+	var size := Vector2(tile_set.tile_size)
+	for cell in walls_layer.get_used_cells():
+		var data := walls_layer.get_cell_tile_data(cell)
+		if data and data.get_collision_polygons_count(0) > 0:
+			var center := walls_layer.to_global(walls_layer.map_to_local(cell))
+			rects.append(Rect2(center - size / 2.0, size))
+	return rects
 
 
 ## The grid cell for a point. If that cell is blocked (e.g. the ghost is
@@ -183,70 +177,25 @@ func _to_cell(point: Vector2) -> Vector2i:
 	return cell
 
 
+# --- Map helpers --------------------------------------------------------------
+
+func _compute_bounds() -> Rect2:
+	var result := Rect2()
+	var first := true
+	for layer: TileMapLayer in [floor_layer, walls_layer]:
+		if layer == null or layer.tile_set == null:
+			continue
+		var used := layer.get_used_rect()
+		if used.size == Vector2i.ZERO:
+			continue
+		var size := Vector2(layer.tile_set.tile_size)
+		var r := Rect2(layer.global_position + Vector2(used.position) * size, Vector2(used.size) * size)
+		result = r if first else result.merge(r)
+		first = false
+	return result
+
+
 func _draw() -> void:
-	# Night outside
-	draw_rect(Rect2(-200, -200, SIZE.x + 400, SIZE.y + 400), Color("1d2236"))
-
-	for f in FLOORS:
-		_draw_floor(f[0], f[1], f[2])
-
-	for d in DECOR:
-		var r: Rect2 = d[0]
-		var c: Color = d[1]
-		if d[2]:
-			draw_rect(Rect2(r.position + Vector2(2, 3), r.size), Color(0, 0, 0, 0.25))
-			draw_rect(r, c)
-			draw_rect(Rect2(r.position, Vector2(r.size.x, 4)), c.lightened(0.2))
-			draw_rect(r, c.darkened(0.4), false, 1.0)
-		else:
-			draw_rect(r, c)
-			draw_rect(r.grow(-4), c.lightened(0.15), false, 2.0)
-
-	for w in WALLS:
-		_draw_wall(w)
-
-
-func _draw_floor(r: Rect2, base: Color, pattern: String) -> void:
-	draw_rect(r, base)
-	match pattern:
-		"planks":
-			var y := r.position.y
-			var row := 0
-			while y < r.end.y:
-				draw_line(Vector2(r.position.x, y), Vector2(r.end.x, y), base.darkened(0.2), 1.0)
-				var x := r.position.x + (row % 2) * 24.0
-				while x < r.end.x:
-					draw_line(Vector2(x, y), Vector2(x, minf(y + 8, r.end.y)), base.darkened(0.2), 1.0)
-					x += 48.0
-				y += 8.0
-				row += 1
-		"tiles":
-			var ts := 16.0
-			var yy := r.position.y
-			while yy < r.end.y:
-				var xx := r.position.x
-				while xx < r.end.x:
-					if int((xx - r.position.x) / ts + (yy - r.position.y) / ts) % 2 == 0:
-						draw_rect(Rect2(xx, yy, minf(ts, r.end.x - xx), minf(ts, r.end.y - yy)), base.darkened(0.08))
-					xx += ts
-				yy += ts
-		"carpet":
-			draw_rect(r.grow(-6), base.lightened(0.08), false, 2.0)
-
-
-func _draw_wall(r: Rect2) -> void:
-	var top_col := Color("4a3b52")
-	var face_col := Color("c9b48f")  # wallpaper
-	var trim := Color("6e4a2f")
-	# Wall tops
-	draw_rect(r, top_col)
-	# Horizontal walls show a wallpapered front face along their bottom edge
-	if r.size.x > r.size.y and r.size.y >= 32.0:
-		var face := Rect2(r.position.x, r.end.y - WALL_TOP_HEIGHT, r.size.x, WALL_TOP_HEIGHT)
-		draw_rect(face, face_col)
-		var x := face.position.x + 4
-		while x < face.end.x:
-			draw_line(Vector2(x, face.position.y), Vector2(x, face.end.y - 3), face_col.darkened(0.08), 1.0)
-			x += 8.0
-		draw_rect(Rect2(face.position.x, face.end.y - 3, face.size.x, 3), trim)
-	draw_rect(r, top_col.darkened(0.3), false, 1.0)
+	# The night outside, behind the map.
+	if _bounds.size != Vector2.ZERO:
+		draw_rect(Rect2(_bounds.position - global_position, _bounds.size).grow(400.0), OUTSIDE_COLOR)
