@@ -79,6 +79,15 @@ func _ready() -> void:
 	_show_message("Something feels wrong in this house...", 3.0)
 
 
+## F11 switches between fullscreen and a window.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_fullscreen"):
+		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(
+			DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
+		get_viewport().set_input_as_handled()
+
+
 func _process(delta: float) -> void:
 	if is_game_over:
 		if Input.is_action_just_pressed("restart"):
