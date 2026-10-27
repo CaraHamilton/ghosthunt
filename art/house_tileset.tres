@@ -1,6 +1,7 @@
 [gd_resource type="TileSet" format=3 uid="uid://q47ohaup0b2u"]
 
 [ext_resource type="Texture2D" uid="uid://bu8eqcc8ll4mv" path="res://art/house_tiles.png" id="1_hifmf"]
+[ext_resource type="Texture2D" uid="uid://b4ld1dnpeeics" path="res://art/wood_floor_1.png" id="2_rih51"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rih51"]
 texture = ExtResource("1_hifmf")
@@ -17,7 +18,14 @@ texture = ExtResource("1_hifmf")
 1:2/0 = 0
 1:2/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_3422p"]
+texture = ExtResource("2_rih51")
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+
 [resource]
 physics_layer_0/collision_layer = 1
 physics_layer_0/collision_mask = 0
 sources/0 = SubResource("TileSetAtlasSource_rih51")
+sources/1 = SubResource("TileSetAtlasSource_3422p")
