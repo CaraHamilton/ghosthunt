@@ -249,8 +249,28 @@ func _physics_process(delta: float) -> void:
 				_try_interact(delta)
 				_try_start_hunt(delta)
 
+	_update_animation()
 	_update_fade(delta)
 	queue_redraw()
+
+
+## Faces the sprite the way the ghost is moving: "down", "up" or "side"
+## (the side art faces left, so it's flipped for moving right). Keeps the
+## last facing while the ghost is standing still.
+func _update_animation() -> void:
+	var sprite := $Sprite as AnimatedSprite2D
+	var move := get_real_velocity()
+	if move.length() < 2.0:
+		return
+	var anim: StringName
+	if absf(move.x) > absf(move.y):
+		anim = &"side"
+		sprite.flip_h = move.x > 0.0
+	else:
+		anim = &"down" if move.y > 0.0 else &"up"
+		sprite.flip_h = false
+	if sprite.animation != anim and sprite.sprite_frames.has_animation(anim):
+		sprite.play(anim)
 
 
 ## Switches state. Ghost types can call this to force a state change.

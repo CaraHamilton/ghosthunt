@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://wb88tfu2jmss"
-path="res://.godot/imported/ghost_chase_down.png-1339e85804b06dcfb2c18de412c769a7.ctex"
+uid="uid://silbg8cd83vb"
+path="res://.godot/imported/ghost_with_antlers.png-0aa32675eb0d6e5a2d43e9d9e6a34006.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ghost_chase_down.png"
-dest_files=["res://.godot/imported/ghost_chase_down.png-1339e85804b06dcfb2c18de412c769a7.ctex"]
+source_file="res://art/ghost_with_antlers.png"
+dest_files=["res://.godot/imported/ghost_with_antlers.png-0aa32675eb0d6e5a2d43e9d9e6a34006.ctex"]
 
 [params]
 
