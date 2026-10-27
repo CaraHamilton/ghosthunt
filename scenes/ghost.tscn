@@ -1,26 +1,26 @@
 [gd_scene format=3 uid="uid://mnilp7or1via"]
 
 [ext_resource type="Script" uid="uid://c3m5mnb6fukyl" path="res://scripts/ghost.gd" id="1_ghost"]
-[ext_resource type="Texture2D" uid="uid://dxx50umpf2fru" path="res://art/ghost.png" id="2_l5lq6"]
+[ext_resource type="Texture2D" uid="uid://d0n0infpte7s5" path="res://art/ghost_chase_down.png" id="2_l5lq6"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ghost"]
 radius = 4.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_bbnym"]
 atlas = ExtResource("2_l5lq6")
-region = Rect2(0, 0, 16, 32)
+region = Rect2(0, 0, 24, 40)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_veat2"]
 atlas = ExtResource("2_l5lq6")
-region = Rect2(16, 0, 16, 32)
+region = Rect2(24, 0, 24, 40)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_5mfnq"]
 atlas = ExtResource("2_l5lq6")
-region = Rect2(32, 0, 16, 32)
+region = Rect2(48, 0, 24, 40)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_lv6vd"]
 atlas = ExtResource("2_l5lq6")
-region = Rect2(48, 0, 16, 32)
+region = Rect2(72, 0, 24, 40)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_74kp6"]
 animations = [{
@@ -51,7 +51,7 @@ script = ExtResource("1_ghost")
 shape = SubResource("CircleShape2D_ghost")
 
 [node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=725816329]
-position = Vector2(0, -16)
+position = Vector2(0, -20)
 sprite_frames = SubResource("SpriteFrames_74kp6")
 animation = &"float"
 autoplay = "float"
