@@ -165,7 +165,6 @@ func set_type(new_type: GhostBehavior.Type) -> void:
 
 
 func _ready() -> void:
-	z_index = 10  # always float above furniture
 	modulate.a = 0.0
 	if behavior == null:
 		set_type(GhostBehavior.random_type())
