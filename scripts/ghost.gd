@@ -48,11 +48,11 @@ const WORLD_LAYER := 1
 const VISIBLE_ALPHA := 0.85
 
 @export_group("Hunting")
-## Chase speed when a chase begins, as a multiple of the player's RUN speed
-## (<1 = slower than you can run).
+## Chase speed when a chase begins, as a multiple of the player's walking speed
+## (<1 = slower than the player).
 @export var chase_start_speed_factor := 0.92
 ## Top chase speed, reached after keeping sight of the player for
-## `chase_ramp_time` seconds (>1 = faster than you can run).
+## `chase_ramp_time` seconds (>1 = faster than the player).
 @export var chase_max_speed_factor := 1.15
 ## Seconds of unbroken sight to go from start speed to top speed. Losing
 ## sight (ending the chase) resets it - break line of sight quickly!
@@ -296,12 +296,12 @@ func start_hunt() -> void:
 	hunt_started.emit()
 
 
-## Chase speed right now: starts a little slower than the player can run and
+## Chase speed right now: starts a little slower than the player and
 ## builds up the longer the ghost keeps sight of them.
 func get_current_chase_speed() -> float:
 	var ramp := clampf(_chase_sight_time / chase_ramp_time, 0.0, 1.0)
 	var factor := lerpf(chase_start_speed_factor, chase_max_speed_factor, ramp)
-	return behavior.get_chase_speed(player.run_speed * factor)
+	return behavior.get_chase_speed(player.walk_speed * factor)
 
 
 ## True if nothing solid (walls, furniture) is between the ghost and player.
