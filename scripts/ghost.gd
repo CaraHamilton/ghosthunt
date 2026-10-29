@@ -155,6 +155,8 @@ var _path := PackedVector2Array()
 var _path_target := Vector2.INF
 var _repath_timer := 0.0
 var _t := 0.0
+## Which way the sprite faces: "down", "up" or "side".
+var _facing := "down"
 
 
 ## Call before adding the ghost to the scene.
@@ -253,21 +255,23 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
-## Faces the sprite the way the ghost is moving: "down", "up" or "side"
-## (the side art faces left, so it's flipped for moving right). Keeps the
-## last facing while the ghost is standing still.
+## Plays "chase_*" while the ghost is going after the player (chasing, or
+## heading to where it last saw them) and "float_*" the rest of the time.
+## The suffix faces the way it's moving: "down", "up" or "side" (the side art
+## faces left, so it's flipped for moving right). Keeps the last facing while
+## the ghost is standing still.
 func _update_animation() -> void:
 	var sprite := $Sprite as AnimatedSprite2D
 	var move := get_real_velocity()
-	if move.length() < 2.0:
-		return
-	var anim: StringName
-	if absf(move.x) > absf(move.y):
-		anim = &"side"
-		sprite.flip_h = move.x > 0.0
-	else:
-		anim = &"down" if move.y > 0.0 else &"up"
-		sprite.flip_h = false
+	if move.length() >= 2.0:
+		if absf(move.x) > absf(move.y):
+			_facing = "side"
+			sprite.flip_h = move.x > 0.0
+		else:
+			_facing = "down" if move.y > 0.0 else "up"
+			sprite.flip_h = false
+	var chasing := state in [State.CHASING, State.INVESTIGATING]
+	var anim := StringName(("chase_" if chasing else "float_") + _facing)
 	if sprite.animation != anim and sprite.sprite_frames.has_animation(anim):
 		sprite.play(anim)
 
