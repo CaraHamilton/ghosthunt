@@ -13,6 +13,11 @@ extends Resource
 @export_multiline var description := ""
 ## Toolbar/floor icon. If empty, the item's script draws a placeholder.
 @export var icon: Texture2D
+## This item in the player's hand, drawn on top of them while it's selected
+## (they switch to their hold_ animations). Just the item, exported from its
+## own layer: 4 frames of 16x32 per row, rows hold_down, hold_up, hold_side.
+## Empty = the item isn't shown in hand and the player walks normally.
+@export var held_sheet: Texture2D
 ## How many fit in one slot. Tools with their own state should stay at 1.
 @export_range(1, 999) var max_stack := 1
 ## Script (extending ItemInstance) that gives this item its behaviour.

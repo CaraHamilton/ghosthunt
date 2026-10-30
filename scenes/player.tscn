@@ -65,6 +65,54 @@ region = Rect2(32, 32, 16, 32)
 atlas = ExtResource("2_g2els")
 region = Rect2(48, 32, 16, 32)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_down_0"]
+atlas = ExtResource("2_g2els")
+region = Rect2(0, 96, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_down_1"]
+atlas = ExtResource("2_g2els")
+region = Rect2(16, 96, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_down_2"]
+atlas = ExtResource("2_g2els")
+region = Rect2(32, 96, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_down_3"]
+atlas = ExtResource("2_g2els")
+region = Rect2(48, 96, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_up_0"]
+atlas = ExtResource("2_g2els")
+region = Rect2(0, 128, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_up_1"]
+atlas = ExtResource("2_g2els")
+region = Rect2(16, 128, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_up_2"]
+atlas = ExtResource("2_g2els")
+region = Rect2(32, 128, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_up_3"]
+atlas = ExtResource("2_g2els")
+region = Rect2(48, 128, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_side_0"]
+atlas = ExtResource("2_g2els")
+region = Rect2(0, 160, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_side_1"]
+atlas = ExtResource("2_g2els")
+region = Rect2(16, 160, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_side_2"]
+atlas = ExtResource("2_g2els")
+region = Rect2(32, 160, 16, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hold_side_3"]
+atlas = ExtResource("2_g2els")
+region = Rect2(48, 160, 16, 32)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_74kp6"]
 animations = [{
 "frames": [{
@@ -117,6 +165,57 @@ animations = [{
 "loop": 1,
 "name": &"walk_up",
 "speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_down_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_down_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_down_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_down_3")
+}],
+"loop": 1,
+"name": &"hold_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_up_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_up_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_up_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_up_3")
+}],
+"loop": 1,
+"name": &"hold_up",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_side_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_side_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_side_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hold_side_3")
+}],
+"loop": 1,
+"name": &"hold_side",
+"speed": 5.0
 }]
 
 [node name="Player" type="CharacterBody2D" unique_id=484622088]
@@ -151,3 +250,7 @@ sprite_frames = SubResource("SpriteFrames_74kp6")
 animation = &"walk_side"
 autoplay = "walk_down"
 frame_progress = 0.44922984
+
+[node name="HeldItem" type="Sprite2D" parent="Sprite"]
+hframes = 4
+vframes = 3

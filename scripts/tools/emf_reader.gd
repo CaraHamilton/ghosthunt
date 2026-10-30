@@ -86,6 +86,9 @@ func get_readout() -> String:
 
 
 func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
+	if data.icon:
+		super(canvas, rect)
+		return
 	var body := Rect2(rect.position + rect.size * Vector2(0.2, 0.1), rect.size * Vector2(0.6, 0.8))
 	canvas.draw_rect(body, Color("2e3440"))
 	canvas.draw_rect(body, Color("101418"), false, 2.0)

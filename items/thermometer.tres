@@ -1,12 +1,15 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://ds44uhk8ipj1n"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_data"]
-[ext_resource type="Script" path="res://scripts/tools/thermometer.gd" id="2_script"]
+[ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
+[ext_resource type="Texture2D" uid="uid://w3fhbq3hpxwk" path="res://art/thermometer_toolbar.png" id="1_hgv0d"]
+[ext_resource type="Texture2D" uid="uid://sgub838f2wg8" path="res://art/held/thermometer.png" id="3_held"]
+[ext_resource type="Script" uid="uid://daxlop36adwwx" path="res://scripts/tools/thermometer.gd" id="2_script"]
 
 [resource]
 script = ExtResource("1_data")
 id = &"thermometer"
 display_name = "Thermometer"
 description = "Reads the temperature of the room it's in. Leave it somewhere and it keeps measuring."
-max_stack = 1
+icon = ExtResource("1_hgv0d")
+held_sheet = ExtResource("3_held")
 instance_script = ExtResource("2_script")

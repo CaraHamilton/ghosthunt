@@ -4,7 +4,7 @@ extends Control
 ## the active item's readout (e.g. the thermometer's temperature) above it
 ## while in use. Stacks show their count in the corner.
 
-const SLOT_SIZE := 56.0
+const SLOT_SIZE := 60.0  # icons get SLOT_SIZE - 12 = 48px: 16px art at 3x, like the world
 const SLOT_GAP := 6.0
 
 var player: Player:

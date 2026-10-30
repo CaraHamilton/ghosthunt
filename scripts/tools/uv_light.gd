@@ -69,6 +69,9 @@ func _set_lantern(on: bool) -> void:
 
 
 func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
+	if data.icon:
+		super(canvas, rect)
+		return
 	var c := rect.get_center()
 	var body := Rect2(c.x - rect.size.x * 0.32, c.y - 4, rect.size.x * 0.45, 8)
 	canvas.draw_rect(body, Color("3a3050"))
