@@ -48,11 +48,11 @@ const WORLD_LAYER := 1
 const VISIBLE_ALPHA := 0.85
 
 @export_group("Hunting")
-## Chase speed when a chase begins, as a multiple of the player's RUN speed
-## (<1 = slower than you can run).
+## Chase speed when a chase begins, as a multiple of the player's walking speed
+## (<1 = slower than the player).
 @export var chase_start_speed_factor := 0.92
 ## Top chase speed, reached after keeping sight of the player for
-## `chase_ramp_time` seconds (>1 = faster than you can run).
+## `chase_ramp_time` seconds (>1 = faster than the player).
 @export var chase_max_speed_factor := 1.15
 ## Seconds of unbroken sight to go from start speed to top speed. Losing
 ## sight (ending the chase) resets it - break line of sight quickly!
@@ -74,7 +74,7 @@ const VISIBLE_ALPHA := 0.85
 @export var lose_sight_delay := 0.4
 ## Chance (0-1) of starting a hunt each `hunt_check_interval` once the ghost
 ## is off cooldown (and the player isn't too close).
-@export var hunt_chance := 0.08
+@export var hunt_chance := 0.2
 @export var hunt_check_interval := 1.0
 ## Random wait (seconds) after each hunt - and from the moment the player's
 ## sanity first drops low enough - before the ghost may hunt again.
@@ -83,8 +83,8 @@ const VISIBLE_ALPHA := 0.85
 ## The ghost won't start a hunt on its own if the player is closer than this.
 @export var min_hunt_distance := 64.0
 ## The ghost only starts hunts on its own once the player's sanity is below
-## this fraction of full (0.7 = 70%).
-@export_range(0.0, 1.0) var hunt_sanity_threshold := 0.7
+## this fraction of full (0.75 = 75%).
+@export_range(0.0, 1.0) var hunt_sanity_threshold := 0.75
 @export var appear_time := 1.0
 @export var catch_radius := 10.0
 
@@ -155,6 +155,8 @@ var _path := PackedVector2Array()
 var _path_target := Vector2.INF
 var _repath_timer := 0.0
 var _t := 0.0
+## Which way the sprite faces: "down", "up" or "side".
+var _facing := "down"
 
 
 ## Call before adding the ghost to the scene.
@@ -165,7 +167,6 @@ func set_type(new_type: GhostBehavior.Type) -> void:
 
 
 func _ready() -> void:
-	z_index = 10  # always float above furniture
 	modulate.a = 0.0
 	if behavior == null:
 		set_type(GhostBehavior.random_type())
@@ -249,8 +250,30 @@ func _physics_process(delta: float) -> void:
 				_try_interact(delta)
 				_try_start_hunt(delta)
 
+	_update_animation()
 	_update_fade(delta)
 	queue_redraw()
+
+
+## Plays "chase_*" while the ghost is going after the player (chasing, or
+## heading to where it last saw them) and "float_*" the rest of the time.
+## The suffix faces the way it's moving: "down", "up" or "side" (the side art
+## faces left, so it's flipped for moving right). Keeps the last facing while
+## the ghost is standing still.
+func _update_animation() -> void:
+	var sprite := $Sprite as AnimatedSprite2D
+	var move := get_real_velocity()
+	if move.length() >= 2.0:
+		if absf(move.x) > absf(move.y):
+			_facing = "side"
+			sprite.flip_h = move.x > 0.0
+		else:
+			_facing = "down" if move.y > 0.0 else "up"
+			sprite.flip_h = false
+	var chasing := state in [State.CHASING, State.INVESTIGATING]
+	var anim := StringName(("chase_" if chasing else "float_") + _facing)
+	if sprite.animation != anim and sprite.sprite_frames.has_animation(anim):
+		sprite.play(anim)
 
 
 ## Switches state. Ghost types can call this to force a state change.
@@ -277,12 +300,12 @@ func start_hunt() -> void:
 	hunt_started.emit()
 
 
-## Chase speed right now: starts a little slower than the player can run and
+## Chase speed right now: starts a little slower than the player and
 ## builds up the longer the ghost keeps sight of them.
 func get_current_chase_speed() -> float:
 	var ramp := clampf(_chase_sight_time / chase_ramp_time, 0.0, 1.0)
 	var factor := lerpf(chase_start_speed_factor, chase_max_speed_factor, ramp)
-	return behavior.get_chase_speed(player.run_speed * factor)
+	return behavior.get_chase_speed(player.walk_speed * factor)
 
 
 ## True if nothing solid (walls, furniture) is between the ghost and player.

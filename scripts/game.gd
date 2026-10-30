@@ -4,11 +4,16 @@ extends Node2D
 ## survival time and handles game over / restart.
 
 const GhostScene := preload("res://scenes/ghost.tscn")
+const MAP_SELECT_SCENE := "res://scenes/map_select.tscn"
 ## Items the player starts with, by id (see res://items/).
 const STARTING_ITEMS: Array[StringName] = [&"thermometer", &"emf_reader", &"tennis_ball", &"uv_light", &"journal"]
 
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
+## The house scene picked on the map select menu (a res:// path). Empty when
+## main.tscn is run straight from the editor: then the House already in the
+## scene is used. Kept across restarts, so R replays the same house.
+static var selected_house := ""
 
 ## Fraction of full sanity lost each time the ghost catches the player
 ## (0.5 = 50%: two catches empty even a full sanity bar).
@@ -18,6 +23,9 @@ static var current: Game
 ## Debug: show the exact sanity percentage on the sanity bar (players
 ## normally have to estimate it from the bar).
 @export var debug_show_sanity_number := false
+## Debug: start the game with sanity right at the point where the ghost is
+## allowed to hunt (its hunt_sanity_threshold), to test hunts without waiting.
+@export var debug_start_at_hunt_threshold := false
 
 @onready var house: House = $House
 @onready var world: Node2D = $World
@@ -51,6 +59,11 @@ var _base_darkness: Color
 func _ready() -> void:
 	current = self
 	randomize()
+	_load_selected_house()
+	# Always on in the game. (Hide the Darkness and HUD nodes in the editor
+	# while painting the map - they cover/darken the editor view too.)
+	darkness.visible = true
+	$HUD.visible = true
 	_base_darkness = darkness.color
 	player.global_position = house.get_player_start()
 	_fit_camera_to_house()
@@ -61,6 +74,10 @@ func _ready() -> void:
 	game_over_panel.visible = false
 	player.sanity_depleted.connect(_on_player_sanity_depleted)
 	_spawn_ghost()
+	if debug_start_at_hunt_threshold:
+		# Just under the line where this ghost (type included) may start hunting.
+		var threshold := ghost.behavior.get_hunt_sanity_threshold(ghost.hunt_sanity_threshold)
+		player.sanity = player.max_sanity * threshold - 0.01
 	temperatures.setup(house, ghost)
 	for id in STARTING_ITEMS:
 		player.inventory.add_item(ItemDB.create(id))
@@ -68,14 +85,39 @@ func _ready() -> void:
 	_show_message("Something feels wrong in this house...", 3.0)
 
 
+## F11 switches between fullscreen and a window.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_fullscreen"):
+		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(
+			DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
+		get_viewport().set_input_as_handled()
+
+
 func _process(delta: float) -> void:
 	if is_game_over:
 		if Input.is_action_just_pressed("restart"):
 			get_tree().reload_current_scene()
+		elif Input.is_action_just_pressed("map_select"):
+			get_tree().change_scene_to_file(MAP_SELECT_SCENE)
 		return
 	survived_time += delta
 	time_label.text = "Survived: %ds" % int(survived_time)
 	_update_sanity_bar()
+
+
+## Swaps the House in main.tscn for the one picked on the map select menu
+## (it keeps the name "House" and its place in the scene tree).
+func _load_selected_house() -> void:
+	if selected_house == "" or selected_house == house.scene_file_path:
+		return
+	var index := house.get_index()
+	remove_child(house)
+	house.free()  # right away, so its furniture leaves the nav_obstacles group
+	house = (load(selected_house) as PackedScene).instantiate() as House
+	house.name = "House"
+	add_child(house)
+	move_child(house, index)
 
 
 ## Stops the camera scrolling far past the edges of the painted map.

@@ -22,7 +22,6 @@ const TOOLBAR_SLOTS := 5
 const DROP_DISTANCE := 10.0
 
 @export var walk_speed := 70.0
-@export var run_speed := 115.0
 
 @export_group("Sanity")
 @export var max_sanity := 100.0
@@ -55,14 +54,17 @@ var selected_item: ItemInstance:
 var _nearby: Array[Node2D] = []
 ## The one the E key acts on right now (the closest).
 var _focused: Node2D = null
-var _walk_time := 0.0
 ## After closing a menu, ignore the use button until it's released, so the
 ## press that closed the journal doesn't instantly reopen it.
 var _use_blocked_until_release := false
 
 
+@onready var sprite: AnimatedSprite2D = $Sprite
+
+
 func _ready() -> void:
 	sanity = minf(start_sanity, max_sanity)
+	_update_animation(false)
 
 
 func _physics_process(delta: float) -> void:
@@ -77,16 +79,12 @@ func _physics_process(delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if in_menu or (is_using_item and selected_item.blocks_movement):
 		input = Vector2.ZERO
-	var speed := run_speed if Input.is_action_pressed("run") else walk_speed
-	velocity = input * speed
+	velocity = input * walk_speed
 	move_and_slide()
 
 	if input != Vector2.ZERO:
 		facing = input.normalized()
-		_walk_time += delta * (speed / walk_speed)
-	else:
-		_walk_time = 0.0
-	queue_redraw()
+	_update_animation(input != Vector2.ZERO)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -115,7 +113,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func die() -> void:
 	is_dead = true
 	velocity = Vector2.ZERO
-	queue_redraw()
+	sprite.stop()
+	sprite.modulate = Color(0.55, 0.55, 0.6)  # drained of colour
 
 
 ## True while the player is inside the house (sanity only drains in there).
@@ -246,39 +245,32 @@ func _closest_interactable() -> Node2D:
 	return best
 
 
-# --- Placeholder art: swap this for an AnimatedSprite2D once you have sprites.
+# --- Art ------------------------------------------------------------------------
 
+## Plays walk_down / walk_up / walk_side for the way the player faces (the
+## side art faces left, so it's mirrored for facing right). Standing still
+## holds the first frame.
+func _update_animation(moving: bool) -> void:
+	var anim: StringName
+	if absf(facing.x) > absf(facing.y):
+		anim = &"walk_side"
+		sprite.flip_h = facing.x > 0.0
+	else:
+		anim = &"walk_down" if facing.y > 0.0 else &"walk_up"
+		sprite.flip_h = false
+	if not sprite.sprite_frames.has_animation(anim):
+		return
+	if moving:
+		if sprite.animation != anim or not sprite.is_playing():
+			sprite.play(anim)
+	else:
+		sprite.animation = anim
+		sprite.stop()
+		sprite.frame = 0
+
+
+## Shadow on the floor under the player (the sprite draws on top).
 func _draw() -> void:
-	var bob := -absf(sin(_walk_time * 10.0)) * 1.5
-	var skin := Color("f2c49b")
-	var shirt := Color("3f7fbf") if not is_dead else Color("6a6a7a")
-	var hair := Color("6b3f22")
-
-	# Shadow
 	draw_set_transform(Vector2(0, 0), 0.0, Vector2(1.0, 0.45))
 	draw_circle(Vector2.ZERO, 6.0, Color(0, 0, 0, 0.3))
 	draw_set_transform(Vector2.ZERO)
-
-	# Legs
-	var step := sin(_walk_time * 10.0) * 1.5
-	draw_rect(Rect2(-3, -5 + step * 0.3, 2, 5), Color("3b2f4a"))
-	draw_rect(Rect2(1, -5 - step * 0.3, 2, 5), Color("3b2f4a"))
-	# Body
-	draw_rect(Rect2(-4, -12 + bob, 8, 8), shirt)
-	# Head
-	draw_circle(Vector2(0, -16 + bob), 5.0, skin)
-	# Hair (covers more of the head when facing away)
-	if facing.y < -0.5:
-		draw_circle(Vector2(0, -16.5 + bob), 5.0, hair)
-	else:
-		draw_rect(Rect2(-5, -21 + bob, 10, 3.5), hair)
-		# Eyes
-		var eye_off := Vector2(facing.x * 1.5, 0)
-		draw_rect(Rect2(Vector2(-2.5, -16 + bob) + eye_off, Vector2(1, 2)), Color("2a2030"))
-		draw_rect(Rect2(Vector2(1.5, -16 + bob) + eye_off, Vector2(1, 2)), Color("2a2030"))
-
-	# Holding the active tool out in front (placeholder until there's art)
-	if is_using_item:
-		var hand := Vector2(5 if facing.x >= 0 else -6, -10 + bob)
-		draw_rect(Rect2(hand, Vector2(1.5, 5)), Color("e8e8f0"))
-		draw_circle(hand + Vector2(0.75, 5.5), 1.3, Color("d8403a"))

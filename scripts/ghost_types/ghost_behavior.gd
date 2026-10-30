@@ -155,7 +155,7 @@ func get_emf_level(base_level: int) -> int:
 
 ## Speed during a hunt while it can see the player and goes straight for
 ## them. `base_speed` already includes the chase ramp-up (slower than the
-## player's run at first, faster after keeping sight of them for a while).
+## player at first, faster after keeping sight of them for a while).
 func get_chase_speed(base_speed: float) -> float:
 	return base_speed
 
