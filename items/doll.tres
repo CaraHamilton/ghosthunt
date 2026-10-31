@@ -1,20 +1,17 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://c8pk8k7qp2v4u"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_data"]
-[ext_resource type="Texture2D" uid="uid://donttkyfnohj0" path="res://art/doll_tool.png" id="2_art"]
-[ext_resource type="Script" path="res://scripts/tools/doll_item.gd" id="3_script"]
-[ext_resource type="PackedScene" path="res://scenes/doll.tscn" id="4_world"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_sit"]
-atlas = ExtResource("2_art")
-region = Rect2(0, 0, 16, 16)
+[ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
+[ext_resource type="Texture2D" uid="uid://ctbfdet58565a" path="res://art/toolbar_icons/doll_toolbar.png" id="1_f6h5f"]
+[ext_resource type="Texture2D" uid="uid://wiyx05tnaar1" path="res://art/held/doll.png" id="2_held"]
+[ext_resource type="Script" uid="uid://dedh8y282hvr7" path="res://scripts/tools/doll_item.gd" id="3_script"]
+[ext_resource type="PackedScene" uid="uid://cq7iw1aw7njl1" path="res://scenes/doll.tscn" id="4_world"]
 
 [resource]
 script = ExtResource("1_data")
 id = &"doll"
 display_name = "Doll"
 description = "Some ghosts can't resist a doll left near them."
-icon = SubResource("AtlasTexture_sit")
-max_stack = 1
+icon = ExtResource("1_f6h5f")
+held_sheet = ExtResource("2_held")
 instance_script = ExtResource("3_script")
 world_scene = ExtResource("4_world")

@@ -1,16 +1,19 @@
 class_name ResidueGlow
 extends Node2D
-## The faint green glow of ghost residue, shown on an interactable only while
-## the player's UV light is shining on it. Drawn unshaded so it glows even in
-## the dark house. Placeholder art: soft blob plus a few smudged prints.
+## The green glow of ghost residue on an interactable. It's always there once
+## a residue-leaving ghost has touched the object, but it's drawn "light
+## only" on its own light mask layer (UVBeam.RESIDUE_LIGHT_LAYER), so it's
+## invisible until the UV light's beam falls on it - and only the part of it
+## inside the beam shows. Placeholder art: soft blob plus a few smudged prints.
 
 var _t := 0.0
 
 
 func _ready() -> void:
-	z_index = 6  # over the UV beam and furniture
+	z_index = 6  # over furniture
+	light_mask = 1 << (UVBeam.RESIDUE_LIGHT_LAYER - 1)
 	var mat := CanvasItemMaterial.new()
-	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_LIGHT_ONLY
 	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	material = mat
 

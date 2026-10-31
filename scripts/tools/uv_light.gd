@@ -1,24 +1,32 @@
 class_name UVLight
 extends ItemInstance
-## A UV flashlight. While held (F / left mouse) it shines a purple beam about
-## 3 tiles in front of the holder, replacing their normal lantern glow. Any
-## ghost residue (left by some ghost types on things they touch) inside the
-## beam glows green.
+## A UV flashlight. While held (F / left mouse) it shines a purple beam of
+## real light about 4 tiles in front of the holder, replacing their normal
+## lantern glow. Ghost residue (left by some ghost types on things they
+## touch) glows green wherever the beam falls on it - see UVBeam.
+##
+## The beam starts at the flashlight's lens in the held art: the brightest
+## pixels of each frame of the held_sheet, so it follows the hand's bob and
+## any redraw. Frames with no lens showing (facing up, the light is in front
+## of her) use the facing-down lens, mirrored to her other side.
 
-## How far the beam reaches (px, ~3 tiles).
-var beam_range := 50.0
-## Half the beam's spread, in degrees.
-var beam_half_angle := 28.0
+## Where the beam starts if the held art has no lens to find (player space).
+const DEFAULT_LENS := Vector2(0, -6)
+## Pixels at least this bright (0-1), and within LENS_TOLERANCE of the
+## brightest pixel in the frame, count as the lens.
+const MIN_LENS_BRIGHTNESS := 0.4
+const LENS_TOLERANCE := 0.05
 
 var _beam: UVBeam
-var _lit: Array[GhostInteractable] = []
+var _held_image: Image
+## Lens centre per frame, in frame pixels: Vector2i(row, frame) -> Vector2,
+## or Vector2.INF if that frame has no lens.
+var _lens_cache := {}
 
 
 func start_use() -> void:
 	if _beam == null:
 		_beam = UVBeam.new()
-		_beam.beam_range = beam_range
-		_beam.beam_half_angle = beam_half_angle
 		holder.add_child(_beam)
 	_beam.visible = true
 	_set_lantern(false)
@@ -28,38 +36,66 @@ func stop_use() -> void:
 	if _beam:
 		_beam.visible = false
 	_set_lantern(true)
-	for item in _lit:
-		if is_instance_valid(item):
-			item.uv_lit = false
-	_lit.clear()
 
 
 func process_use(_delta: float) -> void:
+	_beam.position = _lens_position()
 	_beam.rotation = holder.facing.angle()
-	var now_lit: Array[GhostInteractable] = []
-	for item: GhostInteractable in holder.get_tree().get_nodes_in_group("ghost_interactables"):
-		if _in_beam(item):
-			now_lit.append(item)
-	for item in _lit:
-		if is_instance_valid(item) and item not in now_lit:
-			item.uv_lit = false
-	for item in now_lit:
-		item.uv_lit = true
-	_lit = now_lit
 
 
-func _in_beam(item: GhostInteractable) -> bool:
-	var origin := holder.global_position
-	var target := item.get_footprint().get_center()
-	var to_item := target - origin
-	if to_item.length() > beam_range:
-		return false
-	if to_item.length() > 4.0 and absf(rad_to_deg(holder.facing.angle_to(to_item))) > beam_half_angle:
-		return false
-	# Walls (and other furniture) block the beam.
-	var query := PhysicsRayQueryParameters2D.create(origin, target, 1)
-	query.exclude = [item.get_rid()]
-	return holder.get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+## Where the lens is right now, in the holder's space.
+func _lens_position() -> Vector2:
+	var sprite := holder.sprite
+	var row := Player.HELD_ROWS.find(sprite.animation)
+	if row == -1 or data.held_sheet == null:
+		return DEFAULT_LENS
+	var lens := _find_lens(row, sprite.frame)
+	var frame_width := float(data.held_sheet.get_width()) / holder.held_item.hframes
+	if lens == Vector2.INF and Player.HELD_ROWS[row] == &"hold_up":
+		lens = _find_lens(Player.HELD_ROWS.find(&"hold_down"), sprite.frame)
+		if lens != Vector2.INF:
+			lens.x = frame_width - lens.x  # the hand on her other side
+	if lens == Vector2.INF:
+		return DEFAULT_LENS
+	if sprite.flip_h:
+		lens.x = frame_width - lens.x
+	var frame_size := Vector2(frame_width, float(data.held_sheet.get_height()) / holder.held_item.vframes)
+	return sprite.position - frame_size / 2.0 + lens  # the sprite is centred
+
+
+## The centre of the lens (brightest pixels) in one frame of the held sheet,
+## in that frame's pixels, or INF if there's none.
+func _find_lens(row: int, frame: int) -> Vector2:
+	var key := Vector2i(row, frame)
+	if _lens_cache.has(key):
+		return _lens_cache[key]
+	if _held_image == null:
+		_held_image = data.held_sheet.get_image()
+	var size := Vector2i(_held_image.get_width() / holder.held_item.hframes,
+		_held_image.get_height() / holder.held_item.vframes)
+	var corner := Vector2i(frame, row) * size
+	var brightest := 0.0
+	var pixels: Array[Vector2i] = []
+	var levels: Array[float] = []
+	for y in size.y:
+		for x in size.x:
+			var color := _held_image.get_pixelv(corner + Vector2i(x, y))
+			if color.a < 0.5:
+				continue
+			pixels.append(Vector2i(x, y))
+			levels.append(color.get_luminance())
+			brightest = maxf(brightest, color.get_luminance())
+	var result := Vector2.INF
+	if brightest >= MIN_LENS_BRIGHTNESS:
+		var sum := Vector2.ZERO
+		var count := 0
+		for i in pixels.size():
+			if levels[i] >= brightest - LENS_TOLERANCE:
+				sum += Vector2(pixels[i]) + Vector2(0.5, 0.5)  # pixel centres
+				count += 1
+		result = sum / count
+	_lens_cache[key] = result
+	return result
 
 
 func _set_lantern(on: bool) -> void:

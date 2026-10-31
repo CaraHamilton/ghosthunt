@@ -36,14 +36,13 @@ extends StaticBody2D
 ## Where the UV residue glow is centred, relative to the origin (e.g. on top
 ## of a sink's counter). Set by each interactable.
 var residue_offset := Vector2(0, -8)
-## True once a residue-leaving ghost has touched this. Only visible under UV.
-var has_residue := false
-## Set by the UV light each frame while its beam is on this object.
-var uv_lit := false:
+## True once a residue-leaving ghost has touched this. Only visible where the
+## UV light shines on it (see ResidueGlow).
+var has_residue := false:
 	set(value):
-		uv_lit = value
+		has_residue = value
 		if _residue_glow:
-			_residue_glow.visible = has_residue and uv_lit
+			_residue_glow.visible = has_residue
 
 var _last_interaction_time := -INF
 var _prompt: Label
@@ -69,7 +68,7 @@ func _ready() -> void:
 		_build_player_zone()
 	_residue_glow = ResidueGlow.new()
 	_residue_glow.position = residue_offset
-	_residue_glow.visible = false
+	_residue_glow.visible = has_residue
 	add_child(_residue_glow)
 
 

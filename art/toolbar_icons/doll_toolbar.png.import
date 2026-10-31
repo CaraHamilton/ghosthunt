@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://w3fhbq3hpxwk"
-path="res://.godot/imported/thermometer_toolbar.png-ed294797da22ff9866be094f2ca7eb7e.ctex"
+uid="uid://ctbfdet58565a"
+path="res://.godot/imported/doll_toolbar.png-b9134027affa9488746b50a3d44afd39.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/thermometer_toolbar.png"
-dest_files=["res://.godot/imported/thermometer_toolbar.png-ed294797da22ff9866be094f2ca7eb7e.ctex"]
+source_file="res://art/toolbar_icons/doll_toolbar.png"
+dest_files=["res://.godot/imported/doll_toolbar.png-b9134027affa9488746b50a3d44afd39.ctex"]
 
 [params]
 

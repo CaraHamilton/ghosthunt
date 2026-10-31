@@ -22,6 +22,10 @@ const TOOLBAR_SLOTS := 10
 const DROP_DISTANCE := 10.0
 ## The rows of an item's held_sheet, top to bottom.
 const HELD_ROWS: Array[StringName] = [&"hold_down", &"hold_up", &"hold_side"]
+## Light mask layer the player's sprite is on, instead of the default layer
+## 1. The lantern lights it, but the UV beam's cone doesn't (it would light
+## her body in the cone's pattern) - UVBeam tints her with a soft glow instead.
+const LIGHT_LAYER := 3
 
 @export var walk_speed := 70.0
 
@@ -68,6 +72,10 @@ var _use_blocked_until_release := false
 
 func _ready() -> void:
 	sanity = minf(start_sanity, max_sanity)
+	var layer := 1 << (LIGHT_LAYER - 1)
+	sprite.light_mask = layer
+	held_item.light_mask = layer
+	($Lantern as PointLight2D).range_item_cull_mask |= layer
 	inventory.changed.connect(_update_held_item)
 	sprite.frame_changed.connect(_sync_held_item)
 	sprite.animation_changed.connect(_sync_held_item)

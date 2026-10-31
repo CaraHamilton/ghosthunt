@@ -1,12 +1,15 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0xftbrcp8p0"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_data"]
-[ext_resource type="Script" path="res://scripts/tools/uv_light.gd" id="2_script"]
+[ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
+[ext_resource type="Texture2D" uid="uid://cl2p84ockx6fv" path="res://art/toolbar_icons/uv_light_toolbar.png" id="2_q6t3v"]
+[ext_resource type="Script" uid="uid://c05amp7jxf33p" path="res://scripts/tools/uv_light.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://cel64lkx4xdx4" path="res://art/held/uv_light.png" id="3_held"]
 
 [resource]
 script = ExtResource("1_data")
 id = &"uv_light"
 display_name = "UV Light"
 description = "Reveals ghost residue on things the ghost has touched."
-max_stack = 1
+icon = ExtResource("2_q6t3v")
+held_sheet = ExtResource("3_held")
 instance_script = ExtResource("2_script")

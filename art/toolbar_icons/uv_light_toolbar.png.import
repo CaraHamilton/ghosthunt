@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://donttkyfnohj0"
-path="res://.godot/imported/doll_tool.png-fcadff55bc1310d67a04492d1628f46d.ctex"
+uid="uid://cl2p84ockx6fv"
+path="res://.godot/imported/uv_light_toolbar.png-e7bc7f29f9b51a3b5b835c99c830d662.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/doll_tool.png"
-dest_files=["res://.godot/imported/doll_tool.png-fcadff55bc1310d67a04492d1628f46d.ctex"]
+source_file="res://art/toolbar_icons/uv_light_toolbar.png"
+dest_files=["res://.godot/imported/uv_light_toolbar.png-e7bc7f29f9b51a3b5b835c99c830d662.ctex"]
 
 [params]
 

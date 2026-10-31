@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bc0tlpkw8566w"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_data"]
-[ext_resource type="Texture2D" uid="uid://f8o0t76ihljl" path="res://art/emf_toolbar.png" id="3_icon"]
-[ext_resource type="Texture2D" uid="uid://ybg11giqbdxe" path="res://art/held/emf.png" id="4_held"]
-[ext_resource type="Script" path="res://scripts/tools/emf_reader.gd" id="2_script"]
+[ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
+[ext_resource type="Script" uid="uid://bfsgw57jq71vs" path="res://scripts/tools/emf_reader.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://f8o0t76ihljl" path="res://art/toolbar_icons/emf_toolbar.png" id="3_icon"]
+[ext_resource type="Texture2D" uid="uid://dt0512umwdl3j" path="res://art/held/emf.png" id="4_held"]
 
 [resource]
 script = ExtResource("1_data")
@@ -12,5 +12,4 @@ display_name = "EMF Reader"
 description = "Detects electromagnetic fields, 0-5. Spikes near the ghost and things it touched."
 icon = ExtResource("3_icon")
 held_sheet = ExtResource("4_held")
-max_stack = 1
 instance_script = ExtResource("2_script")
