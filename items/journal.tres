@@ -1,12 +1,17 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://c8bephv7mlqi7"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_data"]
-[ext_resource type="Script" path="res://scripts/tools/journal_item.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://d3xloed2ook7e" path="res://art/overworld/journal_overworld.png" id="1_10sp8"]
+[ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
+[ext_resource type="Texture2D" uid="uid://db2oy8w1blseu" path="res://art/held/journal.png" id="2_3kryr"]
+[ext_resource type="Script" uid="uid://b78em0vpnsslr" path="res://scripts/tools/journal_item.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://fke636rhudu4" path="res://art/toolbar_icons/journal_toolbar.png" id="3_qeclk"]
 
 [resource]
 script = ExtResource("1_data")
 id = &"journal"
 display_name = "Journal"
 description = "Record the evidence you find to work out which ghost haunts the house."
-max_stack = 1
+icon = ExtResource("3_qeclk")
+held_sheet = ExtResource("2_3kryr")
+floor_sprite = ExtResource("1_10sp8")
 instance_script = ExtResource("2_script")
