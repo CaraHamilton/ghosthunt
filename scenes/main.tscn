@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://w8kht28v8upt"]
 
 [ext_resource type="Script" uid="uid://dnuvgiw3bs5b4" path="res://scripts/game.gd" id="1_game"]
-[ext_resource type="PackedScene" uid="uid://dif34mce2rmkp" path="res://scenes/houses/house_1.tscn" id="2_tefeu"]
+[ext_resource type="PackedScene" uid="uid://fr043cogx4kf" path="res://scenes/houses/house_2.tscn" id="2_tefeu"]
 [ext_resource type="PackedScene" uid="uid://d3xfe1fvf6u2f" path="res://scenes/player.tscn" id="3_player"]
 [ext_resource type="Script" uid="uid://bvq5w3xo0rrhs" path="res://scripts/room_temperatures.gd" id="5_temps"]
 [ext_resource type="Script" uid="uid://ddkn5fotmn0va" path="res://scripts/toolbar.gd" id="6_toolbar"]
@@ -192,5 +192,5 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
 theme_override_font_sizes/font_size = 20
-text = "Press R to try again, or M to pick another house"
+text = "Press R to try again"
 horizontal_alignment = 1

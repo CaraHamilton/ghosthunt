@@ -4,16 +4,11 @@ extends Node2D
 ## survival time and handles game over / restart.
 
 const GhostScene := preload("res://scenes/ghost.tscn")
-const MAP_SELECT_SCENE := "res://scenes/map_select.tscn"
 ## Items the player starts with, by id (see res://items/).
 const STARTING_ITEMS: Array[StringName] = [&"thermometer", &"emf_reader", &"doll", &"uv_light", &"journal"]
 
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
-## The house scene picked on the map select menu (a res:// path). Empty when
-## main.tscn is run straight from the editor: then the House already in the
-## scene is used. Kept across restarts, so R replays the same house.
-static var selected_house := ""
 
 ## Fraction of full sanity lost each time the ghost catches the player
 ## (0.5 = 50%: two catches empty even a full sanity bar).
@@ -59,7 +54,6 @@ var _base_darkness: Color
 func _ready() -> void:
 	current = self
 	randomize()
-	_load_selected_house()
 	# Always on in the game. (Hide the Darkness and HUD nodes in the editor
 	# while painting the map - they cover/darken the editor view too.)
 	darkness.visible = true
@@ -98,26 +92,10 @@ func _process(delta: float) -> void:
 	if is_game_over:
 		if Input.is_action_just_pressed("restart"):
 			get_tree().reload_current_scene()
-		elif Input.is_action_just_pressed("map_select"):
-			get_tree().change_scene_to_file(MAP_SELECT_SCENE)
 		return
 	survived_time += delta
 	time_label.text = "Survived: %ds" % int(survived_time)
 	_update_sanity_bar()
-
-
-## Swaps the House in main.tscn for the one picked on the map select menu
-## (it keeps the name "House" and its place in the scene tree).
-func _load_selected_house() -> void:
-	if selected_house == "" or selected_house == house.scene_file_path:
-		return
-	var index := house.get_index()
-	remove_child(house)
-	house.free()  # right away, so its furniture leaves the nav_obstacles group
-	house = (load(selected_house) as PackedScene).instantiate() as House
-	house.name = "House"
-	add_child(house)
-	move_child(house, index)
 
 
 ## Stops the camera scrolling far past the edges of the painted map.

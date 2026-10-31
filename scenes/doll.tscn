@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cq7iw1aw7njl1"]
 
 [ext_resource type="Script" uid="uid://5i4iafxlxxr" path="res://scripts/interactables/doll.gd" id="1_doll"]
-[ext_resource type="Texture2D" uid="uid://cfrdb08cy0ywo" path="res://art/overworld/doll_overoworld.png" id="2_art"]
+[ext_resource type="Texture2D" uid="uid://cfrdb08cy0ywo" path="res://art/overworld/doll_overworld.png" id="2_art"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_sit"]
 atlas = ExtResource("2_art")
