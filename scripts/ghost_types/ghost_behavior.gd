@@ -51,7 +51,7 @@ func get_evidence() -> Array[Evidence.Type]:
 		result.append(Evidence.Type.FREEZING)
 	if get_emf_level(4) >= 5:
 		result.append(Evidence.Type.EMF_5)
-	if plays_with_ball():
+	if possesses_doll():
 		result.append(Evidence.Type.TOY_INTERACTION)
 	if leaves_uv_residue():
 		result.append(Evidence.Type.UV_RESIDUE)
@@ -131,8 +131,8 @@ func get_interaction_chance(_item: GhostInteractable, base_chance: float) -> flo
 	return base_chance
 
 
-## Whether this ghost type plays with the tennis ball (rolls it around).
-func plays_with_ball() -> bool:
+## Whether this ghost type possesses the doll (stands it up) when it's near.
+func possesses_doll() -> bool:
 	return false
 
 

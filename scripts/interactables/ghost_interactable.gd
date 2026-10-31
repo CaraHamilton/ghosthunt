@@ -87,7 +87,7 @@ func can_ghost_interact() -> bool:
 
 
 ## Whether this kind of ghost will ever touch this object (e.g. only some
-## ghost types play with the tennis ball). Override per interactable.
+## ghost types possess the doll). Override per interactable.
 func ghost_can_use(_ghost: Ghost) -> bool:
 	return true
 

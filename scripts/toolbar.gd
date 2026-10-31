@@ -41,5 +41,5 @@ func _draw() -> void:
 			if item.count > 1:
 				draw_string(font, rect.end - Vector2(18, 6), str(item.count),
 					HORIZONTAL_ALIGNMENT_RIGHT, 14, 13, Color("2a1a10"))
-		draw_string(font, rect.position + Vector2(5, 15), str(i + 1),
+		draw_string(font, rect.position + Vector2(5, 15), str((i + 1) % 10),  # slot 10 is the 0 key
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("5e3a25"))

@@ -2,7 +2,7 @@ class_name Player
 extends CharacterBody2D
 ## Top-down player. Walks with WASD/arrows, runs with Shift, and uses the
 ## closest nearby object with E/Space (toggles sinks, picks up items - only
-## the closest one shows its prompt). Picks a toolbar slot with 1-5 or the
+## the closest one shows its prompt). Picks a toolbar slot with 1-9 and 0, or the
 ## mouse wheel, uses the selected item while holding F / left mouse, and
 ## drops it with Q. There's nowhere to hide: during a hunt, run and break the
 ## ghost's line of sight.
@@ -16,8 +16,8 @@ signal sanity_depleted
 
 ## How many inventory slots the player has. The toolbar shows the first
 ## TOOLBAR_SLOTS of them (all of them, for now).
-const INVENTORY_SIZE := 5
-const TOOLBAR_SLOTS := 5
+const INVENTORY_SIZE := 10
+const TOOLBAR_SLOTS := 10
 ## How far in front of the player dropped items land (px).
 const DROP_DISTANCE := 10.0
 ## The rows of an item's held_sheet, top to bottom.

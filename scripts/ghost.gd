@@ -41,6 +41,7 @@ enum State {
 	SEARCHING,     ## hunt: prowling around the last-seen spot until time runs out
 	VANISHING,     ## fading out at the end of a hunt
 	RETURNING,     ## invisible, heading back to its favourite room
+	POSSESSING,    ## invisible, standing on the doll and possessing it
 }
 
 const HUNT_STATES := [State.APPEARING, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
@@ -157,6 +158,10 @@ var _repath_timer := 0.0
 var _t := 0.0
 ## Which way the sprite faces: "down", "up" or "side".
 var _facing := "down"
+## The doll being possessed (or walked to, to possess it), and how many
+## seconds of possession are left once the ghost is standing on it.
+var _doll: Doll = null
+var _possess_time_left := 0.0
 
 
 ## Call before adding the ghost to the scene.
@@ -250,6 +255,22 @@ func _physics_process(delta: float) -> void:
 				_try_interact(delta)
 				_try_start_hunt(delta)
 
+		State.POSSESSING:
+			if not is_instance_valid(_doll):
+				end_possession()
+			elif not _doll.is_possessed:
+				# Still getting onto the doll.
+				_follow_path_to(_doll.global_position, wander_speed, delta, false)
+				_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
+				if global_position.distance_to(_doll.global_position) < 2.0 or _stuck_time > 1.0:
+					velocity = Vector2.ZERO
+					_doll.on_possessed(self)
+			else:
+				velocity = Vector2.ZERO
+				_possess_time_left -= delta
+				if _possess_time_left <= 0.0:
+					end_possession()
+
 	_update_animation()
 	_update_fade(delta)
 	queue_redraw()
@@ -295,6 +316,7 @@ func set_state(new_state: State) -> void:
 func start_hunt() -> void:
 	if is_hunting:
 		return
+	end_possession()
 	is_manifested = true
 	set_state(State.APPEARING)
 	hunt_started.emit()
@@ -355,7 +377,30 @@ func end_hunt() -> void:
 	set_state(State.VANISHING)
 
 
+## Goes and stands on `doll` and possesses it for `duration` seconds (the
+## doll stands up and waves while possessed). The ghost stays invisible and
+## won't hunt until it lets go.
+func possess(doll: Doll, duration: float) -> void:
+	_doll = doll
+	_possess_time_left = duration
+	set_state(State.POSSESSING)
+
+
+## Lets go of the doll (it sits back down) and goes back to wandering.
+func end_possession() -> void:
+	if state != State.POSSESSING:
+		return
+	if is_instance_valid(_doll) and _doll.is_possessed:
+		_doll.on_released()
+	_doll = null
+	_wander_target = Vector2.INF
+	_wander_pause = randf_range(min_wander_pause, max_wander_pause)
+	set_state(State.IDLE)
+
+
 func _try_start_hunt(delta: float) -> void:
+	if state == State.POSSESSING:
+		return  # it just went for the doll this frame
 	if player.sanity_ratio >= behavior.get_hunt_sanity_threshold(hunt_sanity_threshold):
 		_hunts_locked = true  # the player's mind is still too strong
 		return

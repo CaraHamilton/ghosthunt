@@ -5,7 +5,7 @@ extends Resource
 ##
 ## Never put anything that changes during play in here: Resources are shared,
 ## so every thermometer would see the same value. Per-copy state (a
-## thermometer's reading, a ball's residue) lives on the ItemInstance.
+## thermometer's reading, a doll's residue) lives on the ItemInstance.
 
 ## Unique id, also the .tres file name (e.g. "thermometer" -> thermometer.tres).
 @export var id: StringName
@@ -24,5 +24,5 @@ extends Resource
 ## Empty = a plain item with no special behaviour.
 @export var instance_script: Script
 ## Scene spawned when the item is dropped. Empty = the generic floor pickup.
-## Its root needs an `item` property (see ItemPickup, TennisBall).
+## Its root needs an `item` property (see ItemPickup, Doll).
 @export var world_scene: PackedScene

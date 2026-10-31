@@ -6,7 +6,7 @@ extends Node2D
 ## item keeps working while it lies here, e.g. a thermometer keeps measuring).
 ##
 ## Items whose ItemData.world_scene is set use that scene instead (e.g. the
-## tennis ball, which rolls); this is the default for everything else.
+## doll, which ghosts possess); this is the default for everything else.
 
 const DEFAULT_SCENE_PATH := "res://scenes/item_pickup.tscn"
 ## Width/height (px) of the item's icon when drawn on the floor.
