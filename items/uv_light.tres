@@ -1,5 +1,6 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0xftbrcp8p0"]
 
+[ext_resource type="Texture2D" uid="uid://doqfxvklvaf3r" path="res://art/overworld/uv_light_overworld.png" id="1_6vive"]
 [ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
 [ext_resource type="Texture2D" uid="uid://cl2p84ockx6fv" path="res://art/toolbar_icons/uv_light_toolbar.png" id="2_q6t3v"]
 [ext_resource type="Script" uid="uid://c05amp7jxf33p" path="res://scripts/tools/uv_light.gd" id="2_script"]
@@ -12,4 +13,5 @@ display_name = "UV Light"
 description = "Reveals ghost residue on things the ghost has touched."
 icon = ExtResource("2_q6t3v")
 held_sheet = ExtResource("3_held")
+floor_sprite = ExtResource("1_6vive")
 instance_script = ExtResource("2_script")

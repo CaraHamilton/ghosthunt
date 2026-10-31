@@ -1,9 +1,9 @@
 class_name UVLight
 extends ItemInstance
 ## A UV flashlight. While held (F / left mouse) it shines a purple beam of
-## real light about 4 tiles in front of the holder, replacing their normal
-## lantern glow. Ghost residue (left by some ghost types on things they
-## touch) glows green wherever the beam falls on it - see UVBeam.
+## real light about 4 tiles in front of the holder. Ghost residue (left by
+## some ghost types on things they touch) glows green wherever the beam falls
+## on it - see UVBeam.
 ##
 ## The beam starts at the flashlight's lens in the held art: the brightest
 ## pixels of each frame of the held_sheet, so it follows the hand's bob and
@@ -29,13 +29,11 @@ func start_use() -> void:
 		_beam = UVBeam.new()
 		holder.add_child(_beam)
 	_beam.visible = true
-	_set_lantern(false)
 
 
 func stop_use() -> void:
 	if _beam:
 		_beam.visible = false
-	_set_lantern(true)
 
 
 func process_use(_delta: float) -> void:
@@ -96,12 +94,6 @@ func _find_lens(row: int, frame: int) -> Vector2:
 		result = sum / count
 	_lens_cache[key] = result
 	return result
-
-
-func _set_lantern(on: bool) -> void:
-	var lantern := holder.get_node_or_null("Lantern")
-	if lantern:
-		lantern.visible = on
 
 
 func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:

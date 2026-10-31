@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://ca2dx0ian1lr5"]
+
+[ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
+[ext_resource type="Texture2D" uid="uid://d0puxysk4xfcr" path="res://art/held/lantern.png" id="1_kuaus"]
+[ext_resource type="Texture2D" uid="uid://cxaillbqxfyqu" path="res://art/toolbar_icons/lantern_toolbar.png" id="2_ep1sl"]
+[ext_resource type="Script" uid="uid://b3d4dvjxuqfvn" path="res://scripts/tools/lantern.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://ctqhpq8vv25we" path="res://art/overworld/lantern_overworld.png" id="3_floor"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"lantern"
+display_name = "Lantern"
+description = "Lights the way while it's in your hand. Set it down to light up a room."
+icon = ExtResource("2_ep1sl")
+held_sheet = ExtResource("1_kuaus")
+floor_sprite = ExtResource("3_floor")
+instance_script = ExtResource("2_script")

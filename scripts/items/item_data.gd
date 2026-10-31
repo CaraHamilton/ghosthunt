@@ -18,6 +18,9 @@ extends Resource
 ## own layer: 4 frames of 16x32 per row, rows hold_down, hold_up, hold_side.
 ## Empty = the item isn't shown in hand and the player walks normally.
 @export var held_sheet: Texture2D
+## This item lying on the floor, drawn at full size with its bottom-centre on
+## the spot it was dropped. Empty = a small version of the icon.
+@export var floor_sprite: Texture2D
 ## How many fit in one slot. Tools with their own state should stay at 1.
 @export_range(1, 999) var max_stack := 1
 ## Script (extending ItemInstance) that gives this item its behaviour.

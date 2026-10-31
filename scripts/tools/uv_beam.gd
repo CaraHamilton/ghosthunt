@@ -9,7 +9,7 @@ extends Node2D
 ##   - a purple one that lights the room (floor, walls, furniture, ghost)
 ##   - a green-white one that only lights ghost residue (light mask layer 2,
 ##     see ResidueGlow), so residue glows exactly where the beam falls. The
-##     lantern doesn't reach layer 2, so it never shows residue.
+##     lantern (LanternItem) doesn't reach layer 2, so it never shows residue.
 ## The cone skips the player (Player.LIGHT_LAYER) so it doesn't light her body
 ## in its pattern; a soft round glow tints her purple instead.
 

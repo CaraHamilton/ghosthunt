@@ -1,7 +1,7 @@
 class_name ItemPickup
 extends Node2D
-## An item lying on the floor. Shows a small version of the item's icon and
-## an "[E] Pick up ..." prompt. Holds the very same ItemInstance that was
+## An item lying on the floor. Shows the item's floor_sprite (or a small
+## version of its icon) and an "[E] Pick up ..." prompt. Holds the very same ItemInstance that was
 ## dropped, so picking it back up returns it with its state intact (and the
 ## item keeps working while it lies here, e.g. a thermometer keeps measuring).
 ##
@@ -93,12 +93,17 @@ func _draw() -> void:
 	# Shadow
 	draw_set_transform(Vector2(0, 0.5), 0.0, Vector2(1.0, 0.4))
 	draw_circle(Vector2.ZERO, size * 0.45, Color(0, 0, 0, 0.3))
-	# The item's own icon, shrunk down. Icons are drawn for a 44px toolbar
-	# slot, so scale that down to floor size.
-	var s := size / 44.0
-	draw_set_transform(Vector2(0, -size / 2.0), 0.0, Vector2(s, s))
-	item.draw_icon(self, Rect2(-22, -22, 44, 44))
 	draw_set_transform(Vector2.ZERO)
+	var art := item.data.floor_sprite
+	if art:
+		draw_texture(art, Vector2(-art.get_width() / 2, -art.get_height()))
+	else:
+		# The item's own icon, shrunk down. Icons are drawn for a 44px toolbar
+		# slot, so scale that down to floor size.
+		var s := size / 44.0
+		draw_set_transform(Vector2(0, -size / 2.0), 0.0, Vector2(s, s))
+		item.draw_icon(self, Rect2(-22, -22, 44, 44))
+		draw_set_transform(Vector2.ZERO)
 	if item.count > 1:
 		draw_string(ThemeDB.fallback_font, Vector2(size * 0.3, 0), str(item.count),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 6, Color.WHITE)
