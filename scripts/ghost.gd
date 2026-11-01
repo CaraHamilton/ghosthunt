@@ -47,6 +47,11 @@ enum State {
 const HUNT_STATES := [State.APPEARING, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
 const WORLD_LAYER := 1
 const VISIBLE_ALPHA := 0.85
+## Light mask layer only the ghost's sprite is on (as well as the world
+## layer, so the lantern still lights it). Its Glow light shines on just this
+## layer, so the ghost glows softly without lighting anything around it - the
+## same trick as the UV light's glow on the player.
+const GLOW_LIGHT_LAYER := 4
 
 @export_group("Hunting")
 ## Chase speed when a chase begins, as a multiple of the player's walking speed
@@ -173,6 +178,9 @@ func set_type(new_type: GhostBehavior.Type) -> void:
 
 func _ready() -> void:
 	modulate.a = 0.0
+	var glow_layer := 1 << (GLOW_LIGHT_LAYER - 1)
+	$Sprite.light_mask = 1 | glow_layer
+	$Glow.range_item_cull_mask = glow_layer
 	if behavior == null:
 		set_type(GhostBehavior.random_type())
 	if favorite_room == "":
