@@ -1,92 +1,91 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://pfuqxolbbngk"]
 
-[ext_resource type="Script" path="res://scripts/ui/journal_panel.gd" id="1_journal"]
+[ext_resource type="Script" uid="uid://c4j4b68an6bdi" path="res://scripts/ui/journal_panel.gd" id="1_journal"]
+[ext_resource type="Texture2D" uid="uid://dsn8c1pbh08a4" path="res://art/journal_page.png" id="2_page"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_paper"]
-bg_color = Color(0.94, 0.89, 0.78, 1)
-border_width_left = 6
-border_width_top = 6
-border_width_right = 6
-border_width_bottom = 6
-border_color = Color(0.48, 0.23, 0.16, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-shadow_color = Color(0, 0, 0, 0.45)
-shadow_size = 12
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_page"]
+content_margin_left = 24.0
+content_margin_top = 30.0
+content_margin_right = 24.0
+content_margin_bottom = 18.0
+texture = ExtResource("2_page")
 
-[node name="JournalPanel" type="PanelContainer"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_row"]
+content_margin_left = 4.0
+content_margin_top = 2.0
+content_margin_right = 4.0
+content_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hover"]
+content_margin_left = 4.0
+content_margin_top = 2.0
+content_margin_right = 4.0
+content_margin_bottom = 2.0
+bg_color = Color(0.21, 0.26, 0.22, 0.12)
+
+[node name="JournalPanel" type="PanelContainer" unique_id=88804517]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -230.0
-offset_top = -250.0
-offset_right = 230.0
-offset_bottom = 250.0
+offset_left = -234.0
+offset_top = -252.0
+offset_right = 234.0
+offset_bottom = 252.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_paper")
+theme_override_styles/panel = SubResource("StyleBoxTexture_page")
 script = ExtResource("1_journal")
+row_style = SubResource("StyleBoxEmpty_row")
+row_hover_style = SubResource("StyleBoxFlat_hover")
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="VBox" type="VBoxContainer" parent="." unique_id=643796006]
 layout_mode = 2
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 20
+theme_override_constants/separation = 6
 
-[node name="VBox" type="VBoxContainer" parent="Margin"]
+[node name="EvidenceHeader" type="Label" parent="VBox" unique_id=454103425]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 30
+text = "Evidence"
+text_overrun_behavior = 3
 
-[node name="Title" type="Label" parent="Margin/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.23, 0.15, 0.09, 1)
-theme_override_font_sizes/font_size = 34
-text = "Journal"
-horizontal_alignment = 1
-
-[node name="EvidenceHeader" type="Label" parent="Margin/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.48, 0.23, 0.16, 1)
-theme_override_font_sizes/font_size = 22
-text = "Evidence found"
-
-[node name="EvidenceList" type="VBoxContainer" parent="Margin/VBox"]
+[node name="EvidenceList" type="VBoxContainer" parent="VBox" unique_id=428621740]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 4
 
-[node name="Separator" type="HSeparator" parent="Margin/VBox"]
+[node name="Gap" type="Control" parent="VBox" unique_id=1487515187]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
-[node name="GhostHeader" type="Label" parent="Margin/VBox"]
+[node name="GhostHeader" type="Label" parent="VBox" unique_id=682035254]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.48, 0.23, 0.16, 1)
-theme_override_font_sizes/font_size = 22
-text = "Possible ghosts"
-
-[node name="GhostList" type="VBoxContainer" parent="Margin/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="NoMatch" type="Label" parent="Margin/VBox"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.2, 0.15, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 20
-text = "No ghost matches this evidence."
+text = "The evidence points to the ghost being a"
 
-[node name="Spacer" type="Control" parent="Margin/VBox"]
+[node name="GhostList" type="VBoxContainer" parent="VBox" unique_id=1425146611]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Spacer" type="Control" parent="VBox" unique_id=91372258]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CloseButton" type="Button" parent="Margin/VBox"]
+[node name="CloseButton" type="Button" parent="VBox" unique_id=1529301678]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 18
-text = "Close  (F / Esc)"
+theme_override_styles/normal = SubResource("StyleBoxEmpty_row")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_hover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_hover")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_row")
+text = "Close"
