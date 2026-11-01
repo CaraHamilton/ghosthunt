@@ -29,6 +29,7 @@ static var current: Game
 @onready var temperatures: RoomTemperatures = $RoomTemperatures
 @onready var toolbar: Control = $HUD/Toolbar
 @onready var journal_panel: JournalPanel = $HUD/JournalPanel
+@onready var thermometer_overlay: Control = $HUD/ThermometerOverlay
 @onready var time_label: Label = $HUD/TimeLabel
 @onready var message_label: Label = $HUD/MessageLabel
 @onready var game_over_panel: Control = $HUD/GameOver
@@ -76,6 +77,7 @@ func _ready() -> void:
 	for id in STARTING_ITEMS:
 		player.inventory.add_item(ItemDB.create(id))
 	toolbar.player = player
+	thermometer_overlay.player = player
 	_show_message("Something feels wrong in this house...", 3.0)
 
 
