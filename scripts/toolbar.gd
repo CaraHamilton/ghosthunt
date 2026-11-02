@@ -1,7 +1,7 @@
 extends Control
 ## Stardew-style toolbar along the bottom of the screen. Shows the first
 ## slots of the player's inventory, highlights the selected one, and shows
-## the active item's readout (e.g. the EMF reader's level) above it
+## the active item's text readout, if it has one, above it
 ## while in use. Stacks show their count in the corner.
 ##
 ## The bar (slot numbers included) is res://art/toolbar.png and the selection

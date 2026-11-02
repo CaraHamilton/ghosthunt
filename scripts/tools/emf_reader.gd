@@ -81,9 +81,6 @@ func _trace_level(game: Game, pos: Vector2) -> int:
 	return best
 
 
-func get_readout() -> String:
-	return "EMF  %s%s  %d" % ["●".repeat(level), "·".repeat(5 - level), level]
-
 
 func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
 	if data.icon:

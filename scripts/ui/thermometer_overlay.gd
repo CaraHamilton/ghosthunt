@@ -1,8 +1,8 @@
-extends Control
-## The big thermometer on the right edge of the screen. It slides in while
-## the player is using a thermometer and slides back out when they stop. The
-## liquid column shows that thermometer's reading - there's no number, so
-## the player has to read it off the scale.
+extends ToolOverlay
+## The big thermometer on the right edge of the screen, shown while the
+## player is using a thermometer (see ToolOverlay). The liquid column shows
+## that thermometer's reading - there's no number, so the player has to read
+## it off the scale.
 ##
 ## The glass, scale and bulb are res://art/thermometer_overlay.png, exported
 ## at 3x. The constants below say where the tube and scale are in that art,
@@ -18,34 +18,20 @@ const TUBE := Rect2(18, 6, 4, 100)
 const ZERO_Y := 79.5
 ## How many pixels the liquid rises per °C (10 °C between labels = 20 px).
 const PIXELS_PER_DEGREE := 2.0
-## Gap between the thermometer and the right edge of the screen (screen px).
-const EDGE_GAP := 16.0
-## Seconds to slide in or out.
-const SLIDE_TIME := 0.15
 
-var player: Player
-
-## 0 = hidden off the right edge, 1 = fully on screen.
-var _shown := 0.0
 var _reading := NAN
 
 
-func _ready() -> void:
-	mouse_filter = MOUSE_FILTER_IGNORE
-	custom_minimum_size = ART.get_size()
-	size = ART.get_size()
+func _is_for(item: ItemInstance) -> bool:
+	return item is Thermometer
 
 
-func _process(delta: float) -> void:
-	var item := player.selected_item if player else null
-	var using := player != null and player.is_using_item and item is Thermometer
-	if using:
-		_reading = item.reading
-	_shown = move_toward(_shown, 1.0 if using else 0.0, delta / SLIDE_TIME)
-	visible = _shown > 0.0
-	# Slide in from past the right edge.
-	position.x = get_parent_area_size().x - (size.x + EDGE_GAP) * ease(_shown, 0.4)
-	queue_redraw()
+func _read(item: ItemInstance) -> void:
+	_reading = (item as Thermometer).reading
+
+
+func _art_size() -> Vector2:
+	return ART.get_size()
 
 
 func _draw() -> void:
