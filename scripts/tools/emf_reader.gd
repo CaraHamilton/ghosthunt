@@ -79,21 +79,3 @@ func _trace_level(game: Game, pos: Vector2) -> int:
 			continue
 		best = maxi(best, 3 - int(age / (trace_duration / 3.0)))
 	return best
-
-
-func get_readout() -> String:
-	return "EMF  %s%s  %d" % ["●".repeat(level), "·".repeat(5 - level), level]
-
-
-func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
-	var body := Rect2(rect.position + rect.size * Vector2(0.2, 0.1), rect.size * Vector2(0.6, 0.8))
-	canvas.draw_rect(body, Color("2e3440"))
-	canvas.draw_rect(body, Color("101418"), false, 2.0)
-	# Five LEDs, green to red
-	var colors := [Color("4cd964"), Color("a8e04c"), Color("f2d24c"), Color("f29a3c"), Color("e8443a")]
-	var led_w := body.size.x / 6.0
-	for i in 5:
-		var led := Rect2(body.position.x + led_w * (i + 0.5), body.position.y + 5, led_w * 0.7, 6)
-		canvas.draw_rect(led, colors[i])
-	# Antenna-ish screen
-	canvas.draw_rect(Rect2(body.position + Vector2(5, 16), Vector2(body.size.x - 10, body.size.y - 22)), Color("1c2430"))

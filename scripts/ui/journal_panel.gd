@@ -1,42 +1,62 @@
 class_name JournalPanel
 extends PanelContainer
-## The journal window. Lists every kind of evidence as a checklist, and below
-## it the ghost types that still fit what's been ticked. Ticks are saved on
-## the JournalItem that opened it, so each journal keeps its own notes.
+## The journal window. Lists every kind of evidence, each with a box the
+## player clicks through empty -> found (tick) -> ruled out (X) -> empty, and
+## below it every ghost type, grayed out once the marks rule it out. Marks
+## are saved on the JournalItem that opened it, so each journal keeps its
+## own notes.
+##
+## The page is res://art/journal_page.png drawn at 3x (468x504). Spacing is
+## set in journal_panel.tscn: the page style's content margins, the VBoxes'
+## separation, and the Gap node between the two lists.
 ##
 ## While it's open the player can't move or use items (the game keeps
 ## running, so the ghost can still hunt). Close with F, Esc or the button.
 
-const INK := Color("3a2618")
-const FADED_INK := Color("8a7058")
+const INK := Color("000000")
+## Ghost types that don't fit the marked evidence.
+const GRAYED_INK := Color("adab8c")
+## The box shown for each JournalItem.Mark.
+const BOX_ICONS := {
+	JournalItem.Mark.NONE: preload("res://art/journal_checkbox_empty.png"),
+	JournalItem.Mark.FOUND: preload("res://art/journal_checkbox_check.png"),
+	JournalItem.Mark.RULED_OUT: preload("res://art/journal_checkbox_x.png"),
+}
+
+## Look of an evidence row, and of one under the mouse.
+@export var row_style: StyleBox
+@export var row_hover_style: StyleBox
 
 var _journal: JournalItem
 var _player: Player
-var _checkboxes := {}   # Evidence.Type -> CheckBox
+var _evidence_rows := {}   # Evidence.Type -> Button
 var _ghost_rows := {}   # GhostBehavior.Type -> Label
 
 @onready var evidence_list: VBoxContainer = %EvidenceList
 @onready var ghost_list: VBoxContainer = %GhostList
-@onready var no_match: Label = %NoMatch
 @onready var close_button: Button = %CloseButton
 
 
 func _ready() -> void:
 	visible = false
 	for evidence: Evidence.Type in Evidence.Type.values():
-		var box := CheckBox.new()
-		box.text = Evidence.name_of(evidence)
-		box.add_theme_font_size_override("font_size", 22)
-		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
-			box.add_theme_color_override(state, INK)
-		box.toggled.connect(_on_evidence_toggled.bind(evidence))
-		evidence_list.add_child(box)
-		_checkboxes[evidence] = box
+		var row := Button.new()
+		row.text = Evidence.name_of(evidence)
+		row.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		row.focus_mode = Control.FOCUS_NONE
+		row.add_theme_font_size_override("font_size", 20)
+		row.add_theme_constant_override("h_separation", 8)
+		for state in ["normal", "pressed", "focus"]:
+			row.add_theme_stylebox_override(state, row_style)
+		row.add_theme_stylebox_override("hover", row_hover_style)
+		row.pressed.connect(_on_evidence_pressed.bind(evidence))
+		evidence_list.add_child(row)
+		_evidence_rows[evidence] = row
 	for type: GhostBehavior.Type in GhostBehavior.Type.values():
 		var row := Label.new()
-		var evidence_names := GhostBehavior.evidence_for(type).map(func(e): return Evidence.name_of(e))
-		row.text = "%s  -  %s" % [GhostBehavior.type_name(type), ", ".join(evidence_names)]
-		row.add_theme_font_size_override("font_size", 20)
+		row.text = GhostBehavior.type_name(type)
+		row.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		row.add_theme_font_size_override("font_size", 18)
 		row.add_theme_color_override("font_color", INK)
 		ghost_list.add_child(row)
 		_ghost_rows[type] = row
@@ -46,8 +66,6 @@ func _ready() -> void:
 func open(journal: JournalItem, player: Player) -> void:
 	_journal = journal
 	_player = player
-	for evidence in _checkboxes:
-		_checkboxes[evidence].set_pressed_no_signal(journal.is_checked(evidence))
 	_refresh()
 	visible = true
 	player.set_in_menu(true)
@@ -78,14 +96,22 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _on_evidence_toggled(pressed: bool, evidence: Evidence.Type) -> void:
-	_journal.set_checked(evidence, pressed)
+## Clicking a row moves it on to the next mark: empty -> found -> ruled out.
+func _on_evidence_pressed(evidence: Evidence.Type) -> void:
+	var next := (_journal.get_mark(evidence) + 1) % JournalItem.Mark.size()
+	_journal.set_mark(evidence, next)
 	_refresh()
 
 
-## Shows only the ghosts that fit every ticked piece of evidence.
+## Shows each row's mark, and grays out the ghosts that don't fit them.
 func _refresh() -> void:
+	for evidence in _evidence_rows:
+		var mark := _journal.get_mark(evidence)
+		var row: Button = _evidence_rows[evidence]
+		row.icon = BOX_ICONS[mark]
+		var ink := GRAYED_INK if mark == JournalItem.Mark.RULED_OUT else INK
+		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+			row.add_theme_color_override(state, ink)
 	var possible := _journal.possible_ghosts()
 	for type in _ghost_rows:
-		_ghost_rows[type].visible = type in possible
-	no_match.visible = possible.is_empty()
+		_ghost_rows[type].add_theme_color_override("font_color", INK if type in possible else GRAYED_INK)

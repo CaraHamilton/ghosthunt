@@ -207,6 +207,15 @@ animations = [{
 "speed": 5.0
 }]
 
+[sub_resource type="Gradient" id="Gradient_glow"]
+colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_glow"]
+gradient = SubResource("Gradient_glow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
+
 [node name="Ghost" type="CharacterBody2D" unique_id=311754552]
 collision_layer = 0
 motion_mode = 1
@@ -220,3 +229,9 @@ position = Vector2(0, -20)
 sprite_frames = SubResource("SpriteFrames_74kp6")
 animation = &"chase_side"
 autoplay = "chase_down"
+
+[node name="Glow" type="PointLight2D" parent="." unique_id=1685024632]
+position = Vector2(0, -20)
+color = Color(0.6, 0.75, 1, 1)
+energy = 0.5
+texture = SubResource("GradientTexture2D_glow")

@@ -9,6 +9,6 @@ func get_emf_level(base_level: int) -> int:
 	return 5 if base_level >= 4 else base_level
 
 
-## Demons roll the tennis ball around when it's near them.
-func plays_with_ball() -> bool:
+## Demons possess the doll when it's near them.
+func possesses_doll() -> bool:
 	return true

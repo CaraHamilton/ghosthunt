@@ -2,7 +2,7 @@ class_name Player
 extends CharacterBody2D
 ## Top-down player. Walks with WASD/arrows, runs with Shift, and uses the
 ## closest nearby object with E/Space (toggles sinks, picks up items - only
-## the closest one shows its prompt). Picks a toolbar slot with 1-5 or the
+## the closest one shows its prompt). Picks a toolbar slot with 1-9, or the
 ## mouse wheel, uses the selected item while holding F / left mouse, and
 ## drops it with Q. There's nowhere to hide: during a hunt, run and break the
 ## ghost's line of sight.
@@ -16,10 +16,17 @@ signal sanity_depleted
 
 ## How many inventory slots the player has. The toolbar shows the first
 ## TOOLBAR_SLOTS of them (all of them, for now).
-const INVENTORY_SIZE := 5
-const TOOLBAR_SLOTS := 5
+const INVENTORY_SIZE := 9
+const TOOLBAR_SLOTS := 9
 ## How far in front of the player dropped items land (px).
 const DROP_DISTANCE := 10.0
+## The rows of an item's held_sheet, top to bottom.
+const HELD_ROWS: Array[StringName] = [&"hold_down", &"hold_up", &"hold_side"]
+## Light mask layer the player's sprite is on, instead of the default layer
+## 1. The lantern (LanternItem) lights it, but the UV beam's cone doesn't (it
+## would light her body in the cone's pattern) - UVBeam tints her with a soft
+## glow instead.
+const LIGHT_LAYER := 3
 
 @export var walk_speed := 70.0
 
@@ -60,10 +67,18 @@ var _use_blocked_until_release := false
 
 
 @onready var sprite: AnimatedSprite2D = $Sprite
+## The selected item drawn in the player's hand, on top of the sprite.
+@onready var held_item: Sprite2D = $Sprite/HeldItem
 
 
 func _ready() -> void:
 	sanity = minf(start_sanity, max_sanity)
+	var layer := 1 << (LIGHT_LAYER - 1)
+	sprite.light_mask = layer
+	held_item.light_mask = layer
+	inventory.changed.connect(_update_held_item)
+	sprite.frame_changed.connect(_sync_held_item)
+	sprite.animation_changed.connect(_sync_held_item)
 	_update_animation(false)
 
 
@@ -248,25 +263,54 @@ func _closest_interactable() -> Node2D:
 # --- Art ------------------------------------------------------------------------
 
 ## Plays walk_down / walk_up / walk_side for the way the player faces (the
-## side art faces left, so it's mirrored for facing right). Standing still
-## holds the first frame.
+## side art faces left, so it's mirrored for facing right). While the
+## selected item has a held_sheet it plays hold_down / hold_up / hold_side
+## instead, with that item drawn on top. Standing still holds the first frame.
 func _update_animation(moving: bool) -> void:
+	var prefix := "hold_" if _held_sheet() else "walk_"
 	var anim: StringName
 	if absf(facing.x) > absf(facing.y):
-		anim = &"walk_side"
+		anim = StringName(prefix + "side")
 		sprite.flip_h = facing.x > 0.0
 	else:
-		anim = &"walk_down" if facing.y > 0.0 else &"walk_up"
+		anim = StringName(prefix + ("down" if facing.y > 0.0 else "up"))
 		sprite.flip_h = false
+	held_item.flip_h = sprite.flip_h
 	if not sprite.sprite_frames.has_animation(anim):
 		return
 	if moving:
 		if sprite.animation != anim or not sprite.is_playing():
+			# Keep the step the legs are on when picking up/putting away an item.
+			var frame := sprite.frame
+			var progress := sprite.frame_progress
 			sprite.play(anim)
+			sprite.set_frame_and_progress(frame, progress)
 	else:
 		sprite.animation = anim
 		sprite.stop()
 		sprite.frame = 0
+
+
+## The selected item's held_sheet, or null if it has none (or the slot is empty).
+func _held_sheet() -> Texture2D:
+	var item := selected_item
+	return item.data.held_sheet if item else null
+
+
+## Called when the selected item changes: shows the new one in hand (or none).
+func _update_held_item() -> void:
+	held_item.texture = _held_sheet()
+	_update_animation(sprite.is_playing())
+	_sync_held_item()
+
+
+## Shows the held item's frame that matches the player's current frame. Its
+## sheet has a row per hold animation, in HELD_ROWS order.
+func _sync_held_item() -> void:
+	var row := HELD_ROWS.find(sprite.animation)
+	held_item.visible = held_item.texture != null and row != -1
+	if held_item.visible:
+		held_item.frame = row * held_item.hframes + sprite.frame
 
 
 ## Shadow on the floor under the player (the sprite draws on top).
