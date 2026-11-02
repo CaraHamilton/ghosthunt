@@ -38,15 +38,3 @@ func possible_ghosts() -> Array[GhostBehavior.Type]:
 
 func start_use() -> void:
 	Game.current.journal_panel.open(self, holder)
-
-
-func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
-	if data.icon:
-		super(canvas, rect)
-		return
-	var book := Rect2(rect.position + rect.size * Vector2(0.2, 0.12), rect.size * Vector2(0.6, 0.76))
-	canvas.draw_rect(Rect2(book.position + Vector2(3, 3), book.size), Color("f0e6cc"))  # pages
-	canvas.draw_rect(book, Color("7a3b2a"))  # cover
-	canvas.draw_rect(book, Color("3a1a10"), false, 2.0)
-	canvas.draw_rect(Rect2(book.position.x + 3, book.position.y, 3, book.size.y), Color("5a2a1c"))  # spine
-	canvas.draw_rect(Rect2(book.get_center() - Vector2(5, 3), Vector2(12, 6)), Color("e0c070"))  # label

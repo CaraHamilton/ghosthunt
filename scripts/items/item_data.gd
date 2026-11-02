@@ -11,7 +11,7 @@ extends Resource
 @export var id: StringName
 @export var display_name := ""
 @export_multiline var description := ""
-## Toolbar/floor icon. If empty, the item's script draws a placeholder.
+## Toolbar/floor icon. If empty, a gray square is shown.
 @export var icon: Texture2D
 ## This item in the player's hand, drawn on top of them while it's selected
 ## (they switch to their hold_ animations). Just the item, exported from its

@@ -94,18 +94,3 @@ func _find_lens(row: int, frame: int) -> Vector2:
 		result = sum / count
 	_lens_cache[key] = result
 	return result
-
-
-func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
-	if data.icon:
-		super(canvas, rect)
-		return
-	var c := rect.get_center()
-	var body := Rect2(c.x - rect.size.x * 0.32, c.y - 4, rect.size.x * 0.45, 8)
-	canvas.draw_rect(body, Color("3a3050"))
-	canvas.draw_rect(body, Color("15101e"), false, 1.5)
-	var head := PackedVector2Array([
-		Vector2(body.end.x, body.position.y - 1), Vector2(body.end.x + 9, body.position.y - 5),
-		Vector2(body.end.x + 9, body.end.y + 5), Vector2(body.end.x, body.end.y + 1)])
-	canvas.draw_colored_polygon(head, Color("4a3e66"))
-	canvas.draw_line(Vector2(body.end.x + 9, body.position.y - 4), Vector2(body.end.x + 9, body.end.y + 4), Color("b070ff"), 3.0)

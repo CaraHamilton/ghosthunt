@@ -82,8 +82,7 @@ func on_picked_up(_player: Player) -> void:
 	pass
 
 
-## Draws the item's icon. Uses ItemData.icon if set; items without art
-## override this to draw a placeholder.
+## Draws the item's icon (ItemData.icon), or a gray square if it has none.
 func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
 	if data.icon:
 		canvas.draw_texture_rect(data.icon, rect, false)

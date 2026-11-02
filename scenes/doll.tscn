@@ -3,39 +3,39 @@
 [ext_resource type="Script" uid="uid://5i4iafxlxxr" path="res://scripts/interactables/doll.gd" id="1_doll"]
 [ext_resource type="Texture2D" uid="uid://cfrdb08cy0ywo" path="res://art/overworld/doll_overworld.png" id="2_art"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_sit"]
-atlas = ExtResource("2_art")
-region = Rect2(0, 0, 16, 16)
-
 [sub_resource type="AtlasTexture" id="AtlasTexture_2lxit"]
 atlas = ExtResource("2_art")
-region = Rect2(0, 16, 16, 16)
+region = Rect2(0, 0, 16, 24)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_7yriu"]
 atlas = ExtResource("2_art")
-region = Rect2(16, 16, 16, 16)
+region = Rect2(0, 24, 16, 24)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_fxx1d"]
 atlas = ExtResource("2_art")
-region = Rect2(32, 16, 16, 16)
+region = Rect2(16, 24, 16, 24)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_48b15"]
 atlas = ExtResource("2_art")
-region = Rect2(48, 16, 16, 16)
+region = Rect2(32, 24, 16, 24)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_kpghy"]
 atlas = ExtResource("2_art")
-region = Rect2(64, 16, 16, 16)
+region = Rect2(48, 24, 16, 24)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_na3qk"]
 atlas = ExtResource("2_art")
-region = Rect2(80, 16, 16, 16)
+region = Rect2(64, 24, 16, 24)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3mwwm"]
+atlas = ExtResource("2_art")
+region = Rect2(80, 24, 16, 24)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_doll"]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_sit")
+"texture": SubResource("AtlasTexture_2lxit")
 }],
 "loop": 1,
 "name": &"sit",
@@ -43,22 +43,22 @@ animations = [{
 }, {
 "frames": [{
 "duration": 3.0,
-"texture": SubResource("AtlasTexture_2lxit")
-}, {
-"duration": 1.0,
 "texture": SubResource("AtlasTexture_7yriu")
 }, {
-"duration": 5.0,
+"duration": 1.0,
 "texture": SubResource("AtlasTexture_fxx1d")
 }, {
-"duration": 1.0,
+"duration": 8.0,
 "texture": SubResource("AtlasTexture_48b15")
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_kpghy")
 }, {
-"duration": 1.0,
+"duration": 5.0,
 "texture": SubResource("AtlasTexture_na3qk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3mwwm")
 }],
 "loop": 1,
 "name": &"stand_and_wave",

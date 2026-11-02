@@ -47,18 +47,3 @@ func _attach(parent: Node2D, offset: Vector2, on: bool) -> void:
 			parent.add_child(_light)
 	_light.position = offset
 	_light.visible = on
-
-
-func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
-	if data.icon:
-		super(canvas, rect)
-		return
-	var c := rect.get_center()
-	var w := rect.size.x
-	canvas.draw_circle(c + Vector2(0, 1), w * 0.24, Color(1.0, 0.8, 0.4, 0.35))  # glow
-	canvas.draw_arc(c - Vector2(0, w * 0.2), w * 0.1, PI, TAU, 8, Color("2a2a30"), 2.0)  # handle
-	var glass := Rect2(c.x - w * 0.12, c.y - w * 0.14, w * 0.24, w * 0.3)
-	canvas.draw_rect(glass, Color("ffd27a"))
-	canvas.draw_rect(glass, Color("2a2a30"), false, 2.0)
-	canvas.draw_rect(Rect2(c.x - w * 0.16, glass.end.y, w * 0.32, w * 0.06), Color("2a2a30"))  # base
-	canvas.draw_rect(Rect2(c.x - w * 0.16, glass.position.y - w * 0.04, w * 0.32, w * 0.05), Color("2a2a30"))  # top

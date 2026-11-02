@@ -36,19 +36,3 @@ func process_always(delta: float) -> void:
 		reading = actual
 	var step := (actual - reading) * (1.0 - exp(-response_rate * delta))
 	reading += clampf(step, -max_change_per_second * delta, max_change_per_second * delta)
-
-
-
-func draw_icon(canvas: CanvasItem, rect: Rect2) -> void:
-	if data.icon:
-		super(canvas, rect)
-		return
-	var c := rect.get_center()
-	var s := rect.size.x / 44.0  # placeholder was designed for a 44px slot
-	var h := rect.size.y * 0.6
-	var tube := Rect2(c.x - 4 * s, c.y - h / 2.0, 8 * s, h)
-	canvas.draw_rect(tube, Color("e8e8f0"))
-	canvas.draw_rect(tube, Color("50506a"), false, 2.0 * s)
-	canvas.draw_circle(Vector2(c.x, tube.end.y), 8.0 * s, Color("50506a"))
-	canvas.draw_circle(Vector2(c.x, tube.end.y), 6.0 * s, Color("d8403a"))
-	canvas.draw_rect(Rect2(c.x - 2 * s, c.y - 2 * s, 4 * s, h / 2.0 + 2 * s), Color("d8403a"))
