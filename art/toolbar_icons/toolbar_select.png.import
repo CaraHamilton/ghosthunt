@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dste1o2bjn6nc"
-path="res://.godot/imported/uv_beam.png-72c1ef0f8fe7fc32840d183c9ef821ce.ctex"
+uid="uid://ckshetk2lieft"
+path="res://.godot/imported/toolbar_select.png-868bb86b304ccdee91303816f097d831.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/uv_beam.png"
-dest_files=["res://.godot/imported/uv_beam.png-72c1ef0f8fe7fc32840d183c9ef821ce.ctex"]
+source_file="res://art/toolbar_icons/toolbar_select.png"
+dest_files=["res://.godot/imported/toolbar_select.png-868bb86b304ccdee91303816f097d831.ctex"]
 
 [params]
 

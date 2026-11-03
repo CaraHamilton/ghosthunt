@@ -8,8 +8,8 @@ extends Control
 ## res://art/toolbar_select.png, both exported at 3x. The constants below say
 ## where the slots are in the bar art, in its 1x pixels.
 
-const BAR := preload("res://art/toolbar.png")
-const SELECT := preload("res://art/toolbar_select.png")
+const BAR := preload("res://art/toolbar_icons/toolbar.png")
+const SELECT := preload("res://art/toolbar_icons/toolbar_select.png")
 ## How much bigger the art is drawn than its Aseprite pixels.
 const ART_SCALE := 3.0
 ## Top-left of the first slot's box.

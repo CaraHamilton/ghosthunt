@@ -13,7 +13,7 @@ extends Node2D
 ##   │               temperatures, the ghost's favourite room, the EMF reader...
 ##   └─ PlayerStart  Marker2D where the player begins
 ##
-## Furniture, sinks and props are scenes placed in the World node; they add
+## Props (furniture) and sinks are scenes placed in the Furniture node; they add
 ## their own collision and tell the ghost's pathfinding about themselves.
 ## This script also draws the dark "outside" behind the map and builds the
 ## ghost's pathfinding grid from the wall tiles.
@@ -120,7 +120,7 @@ func _get_room_rects(room_name: String) -> Array[Rect2]:
 # --- Pathfinding ----------------------------------------------------------------
 
 ## Builds the pathfinding grid from the solid wall tiles plus `extra_solids`
-## (furniture, sink and prop footprints).
+## (prop and sink footprints).
 func build_navigation(extra_solids: Array[Rect2]) -> void:
 	var from := Vector2i((_bounds.position / NAV_CELL).floor())
 	var to := Vector2i((_bounds.end / NAV_CELL).ceil())

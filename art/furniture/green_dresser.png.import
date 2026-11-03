@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dusg4iemexpj5"
-path="res://.godot/imported/toolbar.png-ac8181d069994402e80fc7803d2715c5.ctex"
+uid="uid://c3ynggnl7bocc"
+path="res://.godot/imported/green_dresser.png-24f09489f265789b5787bee3f285dbe2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/toolbar.png"
-dest_files=["res://.godot/imported/toolbar.png-ac8181d069994402e80fc7803d2715c5.ctex"]
+source_file="res://art/furniture/green_dresser.png"
+dest_files=["res://.godot/imported/green_dresser.png-24f09489f265789b5787bee3f285dbe2.ctex"]
 
 [params]
 

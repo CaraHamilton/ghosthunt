@@ -1,19 +1,27 @@
 @tool
 class_name Prop
 extends StaticBody2D
-## A simple piece of decor placed in the editor: rug, couch, table, bed,
-## bathtub... Solid props block the player, the ghost and its line of sight;
-## flat ones (rugs) are walked over and always drawn under everything else.
+## A piece of furniture placed in the editor: bed, dresser, closet, rug,
+## bookcase... Solid props block the player, the ghost and its line of sight
+## (useful cover to break away behind during a hunt); flat ones (rugs) are
+## walked over and always drawn under everything else.
 ##
 ## The node's origin is the bottom-centre of its footprint (for Y-sorting).
-## Placeholder art is a coloured box; give it a Sprite2D child and set
-## `draw_placeholder` off once you have art.
+## `art` is drawn with its bottom-centre on the origin, so anything standing
+## up off the floor (a headboard, the front of a bookcase) sticks up above
+## the footprint. Until it has art, a prop shows a coloured placeholder box.
 
-## Area on the floor (width, depth) in px.
+## The prop's picture (1x art). Leave empty for a placeholder box.
+@export var art: Texture2D:
+	set(value):
+		art = value
+		queue_redraw()
+## Area on the floor (width, depth) in px. Blocks movement and the ghost.
 @export var footprint := Vector2(32, 16):
 	set(value):
 		footprint = value
 		queue_redraw()
+## Colour of the placeholder box (unused once the prop has art).
 @export var color := Color("8a5a3b"):
 	set(value):
 		color = value
@@ -25,11 +33,6 @@ extends StaticBody2D
 	set(value):
 		flat = value
 		z_index = -1 if flat else 0
-		queue_redraw()
-## Turn off once the prop has a real sprite.
-@export var draw_placeholder := true:
-	set(value):
-		draw_placeholder = value
 		queue_redraw()
 
 
@@ -54,11 +57,12 @@ func get_footprint() -> Rect2:
 	return Rect2(global_position + Vector2(-footprint.x / 2.0, -footprint.y), footprint)
 
 
-# --- Placeholder art ------------------------------------------------------
-
 func _draw() -> void:
-	if not draw_placeholder:
+	if art:
+		draw_texture(art, Vector2(-floorf(art.get_width() / 2.0), -art.get_height()))
 		return
+
+	# Placeholder box
 	var r := Rect2(-footprint.x / 2.0, -footprint.y, footprint.x, footprint.y)
 	if flat:
 		draw_rect(r, color)

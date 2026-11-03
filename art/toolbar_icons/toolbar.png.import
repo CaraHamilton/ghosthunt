@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckshetk2lieft"
-path="res://.godot/imported/toolbar_select.png-7de8facc1fb85c3535f581bf02c89b17.ctex"
+uid="uid://dusg4iemexpj5"
+path="res://.godot/imported/toolbar.png-f070df53fee88dd3c0e0fe61b5302a7c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/toolbar_select.png"
-dest_files=["res://.godot/imported/toolbar_select.png-7de8facc1fb85c3535f581bf02c89b17.ctex"]
+source_file="res://art/toolbar_icons/toolbar.png"
+dest_files=["res://.godot/imported/toolbar.png-f070df53fee88dd3c0e0fe61b5302a7c.ctex"]
 
 [params]
 
