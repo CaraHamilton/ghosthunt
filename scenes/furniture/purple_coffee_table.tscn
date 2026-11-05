@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_prop"]
+[ext_resource type="Texture2D" uid="uid://kl6shjvfjwt4" path="res://art/furniture/purple/purple_coffee_table.png" id="2_art"]
+
+[node name="PurpleCoffeeTable" type="StaticBody2D"]
+script = ExtResource("1_prop")
+art = ExtResource("2_art")
+footprint = Vector2(32, 24)
+side_footprint = Vector2(24, 32)
