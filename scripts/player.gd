@@ -23,9 +23,10 @@ const DROP_DISTANCE := 10.0
 ## The rows of an item's held_sheet, top to bottom.
 const HELD_ROWS: Array[StringName] = [&"hold_down", &"hold_up", &"hold_side"]
 ## Light mask layer the player's sprite is on, instead of the default layer
-## 1. The lantern (LanternItem) lights it, but the UV beam's cone doesn't (it
-## would light her body in the cone's pattern) - UVBeam tints her with a soft
-## glow instead.
+## 1. World lights (the lantern, fireplaces) don't reach it directly - her
+## PlayerLight copies the brightest of them, so overlapping lights don't add
+## up on her. The UV beam's cone doesn't either (it would light her body in
+## the cone's pattern) - UVBeam tints her with a soft glow instead.
 const LIGHT_LAYER := 3
 
 @export var walk_speed := 70.0
@@ -76,6 +77,7 @@ func _ready() -> void:
 	var layer := 1 << (LIGHT_LAYER - 1)
 	sprite.light_mask = layer
 	held_item.light_mask = layer
+	add_child(PlayerLight.new())
 	inventory.changed.connect(_update_held_item)
 	sprite.frame_changed.connect(_sync_held_item)
 	sprite.animation_changed.connect(_sync_held_item)
