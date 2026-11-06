@@ -1,7 +1,8 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://eqi2cfdd7s3j"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
-colors = PackedColorArray(1, 0.9, 0.7, 1, 0, 0, 0, 0)
+offsets = PackedFloat32Array(0, 0.56216216, 0.6864865)
+colors = PackedColorArray(1, 0.9019608, 0.69803923, 0.74509805, 0.6431373, 0.5803922, 0.4509804, 0.47058824, 0, 0, 0, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_light"]
 gradient = SubResource("Gradient_light")
@@ -11,7 +12,7 @@ fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(0.5, 0)
 
-[node name="LanternLight" type="PointLight2D" groups=["world_lights"]]
+[node name="LanternLight" type="PointLight2D" unique_id=1320186021 groups=["world_lights"]]
 color = Color(1, 0.85, 0.6, 1)
 energy = 1.25
 texture = SubResource("GradientTexture2D_light")
