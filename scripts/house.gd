@@ -9,6 +9,9 @@ extends Node2D
 ##   ├─ Walls        TileMapLayer: wall tiles. Tiles with a collision shape
 ##   │               (TileSet → Paint → Physics Layer 0) block the player,
 ##   │               the ghost, and the ghost's line of sight.
+##   ├─ WallDecor    TileMapLayer drawn over Walls: windows and other wall
+##   │               decorations (no collision - the wall underneath blocks).
+##   │               Window tiles get a moonlight glow in game.
 ##   ├─ Rooms        a Room (resizable box) per room: names the areas used for
 ##   │               temperatures, the ghost's favourite room, the EMF reader...
 ##   └─ PlayerStart  Marker2D where the player begins
@@ -26,6 +29,8 @@ const NAV_CELL := 4
 const NAV_MARGIN := 4.0
 ## Colour of the night outside the house (drawn behind the map).
 const OUTSIDE_COLOR := Color("1d2236")
+## The light put on each window (see _add_window_lights).
+const WINDOW_LIGHT := preload("res://scenes/window_light.tscn")
 
 @onready var floor_layer: TileMapLayer = $Floor
 @onready var walls_layer: TileMapLayer = $Walls
@@ -45,6 +50,23 @@ func _ready() -> void:
 			_rooms.append(child)
 	if _rooms.is_empty():
 		push_warning("House has no Room nodes under House/Rooms.")
+	_add_window_lights()
+
+
+## Puts a WindowLight (res://scenes/window_light.tscn - tweak it there) on
+## every WallDecor tile whose "window_light" custom data is ticked (TileSet >
+## Paint > Custom Data). It sits on that tile's bottom edge, so tick the top
+## tile of a two-tile-tall window to light it from the middle.
+func _add_window_lights() -> void:
+	var decor := get_node_or_null("WallDecor") as TileMapLayer
+	if decor == null or decor.tile_set.get_custom_data_layer_by_name("window_light") == -1:
+		return
+	for cell in decor.get_used_cells():
+		var data := decor.get_cell_tile_data(cell)
+		if data and data.get_custom_data("window_light"):
+			var light: Node2D = WINDOW_LIGHT.instantiate()
+			light.position = decor.map_to_local(cell) + Vector2(0, 8)
+			decor.add_child(light)
 
 
 # --- Layout queries -----------------------------------------------------------

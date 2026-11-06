@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://bu8eqcc8ll4mv" path="res://art/house_tiles.png" id="1_hifmf"]
 [ext_resource type="Texture2D" uid="uid://t6uo2ss4ijgd" path="res://art/custom_house_tiles.png" id="3_3422p"]
 [ext_resource type="Texture2D" uid="uid://bf2ksxw3m1qmq" path="res://art/house_tiles/purple_floors.png" id="4_rw3b7"]
+[ext_resource type="Texture2D" uid="uid://bvpnl37mubfwf" path="res://art/house_tiles/gothic_window.png" id="5_window"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rih51"]
 texture = ExtResource("1_hifmf")
@@ -216,9 +217,18 @@ texture = ExtResource("4_rw3b7")
 16:4/0 = 0
 16:4/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_window"]
+texture = ExtResource("5_window")
+0:0/0 = 0
+0:0/0/custom_data_0 = true
+0:1/0 = 0
+
 [resource]
 physics_layer_0/collision_layer = 1
 physics_layer_0/collision_mask = 0
+custom_data_layer_0/name = "window_light"
+custom_data_layer_0/type = 1
 sources/0 = SubResource("TileSetAtlasSource_rih51")
 sources/2 = SubResource("TileSetAtlasSource_rw3b7")
 sources/3 = SubResource("TileSetAtlasSource_xm8jh")
+sources/4 = SubResource("TileSetAtlasSource_window")
