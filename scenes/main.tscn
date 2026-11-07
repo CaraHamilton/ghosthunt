@@ -56,21 +56,11 @@ script = ExtResource("5_temps")
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1354132517]
 visible = false
 
-[node name="TimeLabel" type="Label" parent="HUD" unique_id=283126945]
-offset_left = 20.0
-offset_top = 16.0
-offset_right = 600.0
-offset_bottom = 50.0
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 22
-text = "Survived: 0s"
-
 [node name="SanityBar" type="ProgressBar" parent="HUD" unique_id=1291647691]
 offset_left = 20.0
-offset_top = 54.0
+offset_top = 16.0
 offset_right = 300.0
-offset_bottom = 82.0
+offset_bottom = 44.0
 mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_sanity_bg")
 theme_override_styles/fill = SubResource("StyleBoxFlat_sanity_fill")
@@ -90,21 +80,6 @@ theme_override_font_sizes/font_size = 16
 text = "Sanity"
 horizontal_alignment = 1
 vertical_alignment = 1
-
-[node name="MessageLabel" type="Label" parent="HUD" unique_id=1030001140]
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -400.0
-offset_top = 70.0
-offset_right = 400.0
-offset_bottom = 120.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 30
-horizontal_alignment = 1
 
 [node name="Toolbar" type="Control" parent="HUD" unique_id=1677603526]
 layout_mode = 3

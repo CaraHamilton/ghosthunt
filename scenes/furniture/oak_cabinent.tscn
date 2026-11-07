@@ -5,5 +5,7 @@
 
 [node name="Prop" type="StaticBody2D" unique_id=1572617577]
 script = ExtResource("1_prop")
+surface = true
+surface_height = 13.0
 art = ExtResource("2_j268m")
 metadata/_custom_type_script = "uid://cd1tei14g3hwn"

@@ -21,6 +21,9 @@ extends Resource
 ## This item lying on the floor, drawn at full size with its bottom-centre on
 ## the spot it was dropped. Empty = a small version of the icon.
 @export var floor_sprite: Texture2D
+## If ticked, the item can be placed up on tables, counters and other
+## surfaces (see Prop.surface). Unticked, it can only go on the floor.
+@export var can_place_on_surfaces := false
 ## How many fit in one slot. Tools with their own state should stay at 1.
 @export_range(1, 999) var max_stack := 1
 ## Script (extending ItemInstance) that gives this item its behaviour.

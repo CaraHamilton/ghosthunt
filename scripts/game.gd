@@ -31,8 +31,6 @@ static var current: Game
 @onready var journal_panel: JournalPanel = $HUD/JournalPanel
 @onready var thermometer_overlay: ToolOverlay = $HUD/ThermometerOverlay
 @onready var emf_overlay: ToolOverlay = $HUD/EmfOverlay
-@onready var time_label: Label = $HUD/TimeLabel
-@onready var message_label: Label = $HUD/MessageLabel
 @onready var game_over_panel: Control = $HUD/GameOver
 @onready var game_over_stats: Label = $HUD/GameOver/Box/Stats
 @onready var game_over_title: Label = $HUD/GameOver/Box/Title
@@ -80,7 +78,6 @@ func _ready() -> void:
 	toolbar.player = player
 	thermometer_overlay.player = player
 	emf_overlay.player = player
-	_show_message("Something feels wrong in this house...", 3.0)
 
 
 ## F11 switches between fullscreen and a window.
@@ -97,8 +94,7 @@ func _process(delta: float) -> void:
 		if Input.is_action_just_pressed("restart"):
 			get_tree().reload_current_scene()
 		return
-	survived_time += delta
-	time_label.text = "Survived: %ds" % int(survived_time)
+	survived_time += delta  # shown on the game over screen
 	_update_sanity_bar()
 
 
@@ -129,7 +125,6 @@ func _spawn_ghost() -> void:
 		start = house.random_point_in_room(ghost.favorite_room)
 	ghost.global_position = start
 	ghost.hunt_started.connect(_on_ghost_hunt_started)
-	ghost.hunt_ended.connect(_on_ghost_hunt_ended)
 	ghost.caught_player.connect(_on_ghost_caught_player)
 	ghost.interacted.connect(_on_ghost_interacted)
 	world.add_child(ghost)
@@ -141,10 +136,6 @@ func _spawn_ghost() -> void:
 func _on_ghost_hunt_started() -> void:
 	hunts += 1
 	_flicker_lights()
-
-
-func _on_ghost_hunt_ended() -> void:
-	_show_message("It's gone... for now.", 2.0)
 
 
 func _on_ghost_interacted(item: GhostInteractable) -> void:
@@ -161,7 +152,6 @@ func _on_ghost_caught_player() -> void:
 	player.lose_sanity(player.max_sanity * catch_sanity_cost)
 	if not is_game_over:
 		_game_over_reason = ""
-		_show_message("It got you... your mind is slipping.", 3.0)
 
 
 func _on_player_sanity_depleted() -> void:
@@ -171,7 +161,6 @@ func _on_player_sanity_depleted() -> void:
 	ghost.set_physics_process(false)
 	journal_panel.close()
 	player.die()
-	message_label.visible = false
 	game_over_title.text = _game_over_reason if _game_over_reason != "" else "YOUR SANITY RAN OUT"
 	game_over_stats.text = "You survived %d seconds and were caught %d time%s." % [
 		int(survived_time), times_caught, "" if times_caught == 1 else "s"]
@@ -205,18 +194,6 @@ func _flicker_lights() -> void:
 	for i in 3:
 		tween.tween_property(darkness, "color", _base_darkness.darkened(0.6), 0.08)
 		tween.tween_property(darkness, "color", _base_darkness, 0.12)
-
-
-var _message_id := 0
-
-func _show_message(text: String, duration: float) -> void:
-	_message_id += 1
-	var id := _message_id
-	message_label.text = text
-	message_label.visible = true
-	await get_tree().create_timer(duration).timeout
-	if id == _message_id and not is_game_over:
-		message_label.visible = false
 
 
 ## For the identification goal later: returns true if the player's guess

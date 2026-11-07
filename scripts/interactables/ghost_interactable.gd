@@ -30,8 +30,6 @@ extends StaticBody2D
 @export var player_can_use := false
 ## How close (px) the player must be to the footprint to use it.
 @export var player_reach := 14.0
-## How far above the origin the "[E] ..." prompt floats.
-@export var prompt_height := 36.0
 
 ## Where the UV residue glow is centred, relative to the origin (e.g. on top
 ## of a sink's counter). Set by each interactable.
@@ -44,8 +42,11 @@ var has_residue := false:
 		if _residue_glow:
 			_residue_glow.visible = has_residue
 
+## Extra height (px) the player's use zone reaches up above the footprint -
+## e.g. for a doll placed up on a table. Set before the node is ready.
+var player_zone_raise := 0.0
+
 var _last_interaction_time := -INF
-var _prompt: Label
 var _residue_glow: ResidueGlow
 
 
@@ -131,29 +132,11 @@ func describe_last_interaction() -> String:
 ## Called by the player pressing E. Don't override - override _on_player_interact.
 func player_interact(player: Player) -> void:
 	_on_player_interact(player)
-	_refresh_prompt()
 
 
 ## What happens when the player uses this. Override in each interactable.
 func _on_player_interact(_player: Player) -> void:
 	pass
-
-
-## Prompt text shown above the object, e.g. "[E] Turn on".
-func get_player_prompt() -> String:
-	return "[E] Use"
-
-
-## The player shows the prompt only on the closest thing they can use.
-func set_prompt_visible(value: bool) -> void:
-	if _prompt:
-		_refresh_prompt()
-		_prompt.visible = value
-
-
-func _refresh_prompt() -> void:
-	if _prompt:
-		_prompt.text = get_player_prompt()
 
 
 func _build_player_zone() -> void:
@@ -162,24 +145,12 @@ func _build_player_zone() -> void:
 	zone.collision_mask = 2  # player
 	var zone_shape := CollisionShape2D.new()
 	var zone_rect := RectangleShape2D.new()
-	zone_rect.size = footprint + Vector2.ONE * player_reach * 2.0
+	zone_rect.size = footprint + Vector2.ONE * player_reach * 2.0 + Vector2(0, player_zone_raise)
 	zone_shape.shape = zone_rect
-	zone_shape.position = Vector2(0, -footprint.y / 2.0)
+	zone_shape.position = Vector2(0, -footprint.y / 2.0 - player_zone_raise / 2.0)
 	zone.add_child(zone_shape)
 	add_child(zone)
 	zone.body_entered.connect(func(body):
 		if body is Player: body.register_interactable(self))
 	zone.body_exited.connect(func(body):
 		if body is Player: body.unregister_interactable(self))
-
-	_prompt = Label.new()
-	_prompt.add_theme_font_size_override("font_size", 8)
-	_prompt.add_theme_color_override("font_outline_color", Color.BLACK)
-	_prompt.add_theme_constant_override("outline_size", 3)
-	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_prompt.size = Vector2(70, 12)
-	_prompt.position = Vector2(-35, -prompt_height)
-	_prompt.z_index = 20
-	_prompt.visible = false
-	add_child(_prompt)
-	_refresh_prompt()

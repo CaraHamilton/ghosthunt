@@ -8,6 +8,7 @@
 
 [resource]
 script = ExtResource("1_data")
+can_place_on_surfaces = true
 id = &"thermometer"
 display_name = "Thermometer"
 description = "Reads the temperature of the room it's in. Leave it somewhere and it keeps measuring."

@@ -5,6 +5,8 @@
 
 [node name="oak_table" type="StaticBody2D" unique_id=452231143]
 script = ExtResource("1_prop")
+surface = true
+surface_height = 10.0
 art = ExtResource("2_16kxy")
 footprint = Vector2(64, 32)
 metadata/_custom_type_script = "uid://cd1tei14g3hwn"

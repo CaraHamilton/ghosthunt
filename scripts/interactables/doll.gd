@@ -16,6 +16,14 @@ var item: DollItem:
 		has_residue = item.has_residue
 		_last_interaction_time = item.last_ghost_touch_time
 
+## How far (px) above its position the doll is drawn, when it's placed on a
+## table (see ItemPickup.elevation). Set before adding it to the scene.
+var elevation := 0.0:
+	set(value):
+		residue_offset.y -= value - elevation
+		player_zone_raise = value
+		elevation = value
+
 ## How long (seconds) a possession lasts, picked at random each time.
 @export var min_possess_time := 5.0
 @export var max_possess_time := 10.0
@@ -30,7 +38,7 @@ var is_possessed: bool:
 
 
 ## Note: the doll's exported settings (footprint, solid, ghost_reach,
-## cooldown, prompt_height...) are set in scenes/doll.tscn, not here, so the
+## cooldown...) are set in scenes/doll.tscn, not here, so the
 ## editor never copies stale values into other scenes.
 func _init() -> void:
 	residue_offset = Vector2(0, -6)
@@ -41,6 +49,7 @@ func _ready() -> void:
 	if not Engine.is_editor_hint():
 		# Always put down sitting, whichever animation the scene was saved on.
 		sprite.play(&"sit")
+		sprite.position.y -= elevation
 
 
 func ghost_can_use(ghost: Ghost) -> bool:
@@ -85,10 +94,6 @@ func _on_player_interact(player: Player) -> void:
 	queue_free()
 
 
-func get_player_prompt() -> String:
-	return "[E] Pick up"
-
-
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
@@ -103,6 +108,6 @@ func _save_traces() -> void:
 
 
 func _draw() -> void:
-	draw_set_transform(Vector2(0, 0), 0.0, Vector2(1.0, 0.45))
+	draw_set_transform(Vector2(0, -elevation), 0.0, Vector2(1.0, 0.45))
 	draw_circle(Vector2.ZERO, 4.0, Color(0, 0, 0, 0.3))  # shadow
 	draw_set_transform(Vector2.ZERO)

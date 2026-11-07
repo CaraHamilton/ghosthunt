@@ -1,10 +1,11 @@
 class_name Player
 extends CharacterBody2D
 ## Top-down player. Walks with WASD/arrows, runs with Shift, and uses the
-## closest nearby object with E/Space (toggles sinks, picks up items - only
-## the closest one shows its prompt). Picks a toolbar slot with 1-9, or the
+## closest nearby object with E/Space (toggles sinks, picks up items). Picks a toolbar slot with 1-9, or the
 ## mouse wheel, uses the selected item while holding F / left mouse, and
-## drops it with Q. There's nowhere to hide: during a hunt, run and break the
+## places it on the tile in front of her by letting go of Q (holding Q shows
+## which tile first; one item per tile; tables
+## and other surfaces take items too). There's nowhere to hide: during a hunt, run and break the
 ## ghost's line of sight.
 ##
 ## Sanity starts full and slowly drains while in the house (it stops, but
@@ -20,6 +21,10 @@ const INVENTORY_SIZE := 9
 const TOOLBAR_SLOTS := 9
 ## How far in front of the player dropped items land (px).
 const DROP_DISTANCE := 10.0
+## Corner correction: walking straight into the corner of a wall or piece of
+## furniture, overlapping it by up to this many px, slides her around it
+## instead of stopping her dead.
+const CORNER_NUDGE := 4
 ## The rows of an item's held_sheet, top to bottom.
 const HELD_ROWS: Array[StringName] = [&"hold_down", &"hold_up", &"hold_side"]
 ## Light mask layer the player's sprite is on, instead of the default layer
@@ -65,9 +70,13 @@ var _focused: Node2D = null
 ## After closing a menu, ignore the use button until it's released, so the
 ## press that closed the journal doesn't instantly reopen it.
 var _use_blocked_until_release := false
+## Outlines the tile Q would place the selected item on.
+var _place_highlight: PlaceHighlight
 
 
 @onready var sprite: AnimatedSprite2D = $Sprite
+## Her collision shape at her feet.
+@onready var _feet: CollisionShape2D = $CollisionShape2D
 ## The selected item drawn in the player's hand, on top of the sprite.
 @onready var held_item: Sprite2D = $Sprite/HeldItem
 
@@ -78,6 +87,8 @@ func _ready() -> void:
 	sprite.light_mask = layer
 	held_item.light_mask = layer
 	add_child(PlayerLight.new())
+	_place_highlight = PlaceHighlight.new()
+	add_child(_place_highlight)
 	inventory.changed.connect(_update_held_item)
 	sprite.frame_changed.connect(_sync_held_item)
 	sprite.animation_changed.connect(_sync_held_item)
@@ -98,10 +109,38 @@ func _physics_process(delta: float) -> void:
 		input = Vector2.ZERO
 	velocity = input * walk_speed
 	move_and_slide()
+	_nudge_around_corners(input, delta)
 
 	if input != Vector2.ZERO:
 		facing = input.normalized()
 	_update_animation(input != Vector2.ZERO)
+
+
+## If walking straight (not diagonally) was blocked by just the edge of
+## something, slides her sideways toward the gap - checking 1 px either side,
+## then 2 px... up to CORNER_NUDGE - at no more than walking speed.
+func _nudge_around_corners(input: Vector2, delta: float) -> void:
+	var dir: Vector2
+	if absf(input.y) < 0.1 and input.x != 0.0:
+		dir = Vector2(signf(input.x), 0)
+	elif absf(input.x) < 0.1 and input.y != 0.0:
+		dir = Vector2(0, signf(input.y))
+	else:
+		return  # standing still, or diagonal (move_and_slide slides those)
+	var step := dir * walk_speed * delta
+	if not test_move(global_transform, step):
+		return  # not blocked
+	var side := Vector2(-dir.y, dir.x)
+	# (+1: clearing an overlap of n px takes an n+1 px shift - Godot keeps a
+	# tiny gap between colliding shapes.)
+	for d in range(1, CORNER_NUDGE + 2):
+		for s: float in [1.0, -1.0]:
+			var shift := side * s * d
+			# The sideways path must be clear, and the way ahead clear from there.
+			if not test_move(global_transform, shift) \
+					and not test_move(global_transform.translated(shift), step):
+				move_and_collide(side * s * minf(d, walk_speed * delta))
+				return
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -117,8 +156,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("prev_tool"):
 		select_slot(posmod(selected_slot - 1, TOOLBAR_SLOTS))
 		return
-	if event.is_action_pressed("drop_item"):
-		drop_selected()
+	# Hold Q to see where the item will go (and move/turn to aim), let go to
+	# place it. A quick tap places it straight away.
+	if event.is_action_pressed("place_item"):
+		_place_highlight.aiming = true
+		return
+	if event.is_action_released("place_item"):
+		if _place_highlight.aiming:
+			_place_highlight.aiming = false
+			place_selected()
 		return
 	if not event.is_action_pressed("interact"):
 		return
@@ -129,6 +175,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func die() -> void:
 	is_dead = true
+	_place_highlight.aiming = false
 	velocity = Vector2.ZERO
 	sprite.stop()
 	sprite.modulate = Color(0.55, 0.55, 0.6)  # drained of colour
@@ -159,6 +206,7 @@ func lose_sanity(amount: float) -> void:
 ## Called by windows like the journal when they open and close.
 func set_in_menu(value: bool) -> void:
 	in_menu = value
+	_place_highlight.aiming = false  # a held Q doesn't place after the menu
 	if not value:
 		_use_blocked_until_release = true
 
@@ -184,7 +232,40 @@ func pick_up(item: ItemInstance, from_node: Node2D) -> bool:
 	return true
 
 
-## Drops the selected item (one of a stack) on the floor in front of us.
+## The tile next to the one we're standing on, the way we face (up, down,
+## left or right) - where Q places the selected item.
+func place_target() -> Vector2i:
+	var dir := Vector2i(signi(roundi(facing.x)), 0) if absf(facing.x) > absf(facing.y) \
+		else Vector2i(0, 1 if facing.y > 0.0 else -1)
+	# Our tile is the one under the middle of our feet (the collision shape),
+	# not the very bottom edge of the sprite.
+	return Game.current.house.tile_at(global_position + _feet.position) + dir
+
+
+## Where the selected item would be placed (see House.get_place_spot): the
+## tile in front of us, on a table there only if the item may go on one.
+func place_spot() -> Dictionary:
+	var on_surfaces := selected_item != null and selected_item.data.can_place_on_surfaces
+	return Game.current.house.get_place_spot(place_target(), on_surfaces)
+
+
+## Places the selected item (one of a stack) on the tile in front of us -
+## on the floor, or on a table there. Does nothing if that tile is blocked.
+func place_selected() -> void:
+	if selected_item == null:
+		return
+	var game := Game.current
+	var spot := place_spot()
+	if not spot.ok:
+		_place_highlight.flash_blocked()
+		return
+	_set_using_item(false)
+	var item := inventory.remove_from_slot(selected_slot, 1)
+	ItemPickup.place(item, game.world, spot)
+
+
+## Drops the selected item (one of a stack) on the floor in front of us,
+## anywhere - not on the tile grid. (Not on a key yet: Q places instead.)
 func drop_selected() -> void:
 	if selected_item == null:
 		return
@@ -227,7 +308,7 @@ func _set_using_item(value: bool) -> void:
 
 
 ## Called by objects' interaction zones when the player walks into range.
-## Each must have `set_prompt_visible(bool)`.
+## Each must have `player_interact(player)`.
 func register_interactable(item: Node2D) -> void:
 	if item not in _nearby:
 		_nearby.append(item)
@@ -237,16 +318,9 @@ func unregister_interactable(item: Node2D) -> void:
 	_nearby.erase(item)
 
 
-## Picks which nearby object E acts on and shows only that one's prompt.
+## Picks which nearby object E acts on (the closest).
 func _update_focus() -> void:
-	var target: Node2D = null if is_dead else _closest_interactable()
-	if target == _focused:
-		return
-	if is_instance_valid(_focused):
-		_focused.set_prompt_visible(false)
-	_focused = target
-	if _focused:
-		_focused.set_prompt_visible(true)
+	_focused = null if is_dead else _closest_interactable()
 
 
 func _closest_interactable() -> Node2D:

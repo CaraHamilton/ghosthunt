@@ -6,4 +6,3 @@
 script = ExtResource("1_sink")
 footprint = Vector2(28, 14)
 player_can_use = true
-prompt_height = 40.0

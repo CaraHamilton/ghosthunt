@@ -82,6 +82,19 @@ const FALLBACK_TAGS := [
 		flat = value
 		z_index = -1 if flat else 0
 		queue_redraw()
+## Tables, desks, counters...: the player can place items on top (one per
+## floor tile the footprint covers), instead of the prop blocking them.
+@export var surface := false:
+	set(value):
+		surface = value
+		queue_redraw()
+## How far (px) the top of the surface is above the floor in the art: items
+## on it are drawn this much higher (and a lantern lights from up there). In
+## the editor, the blue box shows where the top is - line it up with the art.
+@export var surface_height := 12.0:
+	set(value):
+		surface_height = value
+		queue_redraw()
 
 
 ## Cached sheet (see _sheet), and when it was read.
@@ -129,6 +142,9 @@ func _draw() -> void:
 		# Show the footprint in the editor, to help line it up with the art.
 		if Engine.is_editor_hint():
 			draw_rect(r, Color(1, 1, 1, 0.4), false, 1.0)
+			if surface:
+				draw_rect(Rect2(r.position - Vector2(0, surface_height), r.size),
+					Color(0.4, 0.8, 1, 0.7), false, 1.0)
 		return
 
 	# Placeholder box

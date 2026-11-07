@@ -9,4 +9,3 @@ art = ExtResource("2_w3lm3")
 side_footprint = Vector2(16, 32)
 footprint = Vector2(32, 16)
 player_can_use = true
-prompt_height = 40.0

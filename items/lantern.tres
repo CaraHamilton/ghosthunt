@@ -8,6 +8,7 @@
 
 [resource]
 script = ExtResource("1_data")
+can_place_on_surfaces = true
 id = &"lantern"
 display_name = "Lantern"
 description = "Lights the way while it's in your hand. Set it down to light up a room."

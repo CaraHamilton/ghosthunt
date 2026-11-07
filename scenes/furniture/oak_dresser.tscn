@@ -5,4 +5,6 @@
 
 [node name="OakDresser" type="StaticBody2D" unique_id=1085786907]
 script = ExtResource("1_prop")
+surface = true
+surface_height = 13.0
 art = ExtResource("2_art")

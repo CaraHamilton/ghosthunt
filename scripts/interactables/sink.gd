@@ -44,8 +44,8 @@ var _t := 0.0
 var _art_node: Prop
 
 
-## Note: the sink's exported settings (footprint, player_can_use,
-## prompt_height...) are set in scenes/sink.tscn, not here. Setting exported
+## Note: the sink's exported settings (footprint, player_can_use...)
+## are set in its scene, not here. Setting exported
 ## values in code makes the editor copy them into every scene that uses a
 ## sink, where they can get out of date.
 func _init() -> void:
@@ -104,13 +104,8 @@ func _on_player_interact(_player: Player) -> void:
 	_toggle()
 
 
-func get_player_prompt() -> String:
-	return "[E] Turn off" if is_on else "[E] Turn on"
-
-
 func _toggle() -> void:
 	is_on = not is_on
-	_refresh_prompt()
 	toggled.emit(is_on)
 
 
