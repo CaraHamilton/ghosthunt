@@ -22,13 +22,19 @@ func process_always(_delta: float) -> void:
 	if holder:
 		_attach(holder, HELD_OFFSET, holder.selected_item == self)
 	elif is_instance_valid(world_node):
-		_attach(world_node, FLOOR_OFFSET, true)
+		_attach(world_node, _floor_offset(world_node), true)
 
 
 ## Move the light over straight away, before the floor node is freed or a
 ## frame passes in the dark.
 func on_dropped(node: Node2D) -> void:
-	_attach(node, FLOOR_OFFSET, true)
+	_attach(node, _floor_offset(node), true)
+
+
+## On a table, the light sits up on the table top with the lantern.
+func _floor_offset(node: Node2D) -> Vector2:
+	var raised: float = node.get("elevation") if "elevation" in node else 0.0
+	return FLOOR_OFFSET - Vector2(0, raised)
 
 
 func on_picked_up(player: Player) -> void:

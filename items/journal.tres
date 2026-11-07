@@ -8,6 +8,7 @@
 
 [resource]
 script = ExtResource("1_data")
+can_place_on_surfaces = true
 id = &"journal"
 display_name = "Journal"
 description = "Record the evidence you find to work out which ghost haunts the house."

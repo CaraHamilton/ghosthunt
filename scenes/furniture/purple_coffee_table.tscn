@@ -5,6 +5,8 @@
 
 [node name="PurpleCoffeeTable" type="StaticBody2D"]
 script = ExtResource("1_prop")
+surface = true
+surface_height = 1.0
 art = ExtResource("2_art")
 footprint = Vector2(32, 24)
 side_footprint = Vector2(24, 32)

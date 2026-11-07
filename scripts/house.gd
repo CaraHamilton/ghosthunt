@@ -139,6 +139,84 @@ func _get_room_rects(room_name: String) -> Array[Rect2]:
 	return rects
 
 
+# --- Placing items ------------------------------------------------------------
+
+## Items are placed on the floor tiles' grid, one per tile.
+const PLACED_GROUP := &"placed_items"
+## How far (px) up from a tile's centre an item's bottom sits.
+const PLACE_OFFSET := Vector2(0, 4)
+
+
+## The floor tile containing `point`.
+func tile_at(point: Vector2) -> Vector2i:
+	return floor_layer.local_to_map(floor_layer.to_local(point))
+
+
+## A floor tile's square, in world space.
+func tile_rect(cell: Vector2i) -> Rect2:
+	var size := Vector2(floor_layer.tile_set.tile_size)
+	var center := floor_layer.to_global(floor_layer.map_to_local(cell))
+	return Rect2(center - size / 2.0, size)
+
+
+## Where an item placed on `cell` would go:
+##   ok        - false if the tile is a wall, under furniture, off the floor
+##               or already has an item on it
+##   position  - the item's node position (its spot on the floor; for an
+##               item on a table, the table's front edge, so it Y-sorts in
+##               front of the table)
+##   elevation - how far (px) above `position` the item is drawn (0 on the floor)
+##   rect      - the tile's square as it looks (raised onto a table's top)
+##   surface   - the Prop it sits on, or null on the floor
+## With `on_surfaces` false (an item that only goes on the floor), a tile on
+## a table counts as blocked.
+func get_place_spot(cell: Vector2i, on_surfaces := true) -> Dictionary:
+	var rect := tile_rect(cell)
+	var spot := {ok = false, cell = cell, position = rect.get_center() + PLACE_OFFSET,
+		elevation = 0.0, rect = rect, surface = null}
+	if floor_layer.get_cell_source_id(cell) == -1 or _is_solid_wall(cell) or is_tile_taken(cell):
+		return spot
+	# A table here takes the item (even with a chair tucked under it);
+	# otherwise any furniture overlapping the tile is in the way.
+	var surface: Prop = null
+	var blocked := false
+	for obstacle in get_tree().get_nodes_in_group("nav_obstacles"):
+		var fp: Rect2 = obstacle.get_footprint()
+		if obstacle is Prop and obstacle.surface and fp.has_point(rect.get_center()):
+			surface = obstacle
+		elif fp.intersects(rect.grow(-3.0)):
+			blocked = true
+	if (blocked and surface == null) or (surface and not on_surfaces):
+		return spot
+	spot.ok = true
+	if surface:
+		# Rest it on the table's top, kept a little in from its edges.
+		var top := surface.get_footprint().grow(-5.0)
+		var rest: Vector2 = spot.position
+		rest = rest.clamp(top.position, top.end)
+		var front := surface.get_footprint().end.y + 0.5
+		spot.surface = surface
+		spot.position = Vector2(rest.x, front)
+		spot.elevation = front - rest.y + surface.surface_height
+		spot.rect = Rect2(rect.position - Vector2(0, surface.surface_height), rect.size)
+	return spot
+
+
+## True if an item has been placed on `cell`.
+func is_tile_taken(cell: Vector2i) -> bool:
+	for node in get_tree().get_nodes_in_group(PLACED_GROUP):
+		if not node.is_queued_for_deletion() and node.get_meta("place_tile", null) == cell:
+			return true
+	return false
+
+
+func _is_solid_wall(cell: Vector2i) -> bool:
+	var wall_cell := walls_layer.local_to_map(walls_layer.to_local(tile_rect(cell).get_center()))
+	var data := walls_layer.get_cell_tile_data(wall_cell)
+	return data != null and walls_layer.tile_set.get_physics_layers_count() > 0 \
+		and data.get_collision_polygons_count(0) > 0
+
+
 # --- Pathfinding ----------------------------------------------------------------
 
 ## Builds the pathfinding grid from the solid wall tiles plus `extra_solids`

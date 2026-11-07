@@ -8,6 +8,7 @@
 
 [resource]
 script = ExtResource("1_data")
+can_place_on_surfaces = true
 id = &"uv_light"
 display_name = "UV Light"
 description = "Reveals ghost residue on things the ghost has touched."

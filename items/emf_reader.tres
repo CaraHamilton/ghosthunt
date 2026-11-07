@@ -8,6 +8,7 @@
 
 [resource]
 script = ExtResource("1_data")
+can_place_on_surfaces = true
 id = &"emf_reader"
 display_name = "EMF Reader"
 description = "Detects electromagnetic fields, 0-5. Spikes near the ghost and things it touched."

@@ -135,15 +135,15 @@ z_index = 10
 y_sort_enabled = true
 
 [node name="BedroomCloset" parent="Furniture" unique_id=1221152449 instance=ExtResource("5_uar03")]
-position = Vector2(287, 64)
+position = Vector2(288, 64)
 footprint = Vector2(32, 16)
 
 [node name="BedroomVanity" parent="Furniture" unique_id=1369170168 instance=ExtResource("7_jt4rs")]
-position = Vector2(325, 64)
+position = Vector2(328, 64)
 footprint = Vector2(40, 16)
 
 [node name="BathroomVanity" parent="Furniture" unique_id=190014262 instance=ExtResource("7_jt4rs")]
-position = Vector2(316, 464)
+position = Vector2(320, 464)
 footprint = Vector2(40, 16)
 
 [node name="BathroomSink" parent="Furniture" unique_id=1985299513 instance=ExtResource("30_oaksink")]
@@ -160,32 +160,32 @@ facing = 3
 footprint = Vector2(16, 32)
 
 [node name="BathroomCabinent3" parent="Furniture" unique_id=352803244 instance=ExtResource("23_wn87n")]
-position = Vector2(352, 464)
+position = Vector2(360, 464)
 
 [node name="BathroomStool" parent="Furniture" unique_id=2147217558 instance=ExtResource("13_q2vvc")]
-position = Vector2(316, 480)
+position = Vector2(320, 480)
 
 [node name="OakTub" parent="Furniture" unique_id=353646779 instance=ExtResource("25_n1eh5")]
-position = Vector2(276, 528)
+position = Vector2(280, 528)
 
 [node name="BedroomDesk" parent="Furniture" unique_id=182339414 instance=ExtResource("7_wwyrc")]
-position = Vector2(440, 189)
+position = Vector2(440, 192)
 
 [node name="BedroomDesk2" parent="Furniture" unique_id=1884190331 instance=ExtResource("7_wwyrc")]
-position = Vector2(408, 157)
+position = Vector2(408, 160)
 
 [node name="BedroomDesk3" parent="Furniture" unique_id=1321002803 instance=ExtResource("7_wwyrc")]
-position = Vector2(408, 173)
+position = Vector2(408, 176)
 
 [node name="BedroomDesk4" parent="Furniture" unique_id=1523780422 instance=ExtResource("7_wwyrc")]
-position = Vector2(424, 189)
+position = Vector2(424, 192)
 
 [node name="BedroomDesk5" parent="Furniture" unique_id=1695933504 instance=ExtResource("7_wwyrc")]
-position = Vector2(408, 189)
+position = Vector2(408, 192)
 
 [node name="BedroomRug" parent="Furniture" unique_id=395416943 instance=ExtResource("21_cf56p")]
 z_index = -1
-position = Vector2(289, 173)
+position = Vector2(288, 176)
 
 [node name="BedroomRug2" parent="Furniture" unique_id=821046097 instance=ExtResource("21_cf56p")]
 z_index = -1
@@ -196,7 +196,7 @@ position = Vector2(400, 88)
 footprint = Vector2(48, 40)
 
 [node name="BedroomCoffeeTable" parent="Furniture" unique_id=522678484 instance=ExtResource("21_wn87n")]
-position = Vector2(307, 155)
+position = Vector2(312, 160)
 facing = 3
 
 [node name="LivingRoomDesk" parent="Furniture" unique_id=797482268 instance=ExtResource("7_wwyrc")]
@@ -209,22 +209,22 @@ position = Vector2(24, 128)
 position = Vector2(24, 144)
 
 [node name="HallwayDesk" parent="Furniture" unique_id=929624473 instance=ExtResource("7_wwyrc")]
-position = Vector2(104, 270)
+position = Vector2(104, 272)
 
 [node name="HallwayDesk2" parent="Furniture" unique_id=982469858 instance=ExtResource("7_wwyrc")]
-position = Vector2(104, 286)
+position = Vector2(104, 288)
 
 [node name="HallwayDesk3" parent="Furniture" unique_id=163283675 instance=ExtResource("7_wwyrc")]
-position = Vector2(41, 319)
+position = Vector2(40, 320)
 
 [node name="KitchenSink" parent="Furniture" unique_id=1942988491 instance=ExtResource("30_oaksink")]
-position = Vector2(224, 271)
+position = Vector2(224, 272)
 
 [node name="KitchenCabinent" parent="Furniture" unique_id=2115160253 instance=ExtResource("23_wn87n")]
-position = Vector2(256, 271)
+position = Vector2(256, 272)
 
 [node name="KitchenCabinent2" parent="Furniture" unique_id=1677739035 instance=ExtResource("23_wn87n")]
-position = Vector2(176, 271)
+position = Vector2(176, 272)
 
 [node name="KitchenDesk" parent="Furniture" unique_id=1642389879 instance=ExtResource("7_wwyrc")]
 position = Vector2(232, 320)
@@ -251,13 +251,13 @@ position = Vector2(248, 336)
 position = Vector2(264, 336)
 
 [node name="OakFridge" parent="Furniture" unique_id=1441249990 instance=ExtResource("25_4ig67")]
-position = Vector2(200, 271)
+position = Vector2(200, 272)
 
 [node name="BedroomNightstand" parent="Furniture" unique_id=281858528 instance=ExtResource("11_evwak")]
 position = Vector2(440, 64)
 
 [node name="BedroomStool" parent="Furniture" unique_id=1193502947 instance=ExtResource("13_q2vvc")]
-position = Vector2(325, 81)
+position = Vector2(328, 80)
 
 [node name="KitchenStool" parent="Furniture" unique_id=990013792 instance=ExtResource("13_q2vvc")]
 position = Vector2(216, 352)
@@ -269,68 +269,68 @@ position = Vector2(264, 352)
 position = Vector2(240, 352)
 
 [node name="BedroomChair" parent="Furniture" unique_id=321318469 instance=ExtResource("11_os1m1")]
-position = Vector2(430, 167)
+position = Vector2(432, 168)
 
 [node name="BedroomRockingChair" parent="Furniture" unique_id=1512197349 instance=ExtResource("12_d37yu")]
-position = Vector2(270, 135)
+position = Vector2(272, 136)
 facing = 1
 
 [node name="BedroomCouchChair" parent="Furniture" unique_id=1604984488 instance=ExtResource("13_uyajb")]
-position = Vector2(269, 164)
+position = Vector2(272, 168)
 facing = 1
 
 [node name="LivingRoomCoffeeTable" parent="Furniture" unique_id=1217010988 instance=ExtResource("11_xqy2h")]
-position = Vector2(124, 132)
+position = Vector2(120, 136)
 facing = 1
 footprint = Vector2(24, 32)
 
 [node name="LivingRoomCouchChair" parent="Furniture" unique_id=358138931 instance=ExtResource("13_uyajb")]
-position = Vector2(166, 106)
+position = Vector2(168, 112)
 facing = 3
 
 [node name="LivingRoomRug" parent="Furniture" unique_id=1167981447 instance=ExtResource("18_qlsph")]
 z_index = -1
-position = Vector2(122, 158)
+position = Vector2(120, 160)
 footprint = Vector2(80, 80)
 
 [node name="LivingRoomCouchChair2" parent="Furniture" unique_id=303903888 instance=ExtResource("13_uyajb")]
-position = Vector2(163, 144)
+position = Vector2(160, 144)
 facing = 3
 
-[node name="LivingRoomFireplace" parent="Furniture" unique_id=1251979147 instance=ExtResource("18_cf56p")]
-position = Vector2(121, 65)
-
 [node name="LivingRoomCouch" parent="Furniture" unique_id=255963126 instance=ExtResource("20_q2vvc")]
-position = Vector2(81, 149)
+position = Vector2(80, 152)
 facing = 1
 footprint = Vector2(24, 64)
 
+[node name="LivingRoomFireplace" parent="Furniture" unique_id=1251979147 instance=ExtResource("18_cf56p")]
+position = Vector2(120, 64)
+
 [node name="OfficeFireplace" parent="Furniture" unique_id=1447865753 instance=ExtResource("18_cf56p")]
-position = Vector2(144, 464)
+position = Vector2(152, 464)
 
 [node name="OfficeDesk" parent="Furniture" unique_id=1347370478 instance=ExtResource("7_wwyrc")]
-position = Vector2(24, 463)
+position = Vector2(24, 464)
 
 [node name="OfficeDesk2" parent="Furniture" unique_id=1650560753 instance=ExtResource("7_wwyrc")]
-position = Vector2(108, 528)
+position = Vector2(112, 520)
 
 [node name="OfficeCouchChair" parent="Furniture" unique_id=859906311 instance=ExtResource("13_uyajb")]
-position = Vector2(135, 521)
+position = Vector2(136, 520)
 facing = 3
 
 [node name="OfficeCouchChair2" parent="Furniture" unique_id=330950641 instance=ExtResource("13_uyajb")]
-position = Vector2(77, 520)
+position = Vector2(88, 520)
 facing = 1
 
 [node name="OfficeBookshelf" parent="Furniture" unique_id=661952311 instance=ExtResource("6_2luas")]
 position = Vector2(32, 504)
 
 [node name="OfficeBookshelf2" parent="Furniture" unique_id=725976682 instance=ExtResource("6_2luas")]
-position = Vector2(48, 463)
+position = Vector2(48, 464)
 
 [node name="OfficeRug" parent="Furniture" unique_id=1866422268 instance=ExtResource("21_cf56p")]
 z_index = -1
-position = Vector2(108, 528)
+position = Vector2(112, 528)
 
 [node name="DiningRug" parent="Furniture" unique_id=1730634876 instance=ExtResource("18_qlsph")]
 z_index = -1
@@ -351,7 +351,7 @@ position = Vector2(408, 328)
 facing = 1
 
 [node name="DiningChair2" parent="Furniture" unique_id=1449304332 instance=ExtResource("11_os1m1")]
-position = Vector2(432, 289)
+position = Vector2(432, 288)
 
 [node name="DiningChair" parent="Furniture" unique_id=61686506 instance=ExtResource("11_os1m1")]
 position = Vector2(408, 304)
