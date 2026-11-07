@@ -37,9 +37,9 @@ func on_picked_up(player: Player) -> void:
 
 func _attach(parent: Node2D, offset: Vector2, on: bool) -> void:
 	if not is_instance_valid(_light):
+		# It lights the world; PlayerLight lights her from it (it's in the
+		# "world_lights" group).
 		_light = LIGHT_SCENE.instantiate()
-		# Light the world and the player's sprite (she's on her own light layer).
-		_light.range_item_cull_mask = 1 | 1 << (Player.LIGHT_LAYER - 1)
 	if _light.get_parent() != parent:
 		if _light.get_parent():
 			_light.reparent(parent, false)

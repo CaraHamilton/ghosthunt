@@ -13,7 +13,7 @@ extends Node2D
 ## The cone skips the player (Player.LIGHT_LAYER) so it doesn't light her body
 ## in its pattern; a soft round glow tints her purple instead.
 
-const CONE := preload("res://art/uv_beam.png")
+const CONE := preload("res://art/overworld/uv_beam.png")
 ## Light mask layer that only ghost residue is on.
 const RESIDUE_LIGHT_LAYER := 2
 

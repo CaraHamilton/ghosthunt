@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dste1o2bjn6nc"
-path="res://.godot/imported/uv_beam.png-72c1ef0f8fe7fc32840d183c9ef821ce.ctex"
+uid="uid://bvpnl37mubfwf"
+path="res://.godot/imported/gothic_window.png-251a17e72d4bef4dcf61905c1fc54e8f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/uv_beam.png"
-dest_files=["res://.godot/imported/uv_beam.png-72c1ef0f8fe7fc32840d183c9ef821ce.ctex"]
+source_file="res://art/house_tiles/gothic_window.png"
+dest_files=["res://.godot/imported/gothic_window.png-251a17e72d4bef4dcf61905c1fc54e8f.ctex"]
 
 [params]
 

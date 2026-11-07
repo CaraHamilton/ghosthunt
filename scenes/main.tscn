@@ -6,8 +6,8 @@
 [ext_resource type="Script" uid="uid://bvq5w3xo0rrhs" path="res://scripts/room_temperatures.gd" id="5_temps"]
 [ext_resource type="Script" uid="uid://ddkn5fotmn0va" path="res://scripts/toolbar.gd" id="6_toolbar"]
 [ext_resource type="PackedScene" uid="uid://pfuqxolbbngk" path="res://scenes/journal_panel.tscn" id="8_journal"]
-[ext_resource type="Script" path="res://scripts/ui/thermometer_overlay.gd" id="9_thermo"]
-[ext_resource type="Script" path="res://scripts/ui/emf_overlay.gd" id="10_emf"]
+[ext_resource type="Script" uid="uid://cqat3hj66g6aw" path="res://scripts/ui/thermometer_overlay.gd" id="9_thermo"]
+[ext_resource type="Script" uid="uid://cqdwroiwuhum4" path="res://scripts/ui/emf_overlay.gd" id="10_emf"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sanity_bg"]
 bg_color = Color(0.07, 0.05, 0.09, 0.85)
@@ -44,7 +44,7 @@ debug_start_at_hunt_threshold = true
 y_sort_enabled = true
 
 [node name="Player" parent="World" unique_id=1055623004 instance=ExtResource("3_player")]
-position = Vector2(288, 415)
+position = Vector2(30, 319)
 
 [node name="Darkness" type="CanvasModulate" parent="." unique_id=388993979]
 visible = false
@@ -135,9 +135,10 @@ theme_override_constants/outline_size = 8
 theme_override_font_sizes/font_size = 34
 horizontal_alignment = 1
 
-[node name="ThermometerOverlay" type="Control" parent="HUD"]
+[node name="ThermometerOverlay" type="Control" parent="HUD" unique_id=2040803221]
 visible = false
 layout_mode = 3
+anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_top = -192.0
@@ -147,9 +148,10 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("9_thermo")
 
-[node name="EmfOverlay" type="Control" parent="HUD"]
+[node name="EmfOverlay" type="Control" parent="HUD" unique_id=1649388073]
 visible = false
 layout_mode = 3
+anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_top = -144.0

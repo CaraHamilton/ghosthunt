@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dusg4iemexpj5"
-path="res://.godot/imported/toolbar.png-ac8181d069994402e80fc7803d2715c5.ctex"
+uid="uid://bscxyg3ea021w"
+path="res://.godot/imported/oak_table.png-699bb2592aa00355befae9b9b2f8acbe.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/toolbar.png"
-dest_files=["res://.godot/imported/toolbar.png-ac8181d069994402e80fc7803d2715c5.ctex"]
+source_file="res://art/furniture/oak/oak_table.png"
+dest_files=["res://.godot/imported/oak_table.png-699bb2592aa00355befae9b9b2f8acbe.ctex"]
 
 [params]
 

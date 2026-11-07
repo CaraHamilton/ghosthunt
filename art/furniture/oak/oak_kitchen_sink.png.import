@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckshetk2lieft"
-path="res://.godot/imported/toolbar_select.png-7de8facc1fb85c3535f581bf02c89b17.ctex"
+uid="uid://dodejryild161"
+path="res://.godot/imported/oak_kitchen_sink.png-ddd4679608dec60a81e44dd984e94c2f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/toolbar_select.png"
-dest_files=["res://.godot/imported/toolbar_select.png-7de8facc1fb85c3535f581bf02c89b17.ctex"]
+source_file="res://art/furniture/oak/oak_kitchen_sink.png"
+dest_files=["res://.godot/imported/oak_kitchen_sink.png-ddd4679608dec60a81e44dd984e94c2f.ctex"]
 
 [params]
 

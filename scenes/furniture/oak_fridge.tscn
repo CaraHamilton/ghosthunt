@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://rcdhnv2qmxdr"]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_qpe3i"]
+[ext_resource type="Texture2D" uid="uid://cmb1y6gsqxx1m" path="res://art/furniture/oak/oak_fridge.png" id="2_qpe3i"]
+
+[node name="OakFridge" type="StaticBody2D" unique_id=1441249990]
+script = ExtResource("1_qpe3i")
+art = ExtResource("2_qpe3i")
+footprint = Vector2(16, 16)
