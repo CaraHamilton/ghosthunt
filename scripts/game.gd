@@ -48,7 +48,6 @@ var ghost: Ghost
 ## The type of ghost haunting the house this game. The player's goal is to
 ## work this out from how the ghost behaves.
 var ghost_type: GhostBehavior.Type
-var _base_darkness: Color
 
 
 func _ready() -> void:
@@ -58,7 +57,6 @@ func _ready() -> void:
 	# while painting the map - they cover/darken the editor view too.)
 	darkness.visible = true
 	$HUD.visible = true
-	_base_darkness = darkness.color
 	player.global_position = house.get_player_start()
 	_fit_camera_to_house()
 	var furniture: Array[Rect2] = []
@@ -135,7 +133,6 @@ func _spawn_ghost() -> void:
 
 func _on_ghost_hunt_started() -> void:
 	hunts += 1
-	_flicker_lights()
 
 
 func _on_ghost_interacted(item: GhostInteractable) -> void:
@@ -187,13 +184,6 @@ func _flash_hurt() -> void:
 	var tween := create_tween()
 	hurt_flash.color.a = 0.55
 	tween.tween_property(hurt_flash, "color:a", 0.0, 0.8)
-
-
-func _flicker_lights() -> void:
-	var tween := create_tween()
-	for i in 3:
-		tween.tween_property(darkness, "color", _base_darkness.darkened(0.6), 0.08)
-		tween.tween_property(darkness, "color", _base_darkness, 0.12)
 
 
 ## For the identification goal later: returns true if the player's guess
