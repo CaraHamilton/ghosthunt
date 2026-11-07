@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://bdto74t7sicda"]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_prop"]
+[ext_resource type="Texture2D" uid="uid://bscxyg3ea021w" path="res://art/furniture/oak/oak_table.png" id="2_16kxy"]
+
+[node name="oak_table" type="StaticBody2D" unique_id=452231143]
+script = ExtResource("1_prop")
+art = ExtResource("2_16kxy")
+footprint = Vector2(64, 32)
+metadata/_custom_type_script = "uid://cd1tei14g3hwn"

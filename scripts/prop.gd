@@ -23,6 +23,10 @@ extends StaticBody2D
 ## every direction needs a frame: a missing "left" shows the "right" frame
 ## (and vice versa), and a missing "up" shows "down", as does anything else
 ## missing.
+##
+## A sheet can also hold animations: tag a run of frames (e.g. "lit") and set
+## `animation` to that tag's name to loop it, with each frame shown for as
+## long as its duration in Aseprite. The animation replaces the facing frame.
 
 enum Facing { DOWN, RIGHT, UP, LEFT }
 
@@ -45,6 +49,13 @@ const FALLBACK_TAGS := [
 @export var facing := Facing.DOWN:
 	set(value):
 		facing = value
+		queue_redraw()
+## Name of a tag in the sheet whose frames loop as an animation (e.g. "lit").
+## Leave empty to show the facing frame instead.
+@export var animation := "":
+	set(value):
+		animation = value
+		set_process(animation != "")
 		queue_redraw()
 ## Area on the floor (width, depth) in px when facing down or up. Blocks
 ## movement and the ghost.
@@ -73,7 +84,14 @@ const FALLBACK_TAGS := [
 		queue_redraw()
 
 
+## Cached sheet (see _sheet), and when it was read.
+var _sheet_cache := {}
+var _sheet_path := ""
+var _sheet_time := 0
+
+
 func _ready() -> void:
+	set_process(animation != "")
 	if Engine.is_editor_hint():
 		return
 	collision_mask = 0
@@ -126,18 +144,31 @@ func _draw() -> void:
 
 # --- Art and sheets -------------------------------------------------------
 
+func _process(_delta: float) -> void:
+	# Redraw while animating, so the frame advances.
+	if art and _frames_to_show().size() > 1:
+		queue_redraw()
+
+
 func _draw_art() -> void:
-	var frames := _sheet_frames()
+	var frames := _frames_to_show()
 	if frames.is_empty():
 		# A single picture.
 		draw_texture(art, Vector2(-floorf(art.get_width() / 2.0), -art.get_height()))
 		return
 
-	var f: Dictionary = frames[""]
-	for tag: String in FALLBACK_TAGS[facing]:
-		if frames.has(tag):
-			f = frames[tag]
-			break
+	var f: Dictionary = frames[0]
+	if frames.size() > 1:
+		# Pick the animation frame for now: all props share one clock.
+		var total := 0
+		for fr: Dictionary in frames:
+			total += fr.duration
+		var t := Time.get_ticks_msec() % maxi(total, 1)
+		for fr: Dictionary in frames:
+			if t < fr.duration:
+				f = fr
+				break
+			t -= fr.duration
 	var canvas: Vector2 = f.canvas
 	var region: Rect2 = f.region
 	# Place the frame's canvas bottom-centre on the origin (`offset` is where
@@ -146,14 +177,58 @@ func _draw_art() -> void:
 	draw_texture_rect_region(art, Rect2(pos, region.size), region)
 
 
-## The frames of `art`'s sheet by tag ("" = the first frame), each as
-## {region, canvas, offset}, read from the Aseprite JSON next to it. Empty if
-## `art` is a single picture.
-func _sheet_frames() -> Dictionary:
+## The frames to draw: the `animation` tag's frames if it has one, else the
+## single frame for `facing` (or the sheet's first frame). Empty if `art` is a
+## single picture.
+func _frames_to_show() -> Array:
+	var sheet := _sheet()
+	if sheet.is_empty():
+		return []
+	var frames: Array = sheet.frames
+	var tags: Dictionary = sheet.tags
+	var key := animation.to_lower()
+	if key != "" and tags.has(key):
+		var span: Vector2i = tags[key]
+		return frames.slice(span.x, span.y + 1)
+	var tag := facing_tag()
+	if tag != "":
+		return [frames[(tags[tag] as Vector2i).x]]
+	return [frames[0]]
+
+
+## True if `art`'s sheet has a tag called `tag` (any case).
+func has_tag(tag: String) -> bool:
+	return art != null and _sheet().get("tags", {}).has(tag.to_lower())
+
+
+## The tag of the frame shown for `facing` ("right" for a "left"-facing prop
+## with no "left" frame...), or "" if the sheet has none of them.
+func facing_tag() -> String:
+	for tag: String in FALLBACK_TAGS[facing]:
+		if has_tag(tag):
+			return tag
+	return ""
+
+
+## `art`'s sheet, read from the Aseprite JSON next to it: {frames, tags}.
+## frames: each {region, canvas, offset, duration (ms)}, in order.
+## tags: tag name (lower case) -> Vector2i(first frame, last frame).
+## Empty if `art` is a single picture.
+func _sheet() -> Dictionary:
 	var json_path := art.resource_path.get_basename() + ".json"
+	# Read it once; in the editor, again whenever it's re-exported.
+	var time := FileAccess.get_modified_time(json_path) if Engine.is_editor_hint() else 0
+	if json_path == _sheet_path and time == _sheet_time:
+		return _sheet_cache
+	_sheet_path = json_path
+	_sheet_time = time
+	_sheet_cache = _read_sheet(json_path)
+	return _sheet_cache
+
+
+func _read_sheet(json_path: String) -> Dictionary:
 	if not ResourceLoader.exists(json_path):
 		return {}
-	# In the editor, re-read it each time so a re-exported sheet shows up.
 	var mode := ResourceLoader.CACHE_MODE_REPLACE if Engine.is_editor_hint() else ResourceLoader.CACHE_MODE_REUSE
 	var json := ResourceLoader.load(json_path, "JSON", mode) as JSON
 	if json == null or not json.data is Dictionary:
@@ -165,20 +240,20 @@ func _sheet_frames() -> Dictionary:
 	if list.is_empty():
 		return {}
 
-	var frames := {}
-	for i in list.size():
-		var f: Dictionary = list[i]
-		var info := {
+	var frames := []
+	for f: Dictionary in list:
+		frames.append({
 			region = _rect(f.frame),
 			canvas = Vector2(f.sourceSize.w, f.sourceSize.h),
 			offset = _rect(f.spriteSourceSize).position,
-		}
-		if i == 0:
-			frames[""] = info
-		for t in data.get("meta", {}).get("frameTags", []):
-			if t.from == i:
-				frames[(t.name as String).to_lower()] = info
-	return frames
+			duration = int(f.get("duration", 100)),
+		})
+	var tags := {}
+	for t: Dictionary in data.get("meta", {}).get("frameTags", []):
+		var first := clampi(int(t.from), 0, frames.size() - 1)
+		var last := clampi(int(t.to), first, frames.size() - 1)
+		tags[(t.name as String).to_lower()] = Vector2i(first, last)
+	return {frames = frames, tags = tags}
 
 
 func _rect(r: Dictionary) -> Rect2:

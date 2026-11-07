@@ -3,17 +3,45 @@ class_name Sink
 extends GhostInteractable
 ## A sink the ghost can turn on (or off, if it's already running). The
 ## player can turn it on and off too, with E.
+##
+## Give it `art` like any furniture (see Prop): a sheet with "down", "right"...
+## frames for when it's off, plus a "<facing>_on" tag (e.g. "down_on") that
+## loops while it's running. A facing with no "_on" tag of its own uses the
+## one for the frame it shows (a "left" sink showing "right" uses "right_on").
+## Without art it draws a placeholder sink.
 
 signal toggled(is_on: bool)
 
 @export var is_on := false:
 	set(value):
 		is_on = value
-		queue_redraw()
+		_update_art()
+## The sink's picture or Aseprite sheet. Empty = placeholder.
+@export var art: Texture2D:
+	set(value):
+		art = value
+		_update_art()
+## Which way the sink faces (which frame of the sheet is shown).
+@export var facing := Prop.Facing.DOWN:
+	set(value):
+		facing = value
+		_update_art()
+## Area on the floor when facing right or left. Leave at (0, 0) to use
+## `footprint`.
+@export var side_footprint := Vector2.ZERO:
+	set(value):
+		side_footprint = value
+		_update_art()
+## How tall (px) the front of the cabinet is in the art: the UV residue is
+## drawn this far above the middle of the footprint, on the counter.
+@export var front_height := 13.0
 
-const HEIGHT := 12.0  # how tall the cabinet front is drawn
+const HEIGHT := 12.0  # how tall the placeholder's cabinet front is drawn
 
 var _t := 0.0
+## Draws `art` (a Prop just for its drawing - the sink itself is the solid
+## part). Not saved in the scene.
+var _art_node: Prop
 
 
 ## Note: the sink's exported settings (footprint, player_can_use,
@@ -24,8 +52,46 @@ func _init() -> void:
 	residue_offset = Vector2(0, -HEIGHT - 7.0)  # on the counter
 
 
+func _ready() -> void:
+	if not Engine.is_editor_hint():
+		footprint = current_footprint()
+		if art:
+			residue_offset = Vector2(0, -footprint.y / 2.0 - front_height)
+	super()
+	_update_art()
+
+
+## The footprint for the way the sink is facing.
+func current_footprint() -> Vector2:
+	if (facing == Prop.Facing.RIGHT or facing == Prop.Facing.LEFT) and side_footprint != Vector2.ZERO:
+		return side_footprint
+	return footprint
+
+
+## Shows the art's frame for `facing`, or its "_on" animation while running.
+func _update_art() -> void:
+	queue_redraw()
+	if not is_inside_tree():
+		return  # _ready does it
+	if art == null:
+		if _art_node:
+			_art_node.queue_free()
+			_art_node = null
+		return
+	if _art_node == null:
+		_art_node = Prop.new()
+		_art_node.solid = false
+		add_child(_art_node, false, INTERNAL_MODE_FRONT)
+	_art_node.art = art
+	_art_node.facing = facing
+	_art_node.footprint = footprint
+	_art_node.side_footprint = side_footprint
+	var on_tag := _art_node.facing_tag() + "_on"
+	_art_node.animation = on_tag if is_on and _art_node.has_tag(on_tag) else ""
+
+
 func _process(delta: float) -> void:
-	if is_on:
+	if is_on and art == null:
 		_t += delta
 		queue_redraw()
 
@@ -55,6 +121,8 @@ func describe_last_interaction() -> String:
 # --- Placeholder art ------------------------------------------------------
 
 func _draw() -> void:
+	if art:
+		return  # _art_node draws it
 	var w := footprint.x
 	var d := footprint.y
 	var top := Rect2(-w / 2.0, -d - HEIGHT, w, d)  # counter top
