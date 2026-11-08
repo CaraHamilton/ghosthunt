@@ -22,7 +22,7 @@ extends CharacterBody2D
 ## Hunts only start once the player's sanity is low enough. During a hunt,
 ## touching the player catches them (costing them sanity) and ends the hunt.
 ##
-## Appearances: every so often (also only at low enough sanity) the ghost
+## Appearances: every so often (at any sanity) the ghost
 ## simply becomes visible for 2-5 seconds wherever it is, carrying on with
 ## whatever it was doing. It doesn't go after the player and is harmless.
 ##
@@ -110,8 +110,8 @@ const GLOW_LIGHT_LAYER := 4
 ## cooldown.
 @export var appearance_chance := 0.2
 @export var appearance_check_interval := 1.0
-## Random wait (seconds) after each appearance - and from the moment the
-## player's sanity first drops low enough - before the next one.
+## Random wait (seconds) after each appearance - and from the start of the
+## game - before the next one.
 @export var min_appearance_cooldown := 20.0
 @export var max_appearance_cooldown := 45.0
 ## How long (seconds) an appearance lasts, picked at random each time
@@ -121,9 +121,6 @@ const GLOW_LIGHT_LAYER := 4
 ## A hunt can't start during an appearance, nor for this many seconds after
 ## one ends.
 @export var hunt_delay_after_appearance := 15.0
-## Appearances only happen once the player's sanity is below this fraction
-## of full (0.75 = 75%).
-@export_range(0.0, 1.0) var appearance_sanity_threshold := 0.75
 
 @export_group("Wandering")
 @export var wander_speed := 22.0
@@ -186,8 +183,6 @@ var _hunt_check_timer := 0.0
 ## Seconds left in the current appearance (0 when there isn't one).
 var _appearance_time_left := 0.0
 var _appearance_cooldown := 0.0
-## Like `_hunts_locked`, for appearances.
-var _appearances_locked := true
 var _appearance_check_timer := 0.0
 var _wander_target := Vector2.INF
 var _wander_pause := 0.0
@@ -525,13 +520,6 @@ func _update_appearance(delta: float) -> void:
 			# No hunt straight after an appearance.
 			_hunt_cooldown = maxf(_hunt_cooldown, hunt_delay_after_appearance)
 			appearance_ended.emit()
-		return
-	if player.sanity_ratio >= appearance_sanity_threshold:
-		_appearances_locked = true
-		return
-	if _appearances_locked:
-		_appearances_locked = false
-		_start_appearance_cooldown()
 		return
 	_appearance_cooldown -= delta
 	if _appearance_cooldown > 0.0:

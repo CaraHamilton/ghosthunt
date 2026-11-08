@@ -52,7 +52,7 @@ func get_evidence() -> Array[Evidence.Type]:
 	if shows_emf_5():
 		result.append(Evidence.Type.EMF_5)
 	if possesses_doll():
-		result.append(Evidence.Type.TOY_INTERACTION)
+		result.append(Evidence.Type.DOLL_POSSESSION)
 	if leaves_uv_residue():
 		result.append(Evidence.Type.UV_RESIDUE)
 	return result

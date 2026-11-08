@@ -4,12 +4,12 @@ extends RefCounted
 ## (see GhostBehavior.get_evidence); the player records what they've found in
 ## the journal to narrow down which ghost it is.
 
-enum Type { FREEZING, EMF_5, TOY_INTERACTION, UV_RESIDUE }
+enum Type { FREEZING, EMF_5, DOLL_POSSESSION, UV_RESIDUE }
 
 const NAMES := {
 	Type.FREEZING: "Freezing",
 	Type.EMF_5: "EMF 5",
-	Type.TOY_INTERACTION: "Toy interaction",
+	Type.DOLL_POSSESSION: "Doll possession",
 	Type.UV_RESIDUE: "UV Residue",
 }
 

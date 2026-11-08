@@ -9,8 +9,8 @@ extends CharacterBody2D
 ## ghost's line of sight.
 ##
 ## Sanity starts full and slowly drains while in the house (it stops, but
-## doesn't recover, outside). Being caught by the ghost costs a big chunk; at
-## 0 it's game over. Only restore_sanity() (e.g. medicine) brings it back up.
+## doesn't recover, outside). Reaching 0 isn't game over (being caught by the
+## ghost is). Only restore_sanity() (e.g. medicine) brings it back up.
 
 ## Emitted once when sanity hits 0.
 signal sanity_depleted

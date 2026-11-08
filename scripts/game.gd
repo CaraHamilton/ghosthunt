@@ -10,9 +10,6 @@ const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_rea
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
 
-## Fraction of full sanity lost each time the ghost catches the player
-## (0.5 = 50%: two catches empty even a full sanity bar).
-@export_range(0.0, 1.0) var catch_sanity_cost := 0.5
 ## Debug: draw the ghost faintly while it's invisible.
 @export var debug_show_ghost := false
 ## Debug: show the exact sanity percentage on the sanity bar (players
@@ -45,7 +42,6 @@ var survived_time := 0.0
 var hunts := 0
 var is_game_over := false
 var times_caught := 0
-var _game_over_reason := ""
 ## The ghost haunting the house. It exists for the whole game.
 var ghost: Ghost
 ## The type of ghost haunting the house this game. The player's goal is to
@@ -94,7 +90,6 @@ func _ready() -> void:
 		furniture.append(obstacle.get_footprint())
 	house.build_navigation(furniture)
 	game_over_panel.visible = false
-	player.sanity_depleted.connect(_on_player_sanity_depleted)
 	_spawn_ghost()
 	if debug_start_at_hunt_threshold:
 		# Just under the line where this ghost (type included) may start hunting.
@@ -170,27 +165,19 @@ func _on_ghost_interacted(item: GhostInteractable) -> void:
 		print("[debug] The ghost %s" % item.describe_last_interaction())
 
 
-## Being caught costs a big chunk of sanity (the ghost ends its hunt). If it
-## empties their sanity, the game is over.
+## Being caught by the ghost is game over. (Running out of sanity isn't -
+## it just keeps the ghost hunting.)
 func _on_ghost_caught_player() -> void:
-	times_caught += 1
-	_flash_hurt()
-	_game_over_reason = "THE GHOST GOT YOU"
-	player.lose_sanity(player.max_sanity * catch_sanity_cost)
-	if not is_game_over:
-		_game_over_reason = ""
-
-
-func _on_player_sanity_depleted() -> void:
 	if is_game_over:
 		return
+	times_caught += 1
+	_flash_hurt()
 	is_game_over = true
 	ghost.set_physics_process(false)
 	journal_panel.close()
 	player.die()
-	game_over_title.text = _game_over_reason if _game_over_reason != "" else "YOUR SANITY RAN OUT"
-	game_over_stats.text = "You survived %d seconds and were caught %d time%s." % [
-		int(survived_time), times_caught, "" if times_caught == 1 else "s"]
+	game_over_title.text = "THE GHOST GOT YOU"
+	game_over_stats.text = "You survived %d seconds." % int(survived_time)
 	game_over_panel.visible = true
 
 

@@ -31,6 +31,10 @@ extends StaticBody2D
 ## How close (px) the player must be to the footprint to use it.
 @export var player_reach := 14.0
 
+## Chance (0-1) that a residue-leaving ghost leaves UV residue each time it
+## touches something.
+const RESIDUE_CHANCE := 0.5
+
 ## Whether residue-leaving ghosts leave UV residue on this (false for the
 ## doll). Set by each interactable, in _init.
 var can_have_residue := true
@@ -99,7 +103,9 @@ func ghost_can_use(_ghost: Ghost) -> bool:
 ## Called by the ghost. Don't override this - override _on_ghost_interact.
 func ghost_interact(ghost: Ghost) -> void:
 	_last_interaction_time = _game_time()
-	if ghost.behavior.leaves_uv_residue():
+	# Residue-leaving ghosts only leave it some of the time. Once there, it
+	# stays.
+	if ghost.behavior.leaves_uv_residue() and randf() < RESIDUE_CHANCE:
 		has_residue = true
 	_on_ghost_interact(ghost)
 	if Game.current:
