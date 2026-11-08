@@ -18,12 +18,19 @@ extends GhostInteractable
 ## its own uses the one for the frame it shows (a "left" one showing "right"
 ## uses "right_knocked").
 ##
-## Placing it: the origin is the bottom-centre of its footprint, like
-## furniture. On the floor, snap the origin to the bottom-centre of a tile.
-## On a table, put the origin just below the table's front edge (so it's
-## drawn in front of the table) and set `raise` until the art sits on the
-## tabletop - the blue box shows where it rests. Raised, it doesn't block
-## anything (the table does).
+## Placing it: with `snap_to_tile` on (small decor), just drop it on a tile,
+## on the floor or on a table. When the game starts it snaps to that tile
+## the same way a placed tool does: standing on the floor (bottom-centre of
+## the tile, solid), or up on the table's top if a table covers the tile.
+## The editor shows where it will be: a white box on the floor, blue on a
+## table, red if it can't go there (a wall, solid furniture, off the floor) -
+## then it stays where you put it. A snapped one takes its tile, so the
+## player can't place a tool on top of it.
+##
+## With `snap_to_tile` off (furniture bigger than a tile, like a sink),
+## place it by hand like a Prop: the origin is the bottom-centre of its
+## footprint, and `raise` lifts the art if it needs to sit on something.
+## Raised, it doesn't block anything (what's under it does).
 
 ## True while it shows its other look (knocked over, switched on...).
 @export var changed := false:
@@ -59,8 +66,14 @@ extends GhostInteractable
 	set(value):
 		residue_position = value
 		queue_redraw()
-## How far (px) the art is drawn above the origin: 0 on the floor. On a
-## table, the table's surface height plus how far back on the top it sits.
+## Snap to the floor tile it's dropped on (or onto the table there), like a
+## placed tool. Turn off to place it by hand (furniture bigger than a tile).
+@export var snap_to_tile := true:
+	set(value):
+		snap_to_tile = value
+		_update_art()
+## Only with `snap_to_tile` off: how far (px) the art is drawn above the
+## origin - e.g. to sit on a counter. 0 on the floor.
 @export var raise := 0.0:
 	set(value):
 		raise = value
@@ -68,17 +81,68 @@ extends GhostInteractable
 
 ## Draws `art` (a Prop just for its drawing). Not saved in the scene.
 var _art_node: Prop
+## How far (px) the art is actually drawn above the origin (from snapping,
+## or `raise`).
+var _lift := 0.0
+## In the editor: from the node to where it will snap to (the node itself
+## only moves there when the game starts).
+var _shift := Vector2.ZERO
+## In the editor: whether its tile can take it (red box if not).
+var _snap_ok := true
 
 
 func _ready() -> void:
-	if not Engine.is_editor_hint():
+	if Engine.is_editor_hint():
+		set_notify_transform(true)
+	else:
+		_lift = raise
+		if snap_to_tile:
+			var spot := snap_spot()
+			if spot.get("ok", false):
+				global_position = spot.position
+				_lift = spot.elevation
+				# Its tile is taken: no tools placed on top of it.
+				set_meta("place_tile", spot.cell)
+				add_to_group(House.PLACED_GROUP)
+			else:
+				push_warning("%s can't snap to its tile (wall, furniture or no floor)" % name)
 		footprint = current_footprint()
 		# Up on a table it's out of the way; the table blocks instead.
-		solid = solid and raise == 0.0
-		player_zone_raise = raise
-		residue_offset = residue_position - Vector2(0, raise)
+		solid = solid and _lift == 0.0
+		player_zone_raise = _lift
+		residue_offset = residue_position - Vector2(0, _lift)
 	super()
 	_update_art()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSFORM_CHANGED:
+		_update_art()
+
+
+## Where it snaps to (see House.get_place_spot): on a table if one covers
+## its tile, else standing on the floor with its origin at the bottom-centre
+## of the tile. Empty if it isn't in a house.
+func snap_spot() -> Dictionary:
+	var house := _house()
+	if house == null or house.floor_layer == null:
+		return {}
+	# 2px up: an origin on a tile's bottom edge (like furniture's), or
+	# just below it, means that tile, not the one below.
+	var cell := house.tile_at(global_position - Vector2(0, 2))
+	# The house's furniture, straight from the scene (furniture only
+	# registers itself as an obstacle once the game runs).
+	var props := house.find_children("*", "Prop", true, false).filter(
+		func(p: Prop) -> bool: return p.solid and not p.flat)
+	var spot := house.get_place_spot(cell, true, props)
+	return spot
+
+
+func _house() -> House:
+	var node := get_parent()
+	while node and not node is House:
+		node = node.get_parent()
+	return node as House
 
 
 ## The footprint for the way it's facing.
@@ -130,6 +194,8 @@ func _update_art() -> void:
 	queue_redraw()
 	if not is_inside_tree():
 		return  # _ready does it
+	if Engine.is_editor_hint():
+		_preview_snap()
 	if art == null:
 		if _art_node:
 			_art_node.queue_free()
@@ -142,26 +208,47 @@ func _update_art() -> void:
 		add_child(_art_node, false, INTERNAL_MODE_FRONT)
 	_art_node.art = art
 	_art_node.facing = facing
-	_art_node.position = art_offset - Vector2(0, raise)
+	_art_node.position = _shift + art_offset - Vector2(0, _lift)
+	# In the editor the node hasn't moved in front of the table yet, so lift
+	# the preview over it to show it on top.
+	_art_node.z_index = 1 if Engine.is_editor_hint() and _lift > 0.0 else 0
 	var tag := change_tag()
 	_art_node.animation = tag if changed and tag != "" else ""
+
+
+## Editor: works out where it will snap to, for drawing it there.
+func _preview_snap() -> void:
+	_shift = Vector2.ZERO
+	_lift = raise
+	_snap_ok = true
+	if not snap_to_tile:
+		return
+	var spot := snap_spot()
+	if spot.is_empty():
+		return
+	_snap_ok = spot.ok
+	if spot.ok:
+		_shift = spot.position - global_position
+		_lift = spot.elevation
 
 
 func _draw() -> void:
 	if not Engine.is_editor_hint():
 		return
 	var size := current_footprint()
-	var r := Rect2(-size.x / 2.0, -size.y, size.x, size.y)
-	if raise == 0.0:
+	var r := Rect2(_shift + Vector2(-size.x / 2.0, -size.y), size)
+	if not _snap_ok:
+		draw_rect(r, Color(1, 0.2, 0.2, 0.9), false, 1.0)  # can't go here
+	elif _lift == 0.0:
 		draw_rect(r, Color(1, 1, 1, 0.4), false, 1.0)  # what it blocks
 	else:
 		# Where it rests up on the table.
-		draw_rect(Rect2(r.position - Vector2(0, raise), r.size), Color(0.4, 0.8, 1, 0.7), false, 1.0)
-		draw_line(Vector2.ZERO, Vector2(0, -raise), Color(0.4, 0.8, 1, 0.4), 1.0)
+		draw_rect(Rect2(r.position - Vector2(0, _lift), r.size), Color(0.4, 0.8, 1, 0.7), false, 1.0)
+		draw_line(_shift, _shift - Vector2(0, _lift), Color(0.4, 0.8, 1, 0.4), 1.0)
 	if art == null:
-		draw_rect(Rect2(r.position - Vector2(0, raise + 8), Vector2(r.size.x, r.size.y + 8)),
+		draw_rect(Rect2(r.position - Vector2(0, _lift + 8), Vector2(r.size.x, r.size.y + 8)),
 			Color(0.6, 0.5, 0.4))
 	# Where UV residue would glow.
-	var g := residue_position - Vector2(0, raise)
+	var g := _shift + residue_position - Vector2(0, _lift)
 	draw_line(g - Vector2(2, 0), g + Vector2(2, 0), Color(0.35, 1, 0.45, 0.9), 1.0)
 	draw_line(g - Vector2(0, 2), g + Vector2(0, 2), Color(0.35, 1, 0.45, 0.9), 1.0)

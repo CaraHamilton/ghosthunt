@@ -102,9 +102,3 @@ func _physics_process(delta: float) -> void:
 func _save_traces() -> void:
 	if item:
 		item.last_ghost_touch_time = _last_interaction_time
-
-
-func _draw() -> void:
-	draw_set_transform(Vector2(0, -elevation), 0.0, Vector2(1.0, 0.45))
-	draw_circle(Vector2.ZERO, 4.0, Color(0, 0, 0, 0.3))  # shadow
-	draw_set_transform(Vector2.ZERO)

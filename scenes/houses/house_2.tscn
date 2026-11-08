@@ -10,20 +10,20 @@
 [ext_resource type="PackedScene" path="res://scenes/furniture/oak_desk.tscn" id="7_wwyrc"]
 [ext_resource type="PackedScene" path="res://scenes/furniture/oak_nightstand.tscn" id="11_evwak"]
 [ext_resource type="PackedScene" path="res://scenes/furniture/oak_chair.tscn" id="11_os1m1"]
-[ext_resource type="PackedScene" path="res://scenes/furniture/oak_coffee_table.tscn" id="11_xqy2h"]
+[ext_resource type="PackedScene" uid="uid://bo0is3v5hgpkg" path="res://scenes/furniture/oak_coffee_table.tscn" id="11_xqy2h"]
 [ext_resource type="PackedScene" path="res://scenes/furniture/purple_rocking_chair.tscn" id="12_d37yu"]
 [ext_resource type="PackedScene" path="res://scenes/furniture/oak_stool.tscn" id="13_q2vvc"]
-[ext_resource type="PackedScene" path="res://scenes/furniture/purple_couch_chair.tscn" id="13_uyajb"]
 [ext_resource type="PackedScene" uid="uid://ckmuedti5sv3r" path="res://scenes/furniture/gray_fireplace.tscn" id="18_cf56p"]
 [ext_resource type="PackedScene" path="res://scenes/furniture/maroon_rug_large.tscn" id="18_qlsph"]
 [ext_resource type="PackedScene" path="res://scenes/furniture/green_couch.tscn" id="20_q2vvc"]
 [ext_resource type="PackedScene" path="res://scenes/furniture/yellow_rug_med.tscn" id="21_cf56p"]
-[ext_resource type="PackedScene" path="res://scenes/furniture/purple_coffee_table.tscn" id="21_wn87n"]
+[ext_resource type="PackedScene" uid="uid://dbx24uqk7vvue" path="res://scenes/furniture/purple_coffee_table.tscn" id="21_wn87n"]
 [ext_resource type="PackedScene" uid="uid://duc1c52xh0c4" path="res://scenes/furniture/oak_cabinent.tscn" id="23_wn87n"]
 [ext_resource type="PackedScene" uid="uid://bdto74t7sicda" path="res://scenes/furniture/oak_table.tscn" id="24_cf56p"]
 [ext_resource type="PackedScene" uid="uid://rcdhnv2qmxdr" path="res://scenes/furniture/oak_fridge.tscn" id="25_4ig67"]
 [ext_resource type="PackedScene" uid="uid://dmdqmu31femkc" path="res://scenes/furniture/oak_tub.tscn" id="25_n1eh5"]
 [ext_resource type="PackedScene" uid="uid://g7gakc3x0djf" path="res://scenes/house_decor/book_stack.tscn" id="25_xxh47"]
+[ext_resource type="PackedScene" uid="uid://b76psf0nj7mix" path="res://scenes/furniture/purple_fancy_chair.tscn" id="25_yq2st"]
 [ext_resource type="PackedScene" uid="uid://dxg33dpa18u4h" path="res://scenes/furniture/oak_kitchen_sink.tscn" id="30_oaksink"]
 
 [node name="House" type="Node2D" unique_id=845306811]
@@ -167,7 +167,7 @@ position = Vector2(360, 464)
 position = Vector2(320, 480)
 
 [node name="BathroomTub" parent="Furniture" unique_id=353646779 instance=ExtResource("25_n1eh5")]
-position = Vector2(280, 528)
+position = Vector2(280, 520)
 
 [node name="BedroomDesk" parent="Furniture" unique_id=182339414 instance=ExtResource("7_wwyrc")]
 position = Vector2(440, 192)
@@ -198,17 +198,14 @@ footprint = Vector2(48, 40)
 
 [node name="BedroomCoffeeTable" parent="Furniture" unique_id=522678484 instance=ExtResource("21_wn87n")]
 position = Vector2(312, 160)
-facing = 3
+facing = 1
+side_footprint = Vector2(16, 32)
 
 [node name="BedroomChair" parent="Furniture" unique_id=321318469 instance=ExtResource("11_os1m1")]
 position = Vector2(432, 168)
 
 [node name="BedroomRockingChair" parent="Furniture" unique_id=1512197349 instance=ExtResource("12_d37yu")]
 position = Vector2(272, 136)
-facing = 1
-
-[node name="BedroomCouchChair" parent="Furniture" unique_id=1604984488 instance=ExtResource("13_uyajb")]
-position = Vector2(272, 168)
 facing = 1
 
 [node name="BedroomNightstand" parent="Furniture" unique_id=281858528 instance=ExtResource("11_evwak")]
@@ -222,7 +219,7 @@ position = Vector2(408, 192)
 raise = 10.0
 
 [node name="HallwayBookStack" parent="Furniture" unique_id=113220838 instance=ExtResource("25_xxh47")]
-position = Vector2(104, 289)
+position = Vector2(104, 288)
 raise = 11.0
 
 [node name="HallwayDesk" parent="Furniture" unique_id=929624473 instance=ExtResource("7_wwyrc")]
@@ -301,20 +298,12 @@ raise = 11.0
 [node name="LivingRoomCoffeeTable" parent="Furniture" unique_id=1217010988 instance=ExtResource("11_xqy2h")]
 position = Vector2(120, 136)
 facing = 1
-footprint = Vector2(24, 32)
-
-[node name="LivingRoomCouchChair" parent="Furniture" unique_id=358138931 instance=ExtResource("13_uyajb")]
-position = Vector2(168, 112)
-facing = 3
+footprint = Vector2(16, 32)
 
 [node name="LivingRoomRug" parent="Furniture" unique_id=1167981447 instance=ExtResource("18_qlsph")]
 z_index = -1
 position = Vector2(120, 160)
 footprint = Vector2(80, 80)
-
-[node name="LivingRoomCouchChair2" parent="Furniture" unique_id=303903888 instance=ExtResource("13_uyajb")]
-position = Vector2(160, 144)
-facing = 3
 
 [node name="LivingRoomCouch" parent="Furniture" unique_id=255963126 instance=ExtResource("20_q2vvc")]
 position = Vector2(80, 152)
@@ -323,40 +312,30 @@ footprint = Vector2(24, 64)
 
 [node name="LivingRoomFireplace" parent="Furniture" unique_id=1251979147 instance=ExtResource("18_cf56p")]
 position = Vector2(120, 64)
+side_footprint = Vector2(16, 32)
 
 [node name="OfficeFireplace" parent="Furniture" unique_id=1447865753 instance=ExtResource("18_cf56p")]
-position = Vector2(144, 464)
+position = Vector2(160, 464)
 
 [node name="OfficeDesk" parent="Furniture" unique_id=1347370478 instance=ExtResource("7_wwyrc")]
 position = Vector2(24, 464)
 
 [node name="OfficeDesk2" parent="Furniture" unique_id=1650560753 instance=ExtResource("7_wwyrc")]
-position = Vector2(104, 520)
-
-[node name="OfficeDesk3" parent="Furniture" unique_id=1300366154 instance=ExtResource("7_wwyrc")]
-position = Vector2(120, 520)
-
-[node name="OfficeCouchChair" parent="Furniture" unique_id=859906311 instance=ExtResource("13_uyajb")]
-position = Vector2(144, 520)
-facing = 3
-
-[node name="OfficeCouchChair2" parent="Furniture" unique_id=330950641 instance=ExtResource("13_uyajb")]
-position = Vector2(80, 520)
-facing = 1
+position = Vector2(88, 512)
 
 [node name="OfficeBookshelf" parent="Furniture" unique_id=661952311 instance=ExtResource("6_2luas")]
-position = Vector2(32, 504)
+position = Vector2(128, 464)
 
 [node name="OfficeBookshelf2" parent="Furniture" unique_id=725976682 instance=ExtResource("6_2luas")]
 position = Vector2(48, 464)
 
 [node name="OfficeBookStack" parent="Furniture" unique_id=2077446007 instance=ExtResource("25_xxh47")]
-position = Vector2(104, 521)
+position = Vector2(24, 456)
 raise = 11.0
 
 [node name="OfficeRug" parent="Furniture" unique_id=1866422268 instance=ExtResource("21_cf56p")]
 z_index = -1
-position = Vector2(112, 528)
+position = Vector2(88, 520)
 
 [node name="DiningRug" parent="Furniture" unique_id=1730634876 instance=ExtResource("18_qlsph")]
 z_index = -1
@@ -382,3 +361,23 @@ position = Vector2(432, 288)
 [node name="DiningChair" parent="Furniture" unique_id=61686506 instance=ExtResource("11_os1m1")]
 position = Vector2(408, 304)
 facing = 1
+
+[node name="LivingRoomFancyChair" parent="Furniture" unique_id=839130499 instance=ExtResource("25_yq2st")]
+position = Vector2(160, 112)
+facing = 3
+
+[node name="LivingRoomFancyChair2" parent="Furniture" unique_id=2099992280 instance=ExtResource("25_yq2st")]
+position = Vector2(152, 144)
+facing = 3
+
+[node name="BedroomFancyChair" parent="Furniture" unique_id=1995624506 instance=ExtResource("25_yq2st")]
+position = Vector2(272, 168)
+facing = 1
+
+[node name="OfficeFancyChair" parent="Furniture" unique_id=1175828013 instance=ExtResource("25_yq2st")]
+position = Vector2(56, 512)
+facing = 1
+
+[node name="OfficeFancyChair2" parent="Furniture" unique_id=478731793 instance=ExtResource("25_yq2st")]
+position = Vector2(120, 512)
+facing = 3

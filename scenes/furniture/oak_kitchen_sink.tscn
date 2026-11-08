@@ -9,4 +9,5 @@ art = ExtResource("2_w3lm3")
 side_footprint = Vector2(16, 32)
 residue_position = Vector2(0, -21)
 footprint = Vector2(32, 16)
+snap_to_tile = false
 player_can_use = true

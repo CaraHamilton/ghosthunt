@@ -32,8 +32,12 @@ const OUTSIDE_COLOR := Color("1d2236")
 ## The light put on each window (see _add_window_lights).
 const WINDOW_LIGHT := preload("res://scenes/window_light.tscn")
 
-@onready var floor_layer: TileMapLayer = $Floor
-@onready var walls_layer: TileMapLayer = $Walls
+## The layers (looked up each time, so placement works before the house is
+## ready - furniture placed on it works out its spot in its own _ready).
+var floor_layer: TileMapLayer:
+	get: return get_node_or_null("Floor") as TileMapLayer
+var walls_layer: TileMapLayer:
+	get: return get_node_or_null("Walls") as TileMapLayer
 
 var _rooms: Array[Room] = []
 var _bounds := Rect2()
@@ -143,8 +147,10 @@ func _get_room_rects(room_name: String) -> Array[Rect2]:
 
 ## Items are placed on the floor tiles' grid, one per tile.
 const PLACED_GROUP := &"placed_items"
-## How far (px) up from a tile's centre an item's bottom sits.
-const PLACE_OFFSET := Vector2(0, 4)
+## On a table, how far (px) behind the front edge of the tile's part of the
+## top an item's bottom rests. 0: items (16px footprints) fill their tile,
+## so on a table's front row their bottom is right on the table's front edge.
+const SURFACE_FRONT_INSET := 0.0
 
 
 ## The floor tile containing `point`.
@@ -169,10 +175,14 @@ func tile_rect(cell: Vector2i) -> Rect2:
 ##   rect      - the tile's square as it looks (raised onto a table's top)
 ##   surface   - the Prop it sits on, or null on the floor
 ## With `on_surfaces` false (an item that only goes on the floor), a tile on
-## a table counts as blocked.
-func get_place_spot(cell: Vector2i, on_surfaces := true) -> Dictionary:
+## a table counts as blocked. `obstacles` is the furniture to check; by
+## default everything registered in "nav_obstacles" (only filled in once the
+## game runs - Switchable passes the house's Props itself).
+func get_place_spot(cell: Vector2i, on_surfaces := true, obstacles: Variant = null) -> Dictionary:
 	var rect := tile_rect(cell)
-	var spot := {ok = false, cell = cell, position = rect.get_center() + PLACE_OFFSET,
+	# Items have 16px footprints: the bottom-centre of the tile, so the item
+	# sits exactly over it.
+	var spot := {ok = false, cell = cell, position = Vector2(rect.get_center().x, rect.end.y),
 		elevation = 0.0, rect = rect, surface = null}
 	if floor_layer.get_cell_source_id(cell) == -1 or _is_solid_wall(cell) or is_tile_taken(cell):
 		return spot
@@ -180,7 +190,9 @@ func get_place_spot(cell: Vector2i, on_surfaces := true) -> Dictionary:
 	# otherwise any furniture overlapping the tile is in the way.
 	var surface: Prop = null
 	var blocked := false
-	for obstacle in get_tree().get_nodes_in_group("nav_obstacles"):
+	if obstacles == null:
+		obstacles = get_tree().get_nodes_in_group("nav_obstacles")
+	for obstacle: Node2D in obstacles:
 		var fp: Rect2 = obstacle.get_footprint()
 		if obstacle is Prop and obstacle.surface and fp.has_point(rect.get_center()):
 			surface = obstacle
@@ -190,9 +202,10 @@ func get_place_spot(cell: Vector2i, on_surfaces := true) -> Dictionary:
 		return spot
 	spot.ok = true
 	if surface:
-		# Rest it on the table's top, kept a little in from its edges.
-		var top := surface.get_footprint().grow(-5.0)
-		var rest: Vector2 = spot.position
+		# Rest it near the front of the table's top, over this tile (kept a
+		# little in from the sides, bottom on the tile's front edge).
+		var top := surface.get_footprint().grow_individual(-5.0, -2.0, -5.0, -SURFACE_FRONT_INSET)
+		var rest := Vector2(rect.get_center().x, rect.end.y - SURFACE_FRONT_INSET)
 		rest = rest.clamp(top.position, top.end)
 		var front := surface.get_footprint().end.y + 0.5
 		spot.surface = surface
@@ -211,10 +224,19 @@ func is_tile_taken(cell: Vector2i) -> bool:
 
 
 func _is_solid_wall(cell: Vector2i) -> bool:
-	var wall_cell := walls_layer.local_to_map(walls_layer.to_local(tile_rect(cell).get_center()))
-	var data := walls_layer.get_cell_tile_data(wall_cell)
-	return data != null and walls_layer.tile_set.get_physics_layers_count() > 0 \
-		and data.get_collision_polygons_count(0) > 0
+	var walls := walls_layer
+	var point := walls.to_local(tile_rect(cell).get_center())
+	var wall_cell := walls.local_to_map(point)
+	var data := walls.get_cell_tile_data(wall_cell)
+	if data == null or walls.tile_set.get_physics_layers_count() == 0:
+		return false
+	# Solid only if its collision shape covers the middle of the tile (not
+	# just a sliver along one edge, like the bottom of a wall).
+	var local := point - walls.map_to_local(wall_cell)
+	for i: int in data.get_collision_polygons_count(0):
+		if Geometry2D.is_point_in_polygon(local, data.get_collision_polygon_points(0, i)):
+			return true
+	return false
 
 
 # --- Pathfinding ----------------------------------------------------------------
