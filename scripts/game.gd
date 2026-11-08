@@ -20,7 +20,7 @@ static var current: Game
 @export var debug_start_at_hunt_threshold := false
 
 ## How long (s) EMF from something the ghost did lasts (see EMFSource).
-@export var emf_duration := 20.0
+@export var emf_duration := 60.0
 
 @onready var house: House = $House
 @onready var world: Node2D = $World

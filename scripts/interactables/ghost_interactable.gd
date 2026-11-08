@@ -41,6 +41,10 @@ var can_have_residue := true
 ## Where the UV residue glow is centred, relative to the origin (e.g. on top
 ## of a sink's counter). Set by each interactable.
 var residue_offset := Vector2(0, -8)
+## The residue picture and whether it's mirrored (null = the default art).
+## Set by each interactable, before _ready.
+var residue_texture: Texture2D
+var residue_flip_h := false
 ## True once a residue-leaving ghost has touched this. Only visible where the
 ## UV light shines on it (see ResidueGlow).
 var has_residue := false:
@@ -77,6 +81,8 @@ func _ready() -> void:
 	if can_have_residue:
 		_residue_glow = ResidueGlow.new()
 		_residue_glow.position = residue_offset
+		_residue_glow.texture = residue_texture
+		_residue_glow.flip_h = residue_flip_h
 		_residue_glow.visible = has_residue
 		add_child(_residue_glow)
 

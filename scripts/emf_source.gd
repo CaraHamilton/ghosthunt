@@ -18,7 +18,7 @@ var node: Node2D = null
 var position := Vector2.ZERO
 ## Game time it was made, and how long (s) it lasts.
 var created := 0.0
-var duration := 20.0
+var duration := 60.0
 
 
 ## Rolls a level between `min_level` and `max_level`, or 5 with `chance_5`

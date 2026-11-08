@@ -59,13 +59,32 @@ extends GhostInteractable
 	set(value):
 		side_footprint = value
 		queue_redraw()
-## Where the UV residue glows, relative to the origin (before `raise`):
-## on the top of the object in the art (a sink's counter, the top of a
-## stack of books). The green cross in the editor shows it.
+@export_group("UV Residue")
+## Where the centre of the UV residue goes, relative to the origin (before
+## `raise`): on the top of the object in the art (a sink's counter, the top
+## of a stack of books). The green cross in the editor shows it.
 @export var residue_position := Vector2(0, -12):
 	set(value):
 		residue_position = value
 		queue_redraw()
+## The residue picture for this object (bright green on transparent). Empty
+## uses the default, res://art/uv_residue/handprint_default.png. Previewed
+## faintly in the editor.
+@export var residue_art: Texture2D:
+	set(value):
+		residue_art = value
+		queue_redraw()
+## Mirror the residue picture left-right.
+@export var residue_flip := false:
+	set(value):
+		residue_flip = value
+		queue_redraw()
+## Show the residue preview in the editor.
+@export var preview_residue := true:
+	set(value):
+		preview_residue = value
+		queue_redraw()
+@export_group("")
 ## Snap to the floor tile it's dropped on (or onto the table there), like a
 ## placed tool. Turn off to place it by hand (furniture bigger than a tile).
 @export var snap_to_tile := true:
@@ -89,6 +108,8 @@ var _lift := 0.0
 var _shift := Vector2.ZERO
 ## In the editor: whether its tile can take it (red box if not).
 var _snap_ok := true
+## In the editor: draws the residue preview over the art.
+var _residue_preview: Node2D
 
 
 func _ready() -> void:
@@ -111,6 +132,8 @@ func _ready() -> void:
 		solid = solid and _lift == 0.0
 		player_zone_raise = _lift
 		residue_offset = residue_position - Vector2(0, _lift)
+		residue_texture = residue_art
+		residue_flip_h = residue_flip
 	super()
 	_update_art()
 
@@ -257,7 +280,25 @@ func _draw() -> void:
 	if art == null:
 		draw_rect(Rect2(r.position - Vector2(0, _lift + 8), Vector2(r.size.x, r.size.y + 8)),
 			Color(0.6, 0.5, 0.4))
-	# Where UV residue would glow.
+	# The residue preview goes on its own node, over the art.
+	if _residue_preview == null:
+		_residue_preview = Node2D.new()
+		_residue_preview.z_index = 2
+		_residue_preview.draw.connect(_draw_residue_preview)
+		add_child(_residue_preview, false, INTERNAL_MODE_BACK)
+	_residue_preview.queue_redraw()
+
+
+## Editor: the residue art (faint) where it will glow, and a green cross on
+## its centre.
+func _draw_residue_preview() -> void:
 	var g := _shift + residue_position - Vector2(0, _lift)
-	draw_line(g - Vector2(2, 0), g + Vector2(2, 0), Color(0.35, 1, 0.45, 0.9), 1.0)
-	draw_line(g - Vector2(0, 2), g + Vector2(0, 2), Color(0.35, 1, 0.45, 0.9), 1.0)
+	if preview_residue:
+		var tex := residue_art
+		if tex == null and ResourceLoader.exists(ResidueGlow.DEFAULT_ART):
+			tex = load(ResidueGlow.DEFAULT_ART)
+		if tex:
+			ResidueGlow.draw_art(_residue_preview, tex, g, residue_flip, Color(1, 1, 1, 0.7))
+	var c := Color(0.35, 1, 0.45, 0.9)
+	_residue_preview.draw_line(g - Vector2(2, 0), g + Vector2(2, 0), c, 1.0)
+	_residue_preview.draw_line(g - Vector2(0, 2), g + Vector2(0, 2), c, 1.0)
