@@ -16,7 +16,7 @@ extends Node2D
 ##   │               temperatures, the ghost's favourite room, the EMF reader...
 ##   └─ PlayerStart  Marker2D where the player begins
 ##
-## Props (furniture) and sinks are scenes placed in the Furniture node; they add
+## Props (furniture) and Switchables (sinks, books...) are scenes placed in the Furniture node; they add
 ## their own collision and tell the ghost's pathfinding about themselves.
 ## This script also draws the dark "outside" behind the map and builds the
 ## ghost's pathfinding grid from the wall tiles.

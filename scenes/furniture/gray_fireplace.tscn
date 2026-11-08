@@ -18,7 +18,7 @@ fill_to = Vector2(0.5, 0)
 [node name="GrayFireplace" type="StaticBody2D" unique_id=1447865753]
 script = ExtResource("1_prop")
 art = ExtResource("2_art")
-animation = "lit"
+animation = "down_lit"
 
 [node name="FireLight" type="PointLight2D" parent="." unique_id=1598184728 groups=["world_lights"]]
 position = Vector2(0, -11)

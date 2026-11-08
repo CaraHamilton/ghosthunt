@@ -1,7 +1,7 @@
 class_name Player
 extends CharacterBody2D
 ## Top-down player. Walks with WASD/arrows, runs with Shift, and uses the
-## closest nearby object with E/Space (toggles sinks, picks up items). Picks a toolbar slot with 1-9, or the
+## closest nearby object with E/Space (turns sinks on and off, picks up items). Picks a toolbar slot with 1-9, or the
 ## mouse wheel, uses the selected item while holding F / left mouse, and
 ## places it on the tile in front of her by letting go of Q (holding Q shows
 ## which tile first; one item per tile; tables

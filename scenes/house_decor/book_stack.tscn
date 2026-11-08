@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://g7gakc3x0djf"]
+
+[ext_resource type="Script" uid="uid://b4p8p4wouf44r" path="res://scripts/interactables/switchable.gd" id="1_switchable"]
+[ext_resource type="Texture2D" uid="uid://bofa5y0rjdwlh" path="res://art/house_decor/book_stack.png" id="2_books"]
+
+[node name="BookStack" type="StaticBody2D" unique_id=113220838]
+script = ExtResource("1_switchable")
+art = ExtResource("2_books")
+residue_position = Vector2(0, -10)
+footprint = Vector2(16, 16)
+player_can_use = true

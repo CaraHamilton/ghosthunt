@@ -31,6 +31,9 @@ extends StaticBody2D
 ## How close (px) the player must be to the footprint to use it.
 @export var player_reach := 14.0
 
+## Whether residue-leaving ghosts leave UV residue on this (false for the
+## doll). Set by each interactable, in _init.
+var can_have_residue := true
 ## Where the UV residue glow is centred, relative to the origin (e.g. on top
 ## of a sink's counter). Set by each interactable.
 var residue_offset := Vector2(0, -8)
@@ -38,7 +41,7 @@ var residue_offset := Vector2(0, -8)
 ## UV light shines on it (see ResidueGlow).
 var has_residue := false:
 	set(value):
-		has_residue = value
+		has_residue = value and can_have_residue
 		if _residue_glow:
 			_residue_glow.visible = has_residue
 
@@ -67,10 +70,11 @@ func _ready() -> void:
 		add_child(shape)
 	if player_can_use:
 		_build_player_zone()
-	_residue_glow = ResidueGlow.new()
-	_residue_glow.position = residue_offset
-	_residue_glow.visible = has_residue
-	add_child(_residue_glow)
+	if can_have_residue:
+		_residue_glow = ResidueGlow.new()
+		_residue_glow.position = residue_offset
+		_residue_glow.visible = has_residue
+		add_child(_residue_glow)
 
 
 ## The solid area on the floor, in global coordinates.
