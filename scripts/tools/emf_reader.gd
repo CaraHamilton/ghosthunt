@@ -1,26 +1,17 @@
 class_name EMFReader
 extends ItemInstance
-## Electromagnetic field reader, 0-5. Usually reads 0.
-##   1-3  the ghost is in the same room (stronger the closer it is), or the
-##        player is next to something the ghost touched recently
-##   4    the ghost is within a few tiles, or a hunt is happening anywhere
-##   5    only a Demon or Wraith: whenever another ghost would read 4
-## The 5 rule lives in each type's get_emf_level() (Demon, Wraith), so ghost types
-## decide their own EMF quirks.
+## Electromagnetic field reader, 0-5. Usually reads 0. The EMF comes from
+## things the ghost did, never from the ghost itself (see EMFSource):
+##   1-2  next to something the ghost switched on (a sink)
+##   2-3  next to something the ghost knocked over (a stack of books)
+##   4    where the ghost appeared
+##   5    only ghosts that show EMF 5 (Demon, Wraith): sometimes instead of
+##        the above - 10% of 1-2s, 30% of 2-3s, 50% of 4s
+## During a hunt it goes haywire everywhere, flashing 1-4 at random (never 5).
 
-## Within this distance (px) of the ghost the reader shows 4 (~3.5 tiles).
-var close_range := 56.0
-## Distance bands (px) for 3 and 2 while the ghost is in the same room;
-## anywhere else in the room reads 1.
-var room_level_3_range := 100.0
-var room_level_2_range := 160.0
-## How close (px) to a touched object the reader must be to pick it up.
-var trace_range := 32.0
-## How long (s) a ghost's touch keeps showing on the reader. It fades:
-## 3 at first, then 2, then 1.
-var trace_duration := 20.0
-## Chance per update that a 1-3 reading wobbles by one (never into 4/5).
-var flicker_chance := 0.2
+## How close (px) the reader must be to an object (its footprint) or a spot
+## to pick up its EMF.
+var reach := 32.0
 ## Seconds between reading updates.
 var sample_interval := 0.2
 
@@ -39,43 +30,20 @@ func process_always(delta: float) -> void:
 	var game := Game.current
 	if game == null:
 		return
-	level = clampi(game.ghost.behavior.get_emf_level(_base_level(game)), 0, 5)
+	if game.ghost and game.ghost.is_hunting:
+		level = randi_range(1, 4)  # as if broken
+		return
+	level = _source_level(game)
 
 
-func _base_level(game: Game) -> int:
-	var ghost := game.ghost
-	var house := game.house
-	if ghost.is_hunting:
-		return 4
+## The strongest EMF source in reach (0 if none). Drops the ones that
+## have faded.
+func _source_level(game: Game) -> int:
+	var now := Game.game_time()
+	game.emf_sources = game.emf_sources.filter(func(s: EMFSource) -> bool: return s.is_active(now))
 	var pos := get_world_position()
-	var dist := pos.distance_to(ghost.global_position)
-	if dist <= close_range:
-		return 4
-
-	var result := 0
-	var player_room := house.room_at(pos)
-	if player_room != "" and player_room == house.room_at(ghost.global_position):
-		if dist <= room_level_3_range:
-			result = 3
-		elif dist <= room_level_2_range:
-			result = 2
-		else:
-			result = 1
-	result = maxi(result, _trace_level(game, pos))
-
-	if result > 0 and randf() < flicker_chance:
-		result = clampi(result + (1 if randf() < 0.5 else -1), 1, 3)
-	return result
-
-
-## 1-3 if the reader is next to something the ghost touched recently.
-func _trace_level(game: Game, pos: Vector2) -> int:
 	var best := 0
-	for obj: GhostInteractable in game.get_tree().get_nodes_in_group("ghost_interactables"):
-		if not obj.get_footprint().grow(trace_range).has_point(pos):
-			continue
-		var age := obj.seconds_since_ghost_interaction()
-		if age >= trace_duration:
-			continue
-		best = maxi(best, 3 - int(age / (trace_duration / 3.0)))
+	for source: EMFSource in game.emf_sources:
+		if source.reaches(pos, reach):
+			best = maxi(best, source.level)
 	return best

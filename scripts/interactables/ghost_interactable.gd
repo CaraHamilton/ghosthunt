@@ -102,10 +102,23 @@ func ghost_interact(ghost: Ghost) -> void:
 	if ghost.behavior.leaves_uv_residue():
 		has_residue = true
 	_on_ghost_interact(ghost)
+	if Game.current:
+		var levels := emf_levels()
+		Game.current.add_emf_source(self, levels.x, levels.y, emf_5_chance())
 
 
-## Seconds since the ghost last touched this (INF if never). Used by the EMF
-## reader to pick up the ghost's traces.
+## The EMF this gives off after the ghost touches it (min, max): 1-2 for
+## something switched on (a sink). Switchables the ghost knocks over give 2-3.
+func emf_levels() -> Vector2i:
+	return Vector2i(1, 2)
+
+
+## Chance (0-1) the EMF is a 5 instead, for ghost types that show EMF 5.
+func emf_5_chance() -> float:
+	return 0.1
+
+
+## Seconds since the ghost last touched this (INF if never).
 func seconds_since_ghost_interaction() -> float:
 	return _game_time() - _last_interaction_time
 

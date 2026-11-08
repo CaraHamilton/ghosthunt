@@ -75,7 +75,7 @@ func on_possessed(ghost: Ghost) -> void:
 func on_released() -> void:
 	possessed_by = null
 	sprite.play(&"sit")
-	# The ghost was touching it until now: the EMF and cooldown count from here.
+	# The ghost was touching it until now: the cooldown counts from here.
 	_last_interaction_time = _game_time()
 	_save_traces()
 

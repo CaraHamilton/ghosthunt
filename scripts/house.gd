@@ -13,7 +13,7 @@ extends Node2D
 ##   │               decorations (no collision - the wall underneath blocks).
 ##   │               Window tiles get a moonlight glow in game.
 ##   ├─ Rooms        a Room (resizable box) per room: names the areas used for
-##   │               temperatures, the ghost's favourite room, the EMF reader...
+##   │               temperatures, the ghost's favourite room...
 ##   └─ PlayerStart  Marker2D where the player begins
 ##
 ## Props (furniture) and Switchables (sinks, books...) are scenes placed in the Furniture node; they add

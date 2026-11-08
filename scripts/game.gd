@@ -22,6 +22,9 @@ static var current: Game
 ## allowed to hunt (its hunt_sanity_threshold), to test hunts without waiting.
 @export var debug_start_at_hunt_threshold := false
 
+## How long (s) EMF from something the ghost did lasts (see EMFSource).
+@export var emf_duration := 20.0
+
 @onready var house: House = $House
 @onready var world: Node2D = $World
 @onready var player: Player = $World/Player
@@ -48,6 +51,33 @@ var ghost: Ghost
 ## The type of ghost haunting the house this game. The player's goal is to
 ## work this out from how the ghost behaves.
 var ghost_type: GhostBehavior.Type
+## What the EMF reader can pick up right now (see EMFSource).
+var emf_sources: Array[EMFSource] = []
+
+
+## Something the ghost did now gives off EMF: `at` is the object (a Node2D,
+## followed if it moves) or a spot (Vector2). The level is rolled from
+## `min_level`-`max_level`, or 5 with `chance_5` for ghosts that show EMF 5.
+func add_emf_source(at: Variant, min_level: int, max_level: int, chance_5: float) -> EMFSource:
+	var source := EMFSource.new()
+	source.level = EMFSource.roll_level(min_level, max_level, chance_5, ghost.behavior if ghost else null)
+	if at is Node2D:
+		source.node = at
+		# A fresh touch replaces the object's old EMF.
+		emf_sources = emf_sources.filter(func(s: EMFSource) -> bool: return s.node != at)
+	else:
+		source.position = at
+	source.created = game_time()
+	source.duration = emf_duration
+	emf_sources.append(source)
+	if OS.is_debug_build():
+		print("[debug] EMF %d at %s" % [source.level, at.name if at is Node2D else str(at)])
+	return source
+
+
+## Seconds of game time (stops while paused, follows Engine.time_scale).
+static func game_time() -> float:
+	return Engine.get_physics_frames() / float(Engine.physics_ticks_per_second)
 
 
 func _ready() -> void:

@@ -49,7 +49,7 @@ func get_evidence() -> Array[Evidence.Type]:
 	var result: Array[Evidence.Type] = []
 	if get_cold_temperature(3.0, true) < 0.0:
 		result.append(Evidence.Type.FREEZING)
-	if get_emf_level(4) >= 5:
+	if shows_emf_5():
 		result.append(Evidence.Type.EMF_5)
 	if possesses_doll():
 		result.append(Evidence.Type.TOY_INTERACTION)
@@ -147,10 +147,10 @@ func on_interacted(_item: GhostInteractable) -> void:
 	pass
 
 
-## Final say on what the EMF reader shows (0-5). `base_level` is worked out
-## from distance, rooms and hunts, and never exceeds 4.
-func get_emf_level(base_level: int) -> int:
-	return base_level
+## True if this ghost type can leave EMF 5 on the things it touches and
+## where it appears (see EMFSource) - the EMF 5 evidence.
+func shows_emf_5() -> bool:
+	return false
 
 
 ## Speed during a hunt while it can see the player and goes straight for

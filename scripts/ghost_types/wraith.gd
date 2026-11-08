@@ -3,10 +3,10 @@ extends GhostBehavior
 ## Wraith. Override GhostBehavior hooks here to give it its own behaviour.
 
 
-## Like a Demon, a Wraith pushes the EMF reader to 5: whenever any other
-## ghost would read 4 (player close by, or during a hunt), a wraith reads 5.
-func get_emf_level(base_level: int) -> int:
-	return 5 if base_level >= 4 else base_level
+## Like a Demon, a Wraith can leave EMF 5 on what it touches and where it
+## appears.
+func shows_emf_5() -> bool:
+	return true
 
 
 ## Freezing ghost: its favourite room drops below 0 °C. Rooms it only passes

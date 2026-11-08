@@ -169,6 +169,15 @@ func is_one_way() -> bool:
 	return change_tag().ends_with("_knocked")
 
 
+## Knocked over: 2-3 EMF (30% chance of a 5). Switched on: 1-2 (10%).
+func emf_levels() -> Vector2i:
+	return Vector2i(2, 3) if is_one_way() else Vector2i(1, 2)
+
+
+func emf_5_chance() -> float:
+	return 0.3 if is_one_way() else 0.1
+
+
 func can_ghost_interact() -> bool:
 	if is_one_way() and changed:
 		return false  # already knocked over

@@ -503,6 +503,10 @@ func start_appearance(duration := -1.0) -> void:
 		duration = randf_range(min_appearance_time, max_appearance_time)
 	_appearance_time_left = duration
 	is_manifested = true
+	# Where it appeared gives off EMF 4 (or 5, half the time, for ghosts that
+	# show EMF 5).
+	if Game.current:
+		Game.current.add_emf_source(global_position, 4, 4, 0.5)
 	if OS.is_debug_build():
 		print("[debug] Ghost: appearing for %.1fs" % duration)
 	appearance_started.emit()

@@ -7,7 +7,7 @@ extends ItemInstance
 ## When the ghost last touched the doll is kept here, on the item, so it
 ## stays with this doll when it's picked up and put down again.
 
-## Game time the ghost last touched it (for the EMF reader and cooldown).
+## Game time the ghost last touched it (for its cooldown).
 var last_ghost_touch_time := -INF
 
 
