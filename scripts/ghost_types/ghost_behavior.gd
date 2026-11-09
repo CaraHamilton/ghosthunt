@@ -1,14 +1,15 @@
 class_name GhostBehavior
 extends RefCounted
-## Base class for type-specific ghost behaviour. Each ghost type (Demon, Wraith,
-## Banshee, Poltergeist) extends this and overrides the hooks it cares about.
+## Base class for type-specific ghost behaviour. Each ghost type (Banshee,
+## Poltergeist, Sentry, Marionette, Demon) extends this and overrides the
+## hooks it cares about.
 ## The defaults do nothing, so every ghost currently acts the same.
 ##
 ## To add a behaviour: override a hook in the type's script. If you need a
 ## hook that doesn't exist yet, add it here with a do-nothing default and
 ## call it from ghost.gd.
 
-enum Type { DEMON, BANSHEE, POLTERGEIST, WRAITH }
+enum Type { BANSHEE, POLTERGEIST, SENTRY, MARIONETTE, DEMON }
 
 ## The ghost this behaviour drives. Set before `on_spawned()` is called.
 var ghost: Ghost
@@ -17,14 +18,16 @@ var ghost: Ghost
 ## Creates the behaviour object for a ghost type.
 static func create(type: Type) -> GhostBehavior:
 	match type:
-		Type.DEMON:
-			return DemonBehavior.new()
 		Type.BANSHEE:
 			return BansheeBehavior.new()
 		Type.POLTERGEIST:
 			return PoltergeistBehavior.new()
-		Type.WRAITH:
-			return WraithBehavior.new()
+		Type.SENTRY:
+			return SentryBehavior.new()
+		Type.MARIONETTE:
+			return MarionetteBehavior.new()
+		Type.DEMON:
+			return DemonBehavior.new()
 	push_error("Unknown ghost type: %s" % type)
 	return GhostBehavior.new()
 
@@ -116,8 +119,9 @@ func get_return_home_chance(base_chance: float) -> float:
 	return base_chance
 
 
-## What freezing ghost types (Banshee, Wraith) chill their favourite room
-## towards, in °C - cold enough that it reliably reads below zero.
+## What freezing ghost types (Banshee, Sentry, Marionette, Demon) chill
+## their favourite room towards, in °C - cold enough that it reliably reads below
+## zero.
 const FREEZING_TEMPERATURE := -8.0
 
 

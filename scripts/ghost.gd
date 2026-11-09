@@ -27,7 +27,7 @@ extends CharacterBody2D
 ## whatever it was doing. It doesn't go after the player and is harmless.
 ##
 ## The node's origin is the floor point under the ghost. What *kind* of ghost
-## it is (Demon, Banshee, Poltergeist, Wraith) lives in `behavior` - see
+## it is (Banshee, Poltergeist, Sentry, Marionette, Demon) lives in `behavior` - see
 ## scripts/ghost_types/. Every ghost looks the same, so the player has to work
 ## out the type from how it behaves.
 

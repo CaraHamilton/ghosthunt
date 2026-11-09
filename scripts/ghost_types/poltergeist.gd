@@ -11,3 +11,8 @@ func possesses_doll() -> bool:
 ## Poltergeists leave UV residue on everything they touch.
 func leaves_uv_residue() -> bool:
 	return true
+
+
+## Poltergeists can leave EMF 5 on what they touch and where they appear.
+func shows_emf_5() -> bool:
+	return true
