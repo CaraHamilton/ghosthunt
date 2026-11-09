@@ -1,9 +1,9 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://6j0tme08s72t"]
 
 [ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_prop"]
 [ext_resource type="Texture2D" uid="uid://b4pkkk8fgj7xb" path="res://art/furniture/purple/green_couch.png" id="2_art"]
 
-[node name="GreenCouch" type="StaticBody2D"]
+[node name="GreenCouch" type="StaticBody2D" unique_id=796872995]
 script = ExtResource("1_prop")
 art = ExtResource("2_art")
-footprint = Vector2(64, 16)
+footprint = Vector2(64, 32)

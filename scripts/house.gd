@@ -215,6 +215,19 @@ func get_place_spot(cell: Vector2i, on_surfaces := true, obstacles: Variant = nu
 	return spot
 
 
+## True if fog (or anything else drifting over the floor) can fill `cell`:
+## it's floor, not a solid wall, and no solid furniture covers it. Other
+## placed items don't count.
+func is_tile_open(cell: Vector2i) -> bool:
+	if floor_layer.get_cell_source_id(cell) == -1 or _is_solid_wall(cell):
+		return false
+	var inner := tile_rect(cell).grow(-3.0)
+	for obstacle: Node2D in get_tree().get_nodes_in_group("nav_obstacles"):
+		if obstacle.get_footprint().intersects(inner):
+			return false
+	return true
+
+
 ## True if an item has been placed on `cell`.
 func is_tile_taken(cell: Vector2i) -> bool:
 	for node in get_tree().get_nodes_in_group(PLACED_GROUP):

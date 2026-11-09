@@ -12,3 +12,8 @@ func leaves_uv_residue() -> bool:
 ## through cool as normal.
 func get_cold_temperature(base_temperature: float, is_favorite_room: bool) -> float:
 	return FREEZING_TEMPERATURE if is_favorite_room else base_temperature
+
+
+## Banshees show up as a figure in the fog machine's fog.
+func shows_in_fog() -> bool:
+	return true

@@ -20,10 +20,11 @@ func get_item(slot: int) -> ItemInstance:
 	return slots[slot] if slot >= 0 and slot < slots.size() else null
 
 
-## Puts an item in, topping up matching stacks first, then the first empty
-## slot. Returns false if it (or part of a stack) didn't fit; whatever didn't
+## Puts an item in, topping up matching stacks first, then `preferred_slot`
+## if that's empty (e.g. the selected toolbar slot), else the first empty
+## one. Returns false if it (or part of a stack) didn't fit; whatever didn't
 ## fit stays in `item`.
-func add_item(item: ItemInstance) -> bool:
+func add_item(item: ItemInstance, preferred_slot := -1) -> bool:
 	for existing in slots:
 		if item.count == 0:
 			break
@@ -32,7 +33,8 @@ func add_item(item: ItemInstance) -> bool:
 			existing.count += moved
 			item.count -= moved
 	if item.count > 0:
-		var empty := slots.find(null)
+		var in_range := preferred_slot >= 0 and preferred_slot < slots.size()
+		var empty := preferred_slot if in_range and slots[preferred_slot] == null else slots.find(null)
 		if empty < 0:
 			changed.emit()
 			return false

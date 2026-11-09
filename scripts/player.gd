@@ -227,7 +227,8 @@ func pick_up(item: ItemInstance, from_node: Node2D) -> bool:
 	unregister_interactable(from_node)
 	if from_node == _focused:
 		_focused = null
-	inventory.add_item(item)
+	# Into the selected slot if it's free, else the first free one.
+	inventory.add_item(item, selected_slot)
 	item.on_picked_up(self)
 	return true
 

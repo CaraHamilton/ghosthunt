@@ -6,4 +6,3 @@
 [node name="OakTub" type="StaticBody2D" unique_id=353646779]
 script = ExtResource("1_prop")
 art = ExtResource("2_upgam")
-footprint = Vector2(40, 16)

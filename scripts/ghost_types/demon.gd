@@ -12,3 +12,8 @@ func shows_emf_5() -> bool:
 ## Demons possess the doll when it's near them.
 func possesses_doll() -> bool:
 	return true
+
+
+## Demons show up as a figure in the fog machine's fog.
+func shows_in_fog() -> bool:
+	return true

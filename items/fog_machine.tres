@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
+[ext_resource type="Texture2D" path="res://art/toolbar/fog_machine_toolbar.png" id="2_icon"]
+[ext_resource type="PackedScene" path="res://scenes/fog_machine.tscn" id="3_world"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"fog_machine"
+display_name = "Fog Machine"
+description = "Put it down (Q) and it fills the next two tiles with fog. Some ghosts show up as a figure when they pass through it."
+icon = ExtResource("2_icon")
+world_scene = ExtResource("3_world")

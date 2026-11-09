@@ -55,6 +55,8 @@ func get_evidence() -> Array[Evidence.Type]:
 		result.append(Evidence.Type.DOLL_POSSESSION)
 	if leaves_uv_residue():
 		result.append(Evidence.Type.UV_RESIDUE)
+	if shows_in_fog():
+		result.append(Evidence.Type.FOG_FIGURE)
 	return result
 
 
@@ -145,6 +147,12 @@ func leaves_uv_residue() -> bool:
 ## Called right after the ghost interacts with something (e.g. a sink).
 func on_interacted(_item: GhostInteractable) -> void:
 	pass
+
+
+## True if this ghost type shows up as a figure in a fog machine's fog
+## (see FogMachine) - the fog figure evidence.
+func shows_in_fog() -> bool:
+	return false
 
 
 ## True if this ghost type can leave EMF 5 on the things it touches and

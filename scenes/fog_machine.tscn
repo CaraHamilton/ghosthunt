@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/tools/fog_machine.gd" id="1_fog"]
+
+[node name="FogMachine" type="Node2D"]
+script = ExtResource("1_fog")
