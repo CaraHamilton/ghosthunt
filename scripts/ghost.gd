@@ -86,8 +86,11 @@ const GLOW_LIGHT_LAYER := 4
 ## (stops it flip-flopping when the player ducks past a corner).
 @export var lose_sight_delay := 0.4
 ## Chance (0-1) of starting a hunt each `hunt_check_interval` once the ghost
-## is off cooldown (and the player isn't too close).
-@export var hunt_chance := 0.2
+## is off cooldown (and the player isn't too close). It rises steadily as
+## sanity drops: `hunt_chance_at_threshold` right at the sanity threshold,
+## up to `hunt_chance_at_zero` at 0 sanity.
+@export_range(0.0, 1.0) var hunt_chance_at_threshold := 0.03
+@export_range(0.0, 1.0) var hunt_chance_at_zero := 0.3
 @export var hunt_check_interval := 1.0
 ## Random wait (seconds) after each hunt - and from the moment the player's
 ## sanity first drops low enough - before the ghost may hunt again.
@@ -104,16 +107,15 @@ const GLOW_LIGHT_LAYER := 4
 @export_group("Appearances")
 ## An appearance: the ghost becomes visible for a few seconds wherever it is,
 ## but carries on with whatever it was doing (wandering, possessing the
-## doll...) - it doesn't go after the player and can't catch them. The
-## settings match hunts' for now, so they happen about as often.
+## doll...) - it doesn't go after the player and can't catch them.
 ## Chance (0-1) of an appearance each `appearance_check_interval` once off
 ## cooldown.
 @export var appearance_chance := 0.2
 @export var appearance_check_interval := 1.0
 ## Random wait (seconds) after each appearance - and from the start of the
 ## game - before the next one.
-@export var min_appearance_cooldown := 20.0
-@export var max_appearance_cooldown := 45.0
+@export var min_appearance_cooldown := 90.0
+@export var max_appearance_cooldown := 150.0
 ## How long (seconds) an appearance lasts, picked at random each time
 ## (counted from when it starts fading in).
 @export var min_appearance_time := 2.0
@@ -121,6 +123,15 @@ const GLOW_LIGHT_LAYER := 4
 ## A hunt can't start during an appearance, nor for this many seconds after
 ## one ends.
 @export var hunt_delay_after_appearance := 15.0
+## The ghost only starts appearances once the player's sanity is below this
+## fraction of full (0.75 = 75%).
+@export_range(0.0, 1.0) var appearance_sanity_threshold := 0.75
+
+@export_group("Getting more violent")
+## Early on the ghost only switches things on and off (sinks...). Once the
+## player's sanity is below this fraction of full (0.8 = 80%), it also starts
+## knocking things over (book stacks...).
+@export_range(0.0, 1.0) var knock_sanity_threshold := 0.8
 
 @export_group("Wandering")
 @export var wander_speed := 22.0
@@ -167,6 +178,11 @@ var is_appearing: bool:
 var is_hunting: bool:
 	get:
 		return state in HUNT_STATES
+## True once the player's sanity is low enough for the ghost to knock things
+## over (see knock_sanity_threshold).
+var can_knock_things: bool:
+	get:
+		return player == null or player.sanity_ratio < knock_sanity_threshold
 ## True if the ghost can see the player this frame.
 var sees_player := false
 ## Where the ghost last saw the player (INF if it never has). Remembered
@@ -454,7 +470,8 @@ func end_possession() -> void:
 func _try_start_hunt(delta: float) -> void:
 	if state == State.POSSESSING:
 		return  # it just went for the doll this frame
-	if player.sanity_ratio >= behavior.get_hunt_sanity_threshold(hunt_sanity_threshold):
+	var threshold := behavior.get_hunt_sanity_threshold(hunt_sanity_threshold)
+	if player.sanity_ratio >= threshold:
 		_hunts_locked = true  # the player's mind is still too strong
 		return
 	if _hunts_locked:
@@ -471,8 +488,16 @@ func _try_start_hunt(delta: float) -> void:
 		return
 	_hunt_check_timer = hunt_check_interval
 	var far_enough := global_position.distance_to(player.global_position) >= min_hunt_distance
-	if far_enough and randf() < behavior.get_hunt_chance(hunt_chance):
+	if far_enough and randf() < behavior.get_hunt_chance(current_hunt_chance(threshold)):
 		start_hunt()
+
+
+## The chance per check of starting a hunt at the player's current sanity:
+## climbs in a straight line from `hunt_chance_at_threshold` (sanity right at
+## `threshold`) to `hunt_chance_at_zero` (no sanity left).
+func current_hunt_chance(threshold: float) -> float:
+	var lowness := 1.0 - clampf(player.sanity_ratio / maxf(threshold, 0.001), 0.0, 1.0)
+	return lerpf(hunt_chance_at_threshold, hunt_chance_at_zero, lowness)
 
 
 ## Every `interact_check_interval`, maybe mess with one nearby object.
@@ -534,6 +559,8 @@ func _update_appearance(delta: float) -> void:
 	if _appearance_check_timer > 0.0:
 		return
 	_appearance_check_timer = appearance_check_interval
+	if player and player.sanity_ratio >= appearance_sanity_threshold:
+		return  # too early in the game to show itself
 	if randf() < appearance_chance:
 		start_appearance()
 

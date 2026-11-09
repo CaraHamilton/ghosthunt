@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://t4wgbjur1cj7"
-path="res://.godot/imported/fog_machine_toolbar.png-a4e4a269b9c21dfa9acdb9bbaebc1d0c.ctex"
+uid="uid://cjnjip1i3whi"
+path="res://.godot/imported/fog_machine_toolbar.png-37885bd0b659e1796f491248771d1bcf.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/toolbar/fog_machine_toolbar.png"
-dest_files=["res://.godot/imported/fog_machine_toolbar.png-a4e4a269b9c21dfa9acdb9bbaebc1d0c.ctex"]
+source_file="res://art/toolbar_icons/fog_machine_toolbar.png"
+dest_files=["res://.godot/imported/fog_machine_toolbar.png-37885bd0b659e1796f491248771d1bcf.ctex"]
 
 [params]
 

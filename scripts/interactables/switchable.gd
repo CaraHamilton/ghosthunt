@@ -214,9 +214,12 @@ func is_lit_type() -> bool:
 	return change_tag().ends_with("_lit")
 
 
-## The ghost never touches fires.
-func ghost_can_use(_ghost: Ghost) -> bool:
-	return not is_lit_type()
+## The ghost never touches fires, and only knocks things over once the
+## player's sanity is low enough (Ghost.knock_sanity_threshold).
+func ghost_can_use(ghost: Ghost) -> bool:
+	if is_lit_type():
+		return false
+	return ghost.can_knock_things if is_one_way() else true
 
 
 ## True if `point` (the player) is close enough to light it.

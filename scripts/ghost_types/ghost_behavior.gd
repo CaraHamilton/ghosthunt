@@ -93,6 +93,7 @@ func on_caught_player() -> void:
 
 
 ## Chance (0-1) of starting a hunt on each check once off cooldown.
+## `base_chance` already rises as the player's sanity drops.
 ## Return 0 to stop this ghost hunting on its own.
 func get_hunt_chance(base_chance: float) -> float:
 	return base_chance

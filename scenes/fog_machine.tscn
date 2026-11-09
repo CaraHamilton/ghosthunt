@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://n6ni8vptkdh"]
 
-[ext_resource type="Script" path="res://scripts/tools/fog_machine.gd" id="1_fog"]
+[ext_resource type="Script" uid="uid://ckgspac466jk" path="res://scripts/tools/fog_machine.gd" id="1_fog"]
 
-[node name="FogMachine" type="Node2D"]
+[node name="FogMachine" type="Node2D" unique_id=23910149]
 script = ExtResource("1_fog")
