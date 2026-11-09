@@ -14,9 +14,13 @@ extends GhostInteractable
 ##       over. The player can knock it over and set it right again (E).
 ##   "<facing>_on" (e.g. "down_on"): the ghost and the player can both
 ##       switch it either way.
+##   "<facing>_lit" (e.g. "down_lit"): a fire. Only the player can light it
+##       and put it out, with the lantern (F) standing next to it - not E.
+##       The ghost leaves it alone.
 ## A tag with several frames loops as an animation. A facing with no tag of
 ## its own uses the one for the frame it shows (a "left" one showing "right"
 ## uses "right_knocked").
+## `show_while_changed` (e.g. a fire's light) is only shown in the other look.
 ##
 ## Placing it: with `snap_to_tile` on (small decor), just drop it on a tile,
 ## on the floor or on a table. When the game starts it snaps to that tile
@@ -59,6 +63,12 @@ extends GhostInteractable
 	set(value):
 		side_footprint = value
 		queue_redraw()
+## A child (e.g. a fire's PointLight2D) shown only while `changed` - lit,
+## switched on... Hidden the rest of the time.
+@export var show_while_changed: Node2D:
+	set(value):
+		show_while_changed = value
+		_update_art()
 @export_group("UV Residue")
 ## Where the centre of the UV residue goes, relative to the origin (before
 ## `raise`): on the top of the object in the art (a sink's counter, the top
@@ -134,6 +144,9 @@ func _ready() -> void:
 		residue_offset = residue_position - Vector2(0, _lift)
 		residue_texture = residue_art
 		residue_flip_h = residue_flip
+		# Up on a table, its light (a candle's flame) goes up with the art.
+		if is_instance_valid(show_while_changed):
+			show_while_changed.position.y -= _lift
 	super()
 	_update_art()
 
@@ -157,6 +170,10 @@ func snap_spot() -> Dictionary:
 	# registers itself as an obstacle once the game runs).
 	var props := house.find_children("*", "Prop", true, false).filter(
 		func(p: Prop) -> bool: return p.solid and not p.flat)
+	# ...and hand-placed Switchables (a sink, a fireplace).
+	for other: Switchable in house.find_children("*", "Switchable", true, false):
+		if other != self and other.solid and not other.snap_to_tile and other.raise == 0.0:
+			props.append(other)
 	var spot := house.get_place_spot(cell, true, props)
 	return spot
 
@@ -175,13 +192,13 @@ func current_footprint() -> Vector2:
 	return footprint
 
 
-## The tag for the other look ("down_knocked", "down_on"), or "" if the
-## sheet has neither.
+## The tag for the other look ("down_knocked", "down_on", "down_lit"), or
+## "" if the sheet has none of them.
 func change_tag() -> String:
 	if _art_node == null:
 		return ""
 	var base := _art_node.facing_tag()
-	for kind: String in ["_knocked", "_on"]:
+	for kind: String in ["_knocked", "_on", "_lit"]:
 		if _art_node.has_tag(base + kind):
 			return base + kind
 	return ""
@@ -190,6 +207,26 @@ func change_tag() -> String:
 ## True if the ghost can only change it one way (a "_knocked" tag).
 func is_one_way() -> bool:
 	return change_tag().ends_with("_knocked")
+
+
+## True for a fire (a "_lit" tag): only the player's lantern lights it.
+func is_lit_type() -> bool:
+	return change_tag().ends_with("_lit")
+
+
+## The ghost never touches fires.
+func ghost_can_use(_ghost: Ghost) -> bool:
+	return not is_lit_type()
+
+
+## True if `point` (the player) is close enough to light it.
+func in_lantern_reach(point: Vector2) -> bool:
+	return get_footprint().grow(player_reach).has_point(point)
+
+
+## Called by the lantern (F): lights it, or puts it out.
+func light_with_lantern() -> void:
+	changed = not changed
 
 
 ## Knocked over: 2-3 EMF (30% chance of a 5). Switched on: 1-2 (10%).
@@ -212,6 +249,8 @@ func _on_ghost_interact(_ghost: Ghost) -> void:
 
 
 func _on_player_interact(_player: Player) -> void:
+	if is_lit_type():
+		return  # fires are lit with the lantern, not E
 	changed = not changed
 
 
@@ -246,6 +285,8 @@ func _update_art() -> void:
 	_art_node.z_index = 1 if Engine.is_editor_hint() and _lift > 0.0 else 0
 	var tag := change_tag()
 	_art_node.animation = tag if changed and tag != "" else ""
+	if is_instance_valid(show_while_changed):
+		show_while_changed.visible = changed
 
 
 ## Editor: works out where it will snap to, for drawing it there.
@@ -292,6 +333,8 @@ func _draw() -> void:
 ## Editor: the residue art (faint) where it will glow, and a green cross on
 ## its centre.
 func _draw_residue_preview() -> void:
+	if is_lit_type():
+		return  # the ghost never touches fires, so no residue
 	var g := _shift + residue_position - Vector2(0, _lift)
 	if preview_residue:
 		var tex := residue_art

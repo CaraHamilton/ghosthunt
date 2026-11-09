@@ -2,7 +2,8 @@ class_name LanternItem
 extends ItemInstance
 ## The lantern: the player's only light. It glows on its own (no need to hold
 ## F) whenever it's the selected toolbar item, or lying on the floor. Carried
-## but not selected, it's off and the player is in the dark.
+## but not selected, it's off and the player is in the dark. F next to a
+## fireplace lights it, or puts it out.
 ##
 ## The light itself is res://scenes/lantern_light.tscn (tweak its colour and
 ## size there). It moves between the player and the lantern's floor node.
@@ -29,6 +30,25 @@ func process_always(_delta: float) -> void:
 ## frame passes in the dark.
 func on_dropped(node: Node2D) -> void:
 	_attach(node, _floor_offset(node), true)
+
+
+## F next to a fireplace (a Switchable with a "_lit" tag) lights it, or puts
+## it out. The closest one in reach, if several.
+func start_use() -> void:
+	if holder == null:
+		return
+	var best: Switchable = null
+	var best_dist := INF
+	for thing in holder.get_tree().get_nodes_in_group("ghost_interactables"):
+		var fire := thing as Switchable
+		if fire == null or not fire.is_lit_type() or not fire.in_lantern_reach(holder.global_position):
+			continue
+		var d := holder.global_position.distance_squared_to(fire.get_footprint().get_center())
+		if d < best_dist:
+			best_dist = d
+			best = fire
+	if best:
+		best.light_with_lantern()
 
 
 ## On a table, the light sits up on the table top with the lantern.

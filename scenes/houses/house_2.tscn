@@ -24,6 +24,7 @@
 [ext_resource type="PackedScene" uid="uid://dmdqmu31femkc" path="res://scenes/furniture/oak_tub.tscn" id="25_n1eh5"]
 [ext_resource type="PackedScene" uid="uid://g7gakc3x0djf" path="res://scenes/house_decor/book_stack.tscn" id="25_xxh47"]
 [ext_resource type="PackedScene" uid="uid://b76psf0nj7mix" path="res://scenes/furniture/purple_fancy_chair.tscn" id="25_yq2st"]
+[ext_resource type="PackedScene" uid="uid://4f38glxvdqks" path="res://scenes/house_decor/candles.tscn" id="26_n1eh5"]
 [ext_resource type="PackedScene" uid="uid://dxg33dpa18u4h" path="res://scenes/furniture/oak_kitchen_sink.tscn" id="30_oaksink"]
 
 [node name="House" type="Node2D" unique_id=845306811]
@@ -312,10 +313,10 @@ footprint = Vector2(24, 64)
 
 [node name="LivingRoomFireplace" parent="Furniture" unique_id=1251979147 instance=ExtResource("18_cf56p")]
 position = Vector2(120, 64)
-side_footprint = Vector2(16, 32)
 
 [node name="OfficeFireplace" parent="Furniture" unique_id=1447865753 instance=ExtResource("18_cf56p")]
 position = Vector2(160, 464)
+footprint = Vector2(32, 12)
 
 [node name="OfficeDesk" parent="Furniture" unique_id=1347370478 instance=ExtResource("7_wwyrc")]
 position = Vector2(24, 464)
@@ -377,3 +378,21 @@ facing = 1
 [node name="OfficeFancyChair2" parent="Furniture" unique_id=478731793 instance=ExtResource("25_yq2st")]
 position = Vector2(112, 520)
 facing = 3
+
+[node name="Candles" parent="Furniture" unique_id=993299386 instance=ExtResource("26_n1eh5")]
+position = Vector2(40, 320)
+
+[node name="Candles2" parent="Furniture" unique_id=2011775238 instance=ExtResource("26_n1eh5")]
+position = Vector2(264, 264)
+
+[node name="Candles3" parent="Furniture" unique_id=170289049 instance=ExtResource("26_n1eh5")]
+position = Vector2(424, 328)
+
+[node name="Candles4" parent="Furniture" unique_id=2062203084 instance=ExtResource("26_n1eh5")]
+position = Vector2(360, 464)
+
+[node name="Candles5" parent="Furniture" unique_id=319597864 instance=ExtResource("26_n1eh5")]
+position = Vector2(440, 64)
+
+[node name="Candles6" parent="Furniture" unique_id=1017246589 instance=ExtResource("26_n1eh5")]
+position = Vector2(24, 128)

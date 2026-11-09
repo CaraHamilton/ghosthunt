@@ -111,7 +111,9 @@ func ghost_interact(ghost: Ghost) -> void:
 	_last_interaction_time = _game_time()
 	# Residue-leaving ghosts only leave it some of the time. Once there, it
 	# stays.
-	if ghost.behavior.leaves_uv_residue() and randf() < RESIDUE_CHANCE:
+	if ghost.behavior.leaves_uv_residue() and can_have_residue and randf() < RESIDUE_CHANCE:
+		if OS.is_debug_build() and not has_residue:
+			print("[debug] The ghost left UV residue on %s" % name)
 		has_residue = true
 	_on_ghost_interact(ghost)
 	if Game.current:

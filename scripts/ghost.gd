@@ -353,8 +353,6 @@ func set_state(new_state: State) -> void:
 	_chase_sight_time = 0.0  # every new chase starts at the slow start speed
 	_path_target = Vector2.INF
 	if old_state != new_state:
-		if OS.is_debug_build() and (new_state in HUNT_STATES or old_state in HUNT_STATES):
-			print("[debug] Ghost: %s -> %s" % [State.keys()[old_state], State.keys()[new_state]])
 		behavior.on_state_changed(old_state, new_state)
 
 
@@ -365,8 +363,16 @@ func start_hunt() -> void:
 		return
 	end_possession()
 	is_manifested = true
+	if OS.is_debug_build():
+		print("[debug] Ghost: hunt started in the %s" % _room_name())
 	set_state(State.APPEARING)
 	hunt_started.emit()
+
+
+## The room the ghost is in, for debug output.
+func _room_name() -> String:
+	var room := house.room_at(global_position)
+	return room.to_lower() if room != "" else "space between rooms"
 
 
 ## Chase speed right now: starts a little slower than the player and
