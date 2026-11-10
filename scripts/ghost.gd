@@ -27,9 +27,9 @@ extends CharacterBody2D
 ## whatever it was doing. It doesn't go after the player and is harmless.
 ##
 ## The node's origin is the floor point under the ghost. What *kind* of ghost
-## it is (Banshee, Poltergeist, Sentry, Marionette, Demon) lives in `behavior` - see
-## scripts/ghost_types/. Every ghost looks the same, so the player has to work
-## out the type from how it behaves.
+## it is (Banshee, Poltergeist, Sentry, Marionette, Demon, Phantom, Fox, Cold,
+## Fae) lives in `behavior` - see scripts/ghost_types/. Every ghost looks the
+## same, so the player has to work out the type from how it behaves.
 
 signal hunt_started
 signal hunt_ended
@@ -155,6 +155,13 @@ const GLOW_LIGHT_LAYER := 4
 ## chosen room instead of a random spot, so the ghost actually goes near them.
 @export var visit_object_chance := 0.35
 
+@export_group("Holy water")
+## How long (seconds) a ghost type that reacts to holy water stands frozen
+## after a flask splashes it.
+@export var holy_water_freeze_time := 3.0
+## The tint while it's frozen.
+@export var frozen_tint := Color(0.6, 0.85, 1.0)
+
 @export_group("Debug")
 ## Draw the ghost faintly even while it's invisible.
 @export var debug_reveal := false
@@ -183,6 +190,11 @@ var is_hunting: bool:
 var can_knock_things: bool:
 	get:
 		return player == null or player.sanity_ratio < knock_sanity_threshold
+## True while holy water has it frozen in place (see freeze).
+var is_frozen: bool:
+	get:
+		return _frozen_time_left > 0.0
+var _frozen_time_left := 0.0
 ## True if the ghost can see the player this frame.
 var sees_player := false
 ## Where the ghost last saw the player (INF if it never has). Remembered
@@ -243,6 +255,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if is_frozen:
+		_update_frozen(delta)
+		return
 	_t += delta
 	_state_time += delta
 	behavior.process(delta)
@@ -517,6 +532,43 @@ func _try_interact(delta: float) -> void:
 			behavior.on_interacted(item)
 			interacted.emit(item)
 			return
+
+
+## Called when a holy water flask splashes the ghost. Only counts while it's
+## visible (hunting or appearing). Ghost types that react freeze in place
+## for `holy_water_freeze_time` seconds. Returns true if it reacted.
+func hit_with_holy_water() -> bool:
+	if not is_manifested:
+		return false
+	var reacts := behavior.reacts_to_holy_water()
+	if OS.is_debug_build():
+		print("[debug] Holy water hit the ghost%s" % (": it froze" if reacts else " (no reaction)"))
+	if reacts:
+		freeze(holy_water_freeze_time)
+	return reacts
+
+
+## Stops the ghost dead for `duration` seconds: it doesn't move, think or
+## catch anyone, and is tinted icy. A hunt carries on where it left off.
+func freeze(duration: float) -> void:
+	_frozen_time_left = maxf(_frozen_time_left, duration)
+	velocity = Vector2.ZERO
+	var sprite := $Sprite as AnimatedSprite2D
+	sprite.pause()
+	sprite.modulate = frozen_tint
+
+
+func _update_frozen(delta: float) -> void:
+	_frozen_time_left -= delta
+	velocity = Vector2.ZERO
+	_update_appearance(delta)
+	_update_fade(delta)
+	if _frozen_time_left <= 0.0:
+		_frozen_time_left = 0.0
+		var sprite := $Sprite as AnimatedSprite2D
+		sprite.modulate = Color.WHITE
+		sprite.play()
+	queue_redraw()
 
 
 ## Shows the ghost for `duration` seconds without changing what it's doing

@@ -1,15 +1,15 @@
 class_name GhostBehavior
 extends RefCounted
 ## Base class for type-specific ghost behaviour. Each ghost type (Banshee,
-## Poltergeist, Sentry, Marionette, Demon) extends this and overrides the
-## hooks it cares about.
+## Poltergeist, Sentry, Marionette, Demon, Phantom, Fox, Cold, Fae) extends
+## this and overrides the hooks it cares about.
 ## The defaults do nothing, so every ghost currently acts the same.
 ##
 ## To add a behaviour: override a hook in the type's script. If you need a
 ## hook that doesn't exist yet, add it here with a do-nothing default and
 ## call it from ghost.gd.
 
-enum Type { BANSHEE, POLTERGEIST, SENTRY, MARIONETTE, DEMON }
+enum Type { BANSHEE, POLTERGEIST, SENTRY, MARIONETTE, DEMON, PHANTOM, FOX, COLD, FAE }
 
 ## The ghost this behaviour drives. Set before `on_spawned()` is called.
 var ghost: Ghost
@@ -28,6 +28,14 @@ static func create(type: Type) -> GhostBehavior:
 			return MarionetteBehavior.new()
 		Type.DEMON:
 			return DemonBehavior.new()
+		Type.PHANTOM:
+			return PhantomBehavior.new()
+		Type.FOX:
+			return FoxBehavior.new()
+		Type.COLD:
+			return ColdBehavior.new()
+		Type.FAE:
+			return FaeBehavior.new()
 	push_error("Unknown ghost type: %s" % type)
 	return GhostBehavior.new()
 
@@ -60,6 +68,8 @@ func get_evidence() -> Array[Evidence.Type]:
 		result.append(Evidence.Type.UV_RESIDUE)
 	if shows_in_fog():
 		result.append(Evidence.Type.FOG_FIGURE)
+	if reacts_to_holy_water():
+		result.append(Evidence.Type.HOLY_WATER)
 	return result
 
 
@@ -120,8 +130,8 @@ func get_return_home_chance(base_chance: float) -> float:
 	return base_chance
 
 
-## What freezing ghost types (Banshee, Sentry, Marionette, Demon) chill
-## their favourite room towards, in °C - cold enough that it reliably reads below
+## What freezing ghost types (Banshee, Sentry, Marionette, Demon, Cold)
+## chill their favourite room towards, in °C - cold enough that it reliably reads below
 ## zero.
 const FREEZING_TEMPERATURE := -8.0
 
@@ -152,6 +162,12 @@ func leaves_uv_residue() -> bool:
 ## Called right after the ghost interacts with something (e.g. a sink).
 func on_interacted(_item: GhostInteractable) -> void:
 	pass
+
+
+## True if this ghost type reacts to holy water (it freezes for a moment when
+## a flask splashes it while it's visible) - the holy water evidence.
+func reacts_to_holy_water() -> bool:
+	return false
 
 
 ## True if this ghost type shows up as a figure in a fog machine's fog

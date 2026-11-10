@@ -4,8 +4,9 @@ extends Node2D
 ## survival time and handles game over / restart.
 
 const GhostScene := preload("res://scenes/ghost.tscn")
-## Items the player starts with, by id (see res://items/).
-const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_reader", &"doll", &"uv_light", &"journal", &"fog_machine"]
+## Items the player starts with, by id (see res://items/). Stackable ones
+## (holy water) start as a full stack.
+const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_reader", &"doll", &"uv_light", &"journal", &"fog_machine", &"holy_water"]
 
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
@@ -97,7 +98,7 @@ func _ready() -> void:
 		player.sanity = player.max_sanity * threshold - 0.01
 	temperatures.setup(house, ghost)
 	for id in STARTING_ITEMS:
-		player.inventory.add_item(ItemDB.create(id))
+		player.inventory.add_item(ItemDB.create(id, ItemDB.get_data(id).max_stack))
 	toolbar.player = player
 	thermometer_overlay.player = player
 	emf_overlay.player = player

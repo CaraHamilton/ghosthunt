@@ -31,4 +31,4 @@ position = Vector2(0, -19)
 color = Color(1, 0.85, 0.6, 1)
 energy = 0.8
 texture = SubResource("GradientTexture2D_fire")
-texture_scale = 0.4
+texture_scale = 0.5

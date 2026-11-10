@@ -316,7 +316,6 @@ position = Vector2(120, 64)
 
 [node name="OfficeFireplace" parent="Furniture" unique_id=1447865753 instance=ExtResource("18_cf56p")]
 position = Vector2(160, 464)
-footprint = Vector2(32, 12)
 
 [node name="OfficeDesk" parent="Furniture" unique_id=1347370478 instance=ExtResource("7_wwyrc")]
 position = Vector2(24, 464)

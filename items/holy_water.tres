@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/tools/holy_water.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://art/toolbar_icons/holy_water_toolbar.png" id="3_icon"]
+[ext_resource type="Texture2D" path="res://art/overworld/holy_water_overworld.png" id="4_floor"]
+[ext_resource type="Texture2D" path="res://art/held/holy_water.png" id="5_held"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"holy_water"
+display_name = "Holy Water"
+description = "Click to throw a flask (up to 8 tiles). Some ghosts freeze for a moment when it splashes them while they're visible."
+icon = ExtResource("3_icon")
+held_sheet = ExtResource("5_held")
+floor_sprite = ExtResource("4_floor")
+max_stack = 10
+instance_script = ExtResource("2_script")

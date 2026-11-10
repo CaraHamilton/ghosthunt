@@ -236,6 +236,23 @@ func is_tile_taken(cell: Vector2i) -> bool:
 	return false
 
 
+## True if `point` (world space) is inside a wall's collision shape.
+func is_wall_at(point: Vector2) -> bool:
+	var walls := walls_layer
+	if walls.tile_set == null or walls.tile_set.get_physics_layers_count() == 0:
+		return false
+	var local := walls.to_local(point)
+	var wall_cell := walls.local_to_map(local)
+	var data := walls.get_cell_tile_data(wall_cell)
+	if data == null:
+		return false
+	var in_tile := local - walls.map_to_local(wall_cell)
+	for i: int in data.get_collision_polygons_count(0):
+		if Geometry2D.is_point_in_polygon(in_tile, data.get_collision_polygon_points(0, i)):
+			return true
+	return false
+
+
 func _is_solid_wall(cell: Vector2i) -> bool:
 	var walls := walls_layer
 	var point := walls.to_local(tile_rect(cell).get_center())
