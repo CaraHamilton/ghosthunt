@@ -1,9 +1,16 @@
 [gd_scene format=3 uid="uid://dmdqmu31femkc"]
 
-[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_prop"]
+[ext_resource type="Script" uid="uid://b4p8p4wouf44r" path="res://scripts/interactables/switchable.gd" id="1_switchable"]
 [ext_resource type="Texture2D" uid="uid://rhrp3nvpvq1n" path="res://art/furniture/oak/oak_tub.png" id="2_upgam"]
+[ext_resource type="Texture2D" uid="uid://53cxalegjciv" path="res://art/uv_residue/handprint_default.png" id="3_ulcby"]
 
 [node name="OakTub" type="StaticBody2D" unique_id=353646779]
-script = ExtResource("1_prop")
+script = ExtResource("1_switchable")
 art = ExtResource("2_upgam")
-footprint = Vector2(40, 16)
+facing = 1
+side_footprint = Vector2(32, 16)
+residue_position = Vector2(0, -16)
+residue_art = ExtResource("3_ulcby")
+snap_to_tile = false
+footprint = Vector2(16, 32)
+player_can_use = true

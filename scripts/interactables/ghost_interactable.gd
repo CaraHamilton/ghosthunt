@@ -31,14 +31,25 @@ extends StaticBody2D
 ## How close (px) the player must be to the footprint to use it.
 @export var player_reach := 14.0
 
+## Chance (0-1) that a residue-leaving ghost leaves UV residue each time it
+## touches something.
+const RESIDUE_CHANCE := 0.5
+
+## Whether residue-leaving ghosts leave UV residue on this (false for the
+## doll). Set by each interactable, in _init.
+var can_have_residue := true
 ## Where the UV residue glow is centred, relative to the origin (e.g. on top
 ## of a sink's counter). Set by each interactable.
 var residue_offset := Vector2(0, -8)
+## The residue picture and whether it's mirrored (null = the default art).
+## Set by each interactable, before _ready.
+var residue_texture: Texture2D
+var residue_flip_h := false
 ## True once a residue-leaving ghost has touched this. Only visible where the
 ## UV light shines on it (see ResidueGlow).
 var has_residue := false:
 	set(value):
-		has_residue = value
+		has_residue = value and can_have_residue
 		if _residue_glow:
 			_residue_glow.visible = has_residue
 
@@ -67,10 +78,13 @@ func _ready() -> void:
 		add_child(shape)
 	if player_can_use:
 		_build_player_zone()
-	_residue_glow = ResidueGlow.new()
-	_residue_glow.position = residue_offset
-	_residue_glow.visible = has_residue
-	add_child(_residue_glow)
+	if can_have_residue:
+		_residue_glow = ResidueGlow.new()
+		_residue_glow.position = residue_offset
+		_residue_glow.texture = residue_texture
+		_residue_glow.flip_h = residue_flip_h
+		_residue_glow.visible = has_residue
+		add_child(_residue_glow)
 
 
 ## The solid area on the floor, in global coordinates.
@@ -95,13 +109,30 @@ func ghost_can_use(_ghost: Ghost) -> bool:
 ## Called by the ghost. Don't override this - override _on_ghost_interact.
 func ghost_interact(ghost: Ghost) -> void:
 	_last_interaction_time = _game_time()
-	if ghost.behavior.leaves_uv_residue():
+	# Residue-leaving ghosts only leave it some of the time. Once there, it
+	# stays.
+	if ghost.behavior.leaves_uv_residue() and can_have_residue and randf() < RESIDUE_CHANCE:
+		if OS.is_debug_build() and not has_residue:
+			print("[debug] The ghost left UV residue on %s" % name)
 		has_residue = true
 	_on_ghost_interact(ghost)
+	if Game.current:
+		var levels := emf_levels()
+		Game.current.add_emf_source(self, levels.x, levels.y, emf_5_chance())
 
 
-## Seconds since the ghost last touched this (INF if never). Used by the EMF
-## reader to pick up the ghost's traces.
+## The EMF this gives off after the ghost touches it (min, max): 1-2 for
+## something switched on (a sink). Switchables the ghost knocks over give 2-3.
+func emf_levels() -> Vector2i:
+	return Vector2i(1, 2)
+
+
+## Chance (0-1) the EMF is a 5 instead, for ghost types that show EMF 5.
+func emf_5_chance() -> float:
+	return 0.1
+
+
+## Seconds since the ghost last touched this (INF if never).
 func seconds_since_ghost_interaction() -> float:
 	return _game_time() - _last_interaction_time
 
@@ -128,6 +159,18 @@ func describe_last_interaction() -> String:
 
 
 # --- Player use -------------------------------------------------------------
+
+## Where right-clicking counts as clicking on it, in global coordinates.
+## Override to match the art (see Switchable); this is the footprint.
+func get_click_rect() -> Rect2:
+	return get_footprint()
+
+
+## True if clicking at `point` (global) counts as clicking on it. Override to
+## match the art exactly (see Switchable); this is inside get_click_rect.
+func is_clicked_at(point: Vector2) -> bool:
+	return get_click_rect().has_point(point)
+
 
 ## Called by the player pressing E. Don't override - override _on_player_interact.
 func player_interact(player: Player) -> void:

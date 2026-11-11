@@ -55,8 +55,9 @@ func _draw() -> void:
 		if item:
 			item.draw_icon(self, rect.grow(-(SLOT_SIZE - ICON_SIZE) / 2.0 * ART_SCALE))
 			if item.count > 1:
-				draw_string(font, rect.end - Vector2(18, 6), str(item.count),
-					HORIZONTAL_ALIGNMENT_RIGHT, 14, 13, Color("2a1a10"))
+				# Right-aligned to the corner, wide enough for two digits.
+				draw_string(font, rect.end - Vector2(32, 6), str(item.count),
+					HORIZONTAL_ALIGNMENT_RIGHT, 28, 13, Color("2a1a10"))
 	# The highlight is centred on the selected slot (it can be bigger than it).
 	var selected := slot_rect(player.selected_slot)
 	draw_texture(SELECT, selected.get_center() - SELECT.get_size() / 2.0)

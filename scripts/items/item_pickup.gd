@@ -80,10 +80,6 @@ func player_interact(player: Player) -> void:
 func _draw() -> void:
 	var size := FLOOR_ICON_SIZE
 	var up := Vector2(0, -elevation)  # raised onto a table
-	# Shadow
-	draw_set_transform(up + Vector2(0, 0.5), 0.0, Vector2(1.0, 0.4))
-	draw_circle(Vector2.ZERO, size * 0.45, Color(0, 0, 0, 0.3))
-	draw_set_transform(Vector2.ZERO)
 	var art := item.data.floor_sprite
 	if art:
 		draw_texture(art, up + Vector2(-art.get_width() / 2, -art.get_height()))

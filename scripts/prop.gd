@@ -98,6 +98,9 @@ const FALLBACK_TAGS := [
 
 
 ## Cached sheet (see _sheet), and when it was read.
+## A CPU copy of `art`, for is_art_at (made the first time it's needed).
+var _art_image: Image
+var _art_image_of: Texture2D
 var _sheet_cache := {}
 var _sheet_path := ""
 var _sheet_time := 0
@@ -164,6 +167,48 @@ func _process(_delta: float) -> void:
 	# Redraw while animating, so the frame advances.
 	if art and _frames_to_show().size() > 1:
 		queue_redraw()
+
+
+## The area its art covers on screen, in global coordinates (the whole frame
+## canvas). Without art, its footprint.
+func get_art_rect() -> Rect2:
+	if art == null:
+		return get_footprint()
+	var frames := _frames_to_show()
+	var size := Vector2(art.get_size()) if frames.is_empty() else (frames[0].canvas as Vector2)
+	return Rect2(global_position + Vector2(-floorf(size.x / 2.0), -size.y), size)
+
+
+## True if `point` (global) is on a drawn pixel of the art - not the
+## see-through parts of its frame. Without art, inside the footprint.
+func is_art_at(point: Vector2) -> bool:
+	if art == null:
+		return get_footprint().has_point(point)
+	var local := point - global_position
+	var pixel: Vector2
+	var frames := _frames_to_show()
+	if frames.is_empty():
+		var corner := Vector2(-floorf(art.get_width() / 2.0), -art.get_height())
+		if not Rect2(corner, art.get_size()).has_point(local):
+			return false
+		pixel = local - corner
+	else:
+		var f: Dictionary = frames[0]
+		var canvas: Vector2 = f.canvas
+		var region: Rect2 = f.region
+		var corner: Vector2 = Vector2(-floorf(canvas.x / 2.0), -canvas.y) + f.offset
+		if not Rect2(corner, region.size).has_point(local):
+			return false
+		pixel = region.position + (local - corner)
+	if _art_image == null or _art_image_of != art:
+		_art_image = art.get_image()
+		_art_image_of = art
+		if _art_image and _art_image.is_compressed():
+			_art_image.decompress()
+	if _art_image == null:
+		return true
+	var p := Vector2i(pixel.floor()).clamp(Vector2i.ZERO, _art_image.get_size() - Vector2i.ONE)
+	return _art_image.get_pixelv(p).a > 0.1
 
 
 func _draw_art() -> void:

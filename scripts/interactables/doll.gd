@@ -6,21 +6,19 @@ extends GhostInteractable
 ## types (see GhostBehavior.possesses_doll) bother with it: when one is close
 ## by, it (invisibly) goes and stands on the doll and possesses it, and the
 ## doll stands up and waves. When the possession ends the doll sits back
-## down. Ghost traces (residue, last touch) are kept on `item` so they
-## survive being picked up.
+## down. The ghost's last touch is kept on `item` so it survives being
+## picked up. Ghosts never leave UV residue on the doll.
 
 ## The item this node represents (set before it's added to the scene).
 var item: DollItem:
 	set(value):
 		item = value
-		has_residue = item.has_residue
 		_last_interaction_time = item.last_ghost_touch_time
 
 ## How far (px) above its position the doll is drawn, when it's placed on a
 ## table (see ItemPickup.elevation). Set before adding it to the scene.
 var elevation := 0.0:
 	set(value):
-		residue_offset.y -= value - elevation
 		player_zone_raise = value
 		elevation = value
 
@@ -41,7 +39,7 @@ var is_possessed: bool:
 ## cooldown...) are set in scenes/doll.tscn, not here, so the
 ## editor never copies stale values into other scenes.
 func _init() -> void:
-	residue_offset = Vector2(0, -6)
+	can_have_residue = false
 
 
 func _ready() -> void:
@@ -77,7 +75,7 @@ func on_possessed(ghost: Ghost) -> void:
 func on_released() -> void:
 	possessed_by = null
 	sprite.play(&"sit")
-	# The ghost was touching it until now: the EMF and cooldown count from here.
+	# The ghost was touching it until now: the cooldown counts from here.
 	_last_interaction_time = _game_time()
 	_save_traces()
 
@@ -103,11 +101,4 @@ func _physics_process(delta: float) -> void:
 
 func _save_traces() -> void:
 	if item:
-		item.has_residue = has_residue
 		item.last_ghost_touch_time = _last_interaction_time
-
-
-func _draw() -> void:
-	draw_set_transform(Vector2(0, -elevation), 0.0, Vector2(1.0, 0.45))
-	draw_circle(Vector2.ZERO, 4.0, Color(0, 0, 0, 0.3))  # shadow
-	draw_set_transform(Vector2.ZERO)

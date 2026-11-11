@@ -4,15 +4,13 @@ extends Node2D
 ## survival time and handles game over / restart.
 
 const GhostScene := preload("res://scenes/ghost.tscn")
-## Items the player starts with, by id (see res://items/).
-const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_reader", &"doll", &"uv_light", &"journal"]
+## Items the player starts with, by id (see res://items/). Stackable ones
+## (holy water) start as a full stack.
+const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_reader", &"doll", &"uv_light", &"journal", &"fog_machine", &"holy_water"]
 
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
 
-## Fraction of full sanity lost each time the ghost catches the player
-## (0.5 = 50%: two catches empty even a full sanity bar).
-@export_range(0.0, 1.0) var catch_sanity_cost := 0.5
 ## Debug: draw the ghost faintly while it's invisible.
 @export var debug_show_ghost := false
 ## Debug: show the exact sanity percentage on the sanity bar (players
@@ -21,6 +19,9 @@ static var current: Game
 ## Debug: start the game with sanity right at the point where the ghost is
 ## allowed to hunt (its hunt_sanity_threshold), to test hunts without waiting.
 @export var debug_start_at_hunt_threshold := false
+
+## How long (s) EMF from something the ghost did lasts (see EMFSource).
+@export var emf_duration := 60.0
 
 @onready var house: House = $House
 @onready var world: Node2D = $World
@@ -42,12 +43,38 @@ var survived_time := 0.0
 var hunts := 0
 var is_game_over := false
 var times_caught := 0
-var _game_over_reason := ""
 ## The ghost haunting the house. It exists for the whole game.
 var ghost: Ghost
 ## The type of ghost haunting the house this game. The player's goal is to
 ## work this out from how the ghost behaves.
 var ghost_type: GhostBehavior.Type
+## What the EMF reader can pick up right now (see EMFSource).
+var emf_sources: Array[EMFSource] = []
+
+
+## Something the ghost did now gives off EMF: `at` is the object (a Node2D,
+## followed if it moves) or a spot (Vector2). The level is rolled from
+## `min_level`-`max_level`, or 5 with `chance_5` for ghosts that show EMF 5.
+func add_emf_source(at: Variant, min_level: int, max_level: int, chance_5: float) -> EMFSource:
+	var source := EMFSource.new()
+	source.level = EMFSource.roll_level(min_level, max_level, chance_5, ghost.behavior if ghost else null)
+	if at is Node2D:
+		source.node = at
+		# A fresh touch replaces the object's old EMF.
+		emf_sources = emf_sources.filter(func(s: EMFSource) -> bool: return s.node != at)
+	else:
+		source.position = at
+	source.created = game_time()
+	source.duration = emf_duration
+	emf_sources.append(source)
+	if OS.is_debug_build():
+		print("[debug] EMF %d at %s" % [source.level, at.name if at is Node2D else str(at)])
+	return source
+
+
+## Seconds of game time (stops while paused, follows Engine.time_scale).
+static func game_time() -> float:
+	return Engine.get_physics_frames() / float(Engine.physics_ticks_per_second)
 
 
 func _ready() -> void:
@@ -64,7 +91,6 @@ func _ready() -> void:
 		furniture.append(obstacle.get_footprint())
 	house.build_navigation(furniture)
 	game_over_panel.visible = false
-	player.sanity_depleted.connect(_on_player_sanity_depleted)
 	_spawn_ghost()
 	if debug_start_at_hunt_threshold:
 		# Just under the line where this ghost (type included) may start hunting.
@@ -72,7 +98,7 @@ func _ready() -> void:
 		player.sanity = player.max_sanity * threshold - 0.01
 	temperatures.setup(house, ghost)
 	for id in STARTING_ITEMS:
-		player.inventory.add_item(ItemDB.create(id))
+		player.inventory.add_item(ItemDB.create(id, ItemDB.get_data(id).max_stack))
 	toolbar.player = player
 	thermometer_overlay.player = player
 	emf_overlay.player = player
@@ -140,27 +166,19 @@ func _on_ghost_interacted(item: GhostInteractable) -> void:
 		print("[debug] The ghost %s" % item.describe_last_interaction())
 
 
-## Being caught costs a big chunk of sanity (the ghost ends its hunt). If it
-## empties their sanity, the game is over.
+## Being caught by the ghost is game over. (Running out of sanity isn't -
+## it just keeps the ghost hunting.)
 func _on_ghost_caught_player() -> void:
-	times_caught += 1
-	_flash_hurt()
-	_game_over_reason = "THE GHOST GOT YOU"
-	player.lose_sanity(player.max_sanity * catch_sanity_cost)
-	if not is_game_over:
-		_game_over_reason = ""
-
-
-func _on_player_sanity_depleted() -> void:
 	if is_game_over:
 		return
+	times_caught += 1
+	_flash_hurt()
 	is_game_over = true
 	ghost.set_physics_process(false)
 	journal_panel.close()
 	player.die()
-	game_over_title.text = _game_over_reason if _game_over_reason != "" else "YOUR SANITY RAN OUT"
-	game_over_stats.text = "You survived %d seconds and were caught %d time%s." % [
-		int(survived_time), times_caught, "" if times_caught == 1 else "s"]
+	game_over_title.text = "THE GHOST GOT YOU"
+	game_over_stats.text = "You survived %d seconds." % int(survived_time)
 	game_over_panel.visible = true
 
 

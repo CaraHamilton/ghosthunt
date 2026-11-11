@@ -3,7 +3,7 @@ class_name Room
 extends ReferenceRect
 ## One named room of the house - just a rectangle you drag and resize in the
 ## editor (it's invisible in the game). Used for room temperatures, the
-## ghost's favourite room, the EMF reader, wandering, etc.
+## ghost's favourite room, wandering, etc.
 ##
 ## Put Room nodes under House/Rooms. The room's name is `room_name`, or the
 ## node's name if that's left empty. Cover only the floor of the room, not

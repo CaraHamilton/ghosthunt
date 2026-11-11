@@ -1,14 +1,15 @@
 class_name GhostBehavior
 extends RefCounted
-## Base class for type-specific ghost behaviour. Each ghost type (Demon, Wraith,
-## Banshee, Poltergeist) extends this and overrides the hooks it cares about.
+## Base class for type-specific ghost behaviour. Each ghost type (Banshee,
+## Poltergeist, Sentry, Marionette, Demon, Phantom, Fox, Cold, Fae) extends
+## this and overrides the hooks it cares about.
 ## The defaults do nothing, so every ghost currently acts the same.
 ##
 ## To add a behaviour: override a hook in the type's script. If you need a
 ## hook that doesn't exist yet, add it here with a do-nothing default and
 ## call it from ghost.gd.
 
-enum Type { DEMON, BANSHEE, POLTERGEIST, WRAITH }
+enum Type { BANSHEE, POLTERGEIST, SENTRY, MARIONETTE, DEMON, PHANTOM, FOX, COLD, FAE }
 
 ## The ghost this behaviour drives. Set before `on_spawned()` is called.
 var ghost: Ghost
@@ -17,14 +18,24 @@ var ghost: Ghost
 ## Creates the behaviour object for a ghost type.
 static func create(type: Type) -> GhostBehavior:
 	match type:
-		Type.DEMON:
-			return DemonBehavior.new()
 		Type.BANSHEE:
 			return BansheeBehavior.new()
 		Type.POLTERGEIST:
 			return PoltergeistBehavior.new()
-		Type.WRAITH:
-			return WraithBehavior.new()
+		Type.SENTRY:
+			return SentryBehavior.new()
+		Type.MARIONETTE:
+			return MarionetteBehavior.new()
+		Type.DEMON:
+			return DemonBehavior.new()
+		Type.PHANTOM:
+			return PhantomBehavior.new()
+		Type.FOX:
+			return FoxBehavior.new()
+		Type.COLD:
+			return ColdBehavior.new()
+		Type.FAE:
+			return FaeBehavior.new()
 	push_error("Unknown ghost type: %s" % type)
 	return GhostBehavior.new()
 
@@ -49,12 +60,16 @@ func get_evidence() -> Array[Evidence.Type]:
 	var result: Array[Evidence.Type] = []
 	if get_cold_temperature(3.0, true) < 0.0:
 		result.append(Evidence.Type.FREEZING)
-	if get_emf_level(4) >= 5:
+	if shows_emf_5():
 		result.append(Evidence.Type.EMF_5)
 	if possesses_doll():
-		result.append(Evidence.Type.TOY_INTERACTION)
+		result.append(Evidence.Type.DOLL_POSSESSION)
 	if leaves_uv_residue():
 		result.append(Evidence.Type.UV_RESIDUE)
+	if shows_in_fog():
+		result.append(Evidence.Type.FOG_FIGURE)
+	if reacts_to_holy_water():
+		result.append(Evidence.Type.HOLY_WATER)
 	return result
 
 
@@ -88,6 +103,7 @@ func on_caught_player() -> void:
 
 
 ## Chance (0-1) of starting a hunt on each check once off cooldown.
+## `base_chance` already rises as the player's sanity drops.
 ## Return 0 to stop this ghost hunting on its own.
 func get_hunt_chance(base_chance: float) -> float:
 	return base_chance
@@ -114,8 +130,9 @@ func get_return_home_chance(base_chance: float) -> float:
 	return base_chance
 
 
-## What freezing ghost types (Banshee, Wraith) chill their favourite room
-## towards, in °C - cold enough that it reliably reads below zero.
+## What freezing ghost types (Banshee, Sentry, Marionette, Demon, Cold)
+## chill their favourite room towards, in °C - cold enough that it reliably reads below
+## zero.
 const FREEZING_TEMPERATURE := -8.0
 
 
@@ -147,10 +164,22 @@ func on_interacted(_item: GhostInteractable) -> void:
 	pass
 
 
-## Final say on what the EMF reader shows (0-5). `base_level` is worked out
-## from distance, rooms and hunts, and never exceeds 4.
-func get_emf_level(base_level: int) -> int:
-	return base_level
+## True if this ghost type reacts to holy water (it freezes for a moment when
+## a flask splashes it while it's visible) - the holy water evidence.
+func reacts_to_holy_water() -> bool:
+	return false
+
+
+## True if this ghost type shows up as a figure in a fog machine's fog
+## (see FogMachine) - the fog figure evidence.
+func shows_in_fog() -> bool:
+	return false
+
+
+## True if this ghost type can leave EMF 5 on the things it touches and
+## where it appears (see EMFSource) - the EMF 5 evidence.
+func shows_emf_5() -> bool:
+	return false
 
 
 ## Speed during a hunt while it can see the player and goes straight for

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://eqi2cfdd7s3j"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
-offsets = PackedFloat32Array(0, 0.56216216, 0.6864865)
+offsets = PackedFloat32Array(0, 0.8704663, 1)
 colors = PackedColorArray(1, 0.9019608, 0.69803923, 0.74509805, 0.6431373, 0.5803922, 0.4509804, 0.47058824, 0, 0, 0, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_light"]
@@ -16,4 +16,4 @@ fill_to = Vector2(0.5, 0)
 color = Color(1, 0.85, 0.6, 1)
 energy = 1.25
 texture = SubResource("GradientTexture2D_light")
-texture_scale = 0.8
+texture_scale = 0.5

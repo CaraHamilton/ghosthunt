@@ -1,26 +1,36 @@
 class_name PlaceHighlight
 extends CanvasLayer
-## While Q is held, outlines the tile the selected item will be placed on
-## when it's let go: white if it can go there, red if not (a wall,
-## furniture, or another item is in the way). On a table, the outline sits
-## up on the table's top.
+## Corner brackets showing what the player is about to act on:
+##   - While Q is held: the tile the selected item will be placed on when
+##     it's let go (white if it can go there, red if not).
+##   - While right click is held: what letting go will act on under the
+##     mouse (see Player.right_click_target): a placed tool to pick up
+##     (gold), or an empty tile next to the player to place
+##     the held item on (white, or red if it can't go there). Red over a
+##     tile too far away, or the player's own tile while holding something.
+## On a table, the outline sits up on the table's top. After a blocked try it
+## flashes red for a moment.
 ##
 ## It's on its own canvas layer that follows the camera, so the house's
 ## darkness doesn't hide it.
 
 const OK_COLOR := Color(1, 1, 1, 0.35)
 const BLOCKED_COLOR := Color(1, 0.3, 0.3, 0.45)
-## How long (seconds) the outline flashes after trying to place on a
-## blocked tile.
+const TARGET_COLOR := Color(1.0, 0.85, 0.4, 0.55)
+## How long (seconds) the outline flashes after a blocked try.
 const FLASH_TIME := 0.3
 
-## True while the player holds Q: the outline shows (it also shows briefly
-## after a blocked try, to flash red).
+## True while the player holds Q: the outline shows the tile in front of them.
 var aiming := false
+## True while the player holds right click: the outline shows what letting
+## go will act on, under the mouse.
+var mouse_aiming := false
 
 var _canvas := Node2D.new()
-var _spot := {}
+var _rect := Rect2()
+var _color := Color.TRANSPARENT
 var _flash := 0.0
+var _flash_rect := Rect2()
 
 
 func _ready() -> void:
@@ -29,29 +39,46 @@ func _ready() -> void:
 	add_child(_canvas)
 
 
-## Briefly brightens the outline (placing there didn't work).
-func flash_blocked() -> void:
+## Flashes red (placing or picking up there didn't work): over `rect`, or
+## over the Q tile if no rect is given.
+func flash_blocked(rect := Rect2()) -> void:
 	_flash = FLASH_TIME
+	_flash_rect = rect
 
 
 func _process(delta: float) -> void:
 	_flash = maxf(0.0, _flash - delta)
 	var player := get_parent() as Player
 	var game := Game.current
-	var active := game != null and (aiming or _flash > 0.0) and player.selected_item != null \
-		and not player.is_dead and not player.in_menu
-	_spot = player.place_spot() if active else {}
+	_rect = Rect2()
+	if game != null and not player.is_dead and not player.in_menu:
+		if _flash > 0.0 and _flash_rect.has_area():
+			_rect = _flash_rect
+			_color = BLOCKED_COLOR
+		elif (aiming or _flash > 0.0) and player.selected_item != null:
+			var spot := player.place_spot()
+			_rect = spot.rect
+			_color = OK_COLOR if spot.ok else BLOCKED_COLOR
+		elif mouse_aiming:
+			var target := player.right_click_target(player.get_global_mouse_position())
+			match target.kind:
+				&"pick_up":
+					_rect = target.rect
+					_color = TARGET_COLOR
+				&"place":
+					_rect = target.rect
+					_color = OK_COLOR if target.spot.ok else BLOCKED_COLOR
+				&"blocked":
+					_rect = target.rect
+					_color = BLOCKED_COLOR
+	if _flash > 0.0:
+		_color.a = 0.9
 	_canvas.queue_redraw()
 
 
 func _draw_outline() -> void:
-	if _spot.is_empty():
-		return
-	var color := OK_COLOR if _spot.ok else BLOCKED_COLOR
-	if _flash > 0.0:
-		color.a = 0.9
-	var r: Rect2 = _spot.rect
-	draw_corners(r.grow(-0.5), color)
+	if _rect.has_area():
+		draw_corners(_rect.grow(-0.5), _color)
 
 
 ## Stardew-style corner brackets (lighter than a full box).

@@ -1,16 +1,24 @@
 class_name Player
 extends CharacterBody2D
-## Top-down player. Walks with WASD/arrows, runs with Shift, and uses the
-## closest nearby object with E/Space (toggles sinks, picks up items). Picks a toolbar slot with 1-9, or the
-## mouse wheel, uses the selected item while holding F / left mouse, and
-## places it on the tile in front of her by letting go of Q (holding Q shows
-## which tile first; one item per tile; tables
-## and other surfaces take items too). There's nowhere to hide: during a hunt, run and break the
-## ghost's line of sight.
+## Top-down player. Walks with WASD/arrows, runs with Shift, and picks a
+## toolbar slot with 1-9 or the mouse wheel.
+##   Left mouse / F  uses the selected item while held (the doll and fog
+##                   machine have no use in hand). Left-clicking a house
+##                   object within reach (sink, tub, book stack...) uses
+##                   that instead - see house_object_at.
+##   Right mouse     on her own tile or the 8 around it: picks up a placed
+##                   tool (whatever she's holding), or puts the selected
+##                   item down on an empty tile. Hold it to see which first.
+##                   See right_click_target.
+##   Q               places the selected item on the tile in front of her
+##                   when let go (holding it shows which tile first).
+##   E / Space       uses the closest nearby object (or picks up an item).
+## One item per tile; tables and other surfaces take items too. There's
+## nowhere to hide: during a hunt, run and break the ghost's line of sight.
 ##
 ## Sanity starts full and slowly drains while in the house (it stops, but
-## doesn't recover, outside). Being caught by the ghost costs a big chunk; at
-## 0 it's game over. Only restore_sanity() (e.g. medicine) brings it back up.
+## doesn't recover, outside). Reaching 0 isn't game over (being caught by the
+## ghost is). Only restore_sanity() (e.g. medicine) brings it back up.
 
 ## Emitted once when sanity hits 0.
 signal sanity_depleted
@@ -105,7 +113,9 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	if in_menu or (is_using_item and selected_item.blocks_movement):
+	# (selected_item can be gone while using it - e.g. the last flask of holy
+	# water was just thrown.)
+	if in_menu or (is_using_item and selected_item and selected_item.blocks_movement):
 		input = Vector2.ZERO
 	velocity = input * walk_speed
 	move_and_slide()
@@ -166,6 +176,23 @@ func _unhandled_input(event: InputEvent) -> void:
 			_place_highlight.aiming = false
 			place_selected()
 		return
+	# Left click on a house object (a sink...) uses it instead of the held
+	# tool - and the tool stays unused until the button is let go.
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed and left_click(get_global_mouse_position()):
+		_use_blocked_until_release = true
+		_set_using_item(false)
+		get_viewport().set_input_as_handled()
+		return
+	# Same as Q for right click: hold it to see what it will act on, let go.
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.pressed:
+			_place_highlight.mouse_aiming = true
+		elif _place_highlight.mouse_aiming:
+			_place_highlight.mouse_aiming = false
+			right_click(get_global_mouse_position())
+		get_viewport().set_input_as_handled()
+		return
 	if not event.is_action_pressed("interact"):
 		return
 	if _focused and _focused.has_method("player_interact"):
@@ -176,6 +203,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func die() -> void:
 	is_dead = true
 	_place_highlight.aiming = false
+	_place_highlight.mouse_aiming = false
 	velocity = Vector2.ZERO
 	sprite.stop()
 	sprite.modulate = Color(0.55, 0.55, 0.6)  # drained of colour
@@ -206,7 +234,9 @@ func lose_sanity(amount: float) -> void:
 ## Called by windows like the journal when they open and close.
 func set_in_menu(value: bool) -> void:
 	in_menu = value
-	_place_highlight.aiming = false  # a held Q doesn't place after the menu
+	# A held Q or right click doesn't act after the menu.
+	_place_highlight.aiming = false
+	_place_highlight.mouse_aiming = false
 	if not value:
 		_use_blocked_until_release = true
 
@@ -227,7 +257,8 @@ func pick_up(item: ItemInstance, from_node: Node2D) -> bool:
 	unregister_interactable(from_node)
 	if from_node == _focused:
 		_focused = null
-	inventory.add_item(item)
+	# Into the selected slot if it's free, else the first free one.
+	inventory.add_item(item, selected_slot)
 	item.on_picked_up(self)
 	return true
 
@@ -259,9 +290,131 @@ func place_selected() -> void:
 	if not spot.ok:
 		_place_highlight.flash_blocked()
 		return
+	_place_at(spot)
+
+
+## Puts one of the selected item down at `spot` (from House.get_place_spot,
+## and ok).
+func _place_at(spot: Dictionary) -> void:
 	_set_using_item(false)
 	var item := inventory.remove_from_slot(selected_slot, 1)
-	ItemPickup.place(item, game.world, spot)
+	ItemPickup.place(item, Game.current.world, spot)
+
+
+# --- Mouse ----------------------------------------------------------------------
+
+## The tile under the middle of our feet.
+func standing_cell() -> Vector2i:
+	return Game.current.house.tile_at(global_position + _feet.position)
+
+
+## The house object a left click at `point` (world space) would use instead
+## of the held tool: something the player can switch, like a sink, tub or
+## book stack, whose art is under `point` and that's within reach (our tile
+## and the 8 around it). The front-most one if several overlap. Null if none.
+## Fires don't count (left click with the lantern lights them), nor do
+## placed tools (right click picks those up).
+func house_object_at(point: Vector2) -> GhostInteractable:
+	var reach := Game.current.house.tile_rect(standing_cell()).grow(16.0)
+	var best: GhostInteractable = null
+	for thing: GhostInteractable in get_tree().get_nodes_in_group("ghost_interactables"):
+		if not thing.player_can_use or thing.is_queued_for_deletion():
+			continue
+		if ("item" in thing and thing.item != null) or (thing is Switchable and thing.is_lit_type()):
+			continue
+		if not thing.is_clicked_at(point):
+			continue
+		if thing not in _nearby and not thing.get_footprint().intersects(reach):
+			continue
+		if best == null or thing.global_position.y > best.global_position.y:
+			best = thing
+	return best
+
+
+## Left click at `point`: uses the house object there, if any (see
+## house_object_at). Returns true if it did - then the held tool isn't used
+## for this click.
+func left_click(point: Vector2) -> bool:
+	if is_dead or in_menu:
+		return false
+	var thing := house_object_at(point)
+	if thing == null:
+		return false
+	thing.player_interact(self)
+	return true
+
+
+## What a right click at `point` (world space) would do. Only our own tile
+## or the 8 around it count. In order:
+##   kind "pick_up" - a tool we placed is there (node = its world node)
+##   kind "place"   - an empty tile next to us, and we're holding something
+##                    (spot = from House.get_place_spot; spot.ok is false if
+##                    the item can't go there)
+##   kind "blocked" - a tile too far away, or the one we're standing on
+##                    while holding something (we're in the way)
+##   kind "none"    - nothing to do
+## `rect` is the area to highlight.
+func right_click_target(point: Vector2) -> Dictionary:
+	var house := Game.current.house
+	var me := standing_cell()
+	var near := func(cell: Vector2i) -> bool:
+		return absi(cell.x - me.x) <= 1 and absi(cell.y - me.y) <= 1
+
+	# A placed tool (on the floor, or raised up on a table).
+	for node in get_tree().get_nodes_in_group(House.PLACED_GROUP):
+		if node.is_queued_for_deletion() or not ("item" in node) or node.item == null:
+			continue  # (snapped decor like book stacks is in the group too)
+		var cell: Variant = node.get_meta("place_tile", null)
+		if cell == null or not near.call(cell):
+			continue
+		var rect := house.tile_rect(cell)
+		var lift: float = node.get("elevation") if "elevation" in node else 0.0
+		var raised := Rect2(rect.position - Vector2(0, lift), rect.size)
+		if rect.has_point(point) or raised.has_point(point):
+			return {kind = &"pick_up", node = node, rect = raised}
+
+	# An empty tile next to us to put the held item on.
+	if selected_item:
+		var on_surfaces := selected_item.data.can_place_on_surfaces
+		var blocked := {}
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				if dx == 0 and dy == 0:
+					continue
+				var spot := house.get_place_spot(me + Vector2i(dx, dy), on_surfaces)
+				if (spot.rect as Rect2).has_point(point):
+					if spot.ok:
+						return {kind = &"place", spot = spot, rect = spot.rect}
+					blocked = spot
+		if not blocked.is_empty():
+			return {kind = &"place", spot = blocked, rect = blocked.rect}
+	# Our own tile (we're in the way), or too far: nothing can happen there.
+	var cell := house.tile_at(point)
+	if cell != me or selected_item:
+		return {kind = &"blocked", rect = house.tile_rect(cell)}
+	return {kind = &"none"}
+
+
+## Right click at `point`: picks up a placed tool or puts the held item
+## down - see right_click_target. Whatever we're holding stays selected.
+func right_click(point: Vector2) -> void:
+	if is_dead or in_menu:
+		return
+	var target := right_click_target(point)
+	match target.kind:
+		&"pick_up":
+			var node: Node2D = target.node
+			if not inventory.has_room_for(node.item):
+				_place_highlight.flash_blocked(target.rect)
+				return
+			node.player_interact(self)
+		&"place":
+			if target.spot.ok:
+				_place_at(target.spot)
+			else:
+				_place_highlight.flash_blocked(target.rect)
+		&"blocked":
+			_place_highlight.flash_blocked(target.rect)
 
 
 ## Drops the selected item (one of a stack) on the floor in front of us,
