@@ -1,6 +1,14 @@
 { "frames": {
-   "oak_vanity.aseprite": {
+   "oak_vanity #down.aseprite": {
     "frame": { "x": 0, "y": 0, "w": 48, "h": 40 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 40 },
+    "sourceSize": { "w": 48, "h": 40 },
+    "duration": 100
+   },
+   "oak_vanity #down_broken.aseprite": {
+    "frame": { "x": 0, "y": 40, "w": 48, "h": 40 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 40 },
@@ -13,10 +21,11 @@
   "version": "1.3.18.6-x64",
   "image": "oak_vanity.png",
   "format": "RGBA8888",
-  "size": { "w": 48, "h": 40 },
+  "size": { "w": 48, "h": 80 },
   "scale": "1",
   "frameTags": [
-   { "name": "down", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff" }
+   { "name": "down", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff" },
+   { "name": "down_broken", "from": 1, "to": 1, "direction": "forward", "color": "#000000ff" }
   ]
  }
 }
