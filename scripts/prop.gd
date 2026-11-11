@@ -166,6 +166,16 @@ func _process(_delta: float) -> void:
 		queue_redraw()
 
 
+## The area its art covers on screen, in global coordinates (the whole frame
+## canvas). Without art, its footprint.
+func get_art_rect() -> Rect2:
+	if art == null:
+		return get_footprint()
+	var frames := _frames_to_show()
+	var size := Vector2(art.get_size()) if frames.is_empty() else (frames[0].canvas as Vector2)
+	return Rect2(global_position + Vector2(-floorf(size.x / 2.0), -size.y), size)
+
+
 func _draw_art() -> void:
 	var frames := _frames_to_show()
 	if frames.is_empty():

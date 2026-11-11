@@ -251,6 +251,11 @@ func _on_ghost_interact(_ghost: Ghost) -> void:
 	changed = not changed
 
 
+## Right-clicking anywhere on its art counts.
+func get_click_rect() -> Rect2:
+	return _art_node.get_art_rect() if _art_node else get_footprint()
+
+
 func _on_player_interact(_player: Player) -> void:
 	if is_lit_type():
 		return  # fires are lit with the lantern, not E

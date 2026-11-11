@@ -160,6 +160,12 @@ func describe_last_interaction() -> String:
 
 # --- Player use -------------------------------------------------------------
 
+## Where right-clicking counts as clicking on it, in global coordinates.
+## Override to match the art (see Switchable); this is the footprint.
+func get_click_rect() -> Rect2:
+	return get_footprint()
+
+
 ## Called by the player pressing E. Don't override - override _on_player_interact.
 func player_interact(player: Player) -> void:
 	_on_player_interact(player)
