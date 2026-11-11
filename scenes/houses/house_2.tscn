@@ -220,7 +220,7 @@ position = Vector2(408, 192)
 raise = 10.0
 
 [node name="HallwayBookStack" parent="Furniture" unique_id=113220838 instance=ExtResource("25_xxh47")]
-position = Vector2(104, 288)
+position = Vector2(72, 376)
 raise = 11.0
 
 [node name="HallwayDesk" parent="Furniture" unique_id=929624473 instance=ExtResource("7_wwyrc")]

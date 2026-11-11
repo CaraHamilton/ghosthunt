@@ -5,7 +5,7 @@ extends ItemInstance
 ##   1-2  next to something the ghost switched on (a sink)
 ##   2-3  next to something the ghost knocked over (a stack of books)
 ##   4    where the ghost appeared
-##   5    only ghosts that show EMF 5 (Poltergeist, Sentry, Demon, Fox):
+##   5    only ghosts that show EMF 5 (Banshee, Poltergeist, Sentry, Demon, Fox):
 ##        sometimes instead of the above - 10% of 1-2s, 30% of 2-3s, 50% of 4s
 ## During a hunt it goes haywire everywhere, flashing 1-4 at random (never 5).
 

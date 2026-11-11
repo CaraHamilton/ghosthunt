@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_prop"]
 [ext_resource type="Texture2D" uid="uid://6l6bjuc1nh0v" path="res://art/furniture/purple/purple_fancy_chair.png" id="2_3dthd"]
 
-[node name="OakChair" type="StaticBody2D" unique_id=839130499]
+[node name="PurpleFancyChair" type="StaticBody2D" unique_id=839130499]
 script = ExtResource("1_prop")
 art = ExtResource("2_3dthd")
 footprint = Vector2(16, 16)

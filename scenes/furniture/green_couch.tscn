@@ -6,4 +6,5 @@
 [node name="GreenCouch" type="StaticBody2D" unique_id=796872995]
 script = ExtResource("1_prop")
 art = ExtResource("2_art")
-footprint = Vector2(64, 32)
+footprint = Vector2(64, 16)
+side_footprint = Vector2(16, 64)

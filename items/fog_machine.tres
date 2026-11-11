@@ -3,11 +3,15 @@
 [ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
 [ext_resource type="Texture2D" path="res://art/toolbar_icons/fog_machine_toolbar.png" id="2_icon"]
 [ext_resource type="PackedScene" path="res://scenes/fog_machine.tscn" id="3_world"]
+[ext_resource type="Texture2D" path="res://art/held/fog_machine.png" id="4_held"]
+[ext_resource type="Script" path="res://scripts/tools/place_on_use_item.gd" id="5_script"]
 
 [resource]
 script = ExtResource("1_data")
 id = &"fog_machine"
 display_name = "Fog Machine"
-description = "Put it down (Q) and it fills the tiles on all four sides with fog. Some ghosts show up as a figure when they pass through it."
+description = "Put it down (click or Q) and it fills the tiles on all four sides with fog. Some ghosts show up as a figure when they pass through it."
 icon = ExtResource("2_icon")
+held_sheet = ExtResource("4_held")
+instance_script = ExtResource("5_script")
 world_scene = ExtResource("3_world")

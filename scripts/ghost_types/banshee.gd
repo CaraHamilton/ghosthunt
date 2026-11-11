@@ -14,6 +14,6 @@ func get_cold_temperature(base_temperature: float, is_favorite_room: bool) -> fl
 	return FREEZING_TEMPERATURE if is_favorite_room else base_temperature
 
 
-## Banshees show up as a figure in the fog machine's fog.
-func shows_in_fog() -> bool:
+## Banshees can make the EMF reader hit level 5.
+func shows_emf_5() -> bool:
 	return true
