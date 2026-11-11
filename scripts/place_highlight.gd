@@ -6,8 +6,8 @@ extends CanvasLayer
 ##   - While right click is held: what letting go will act on under the
 ##     mouse (see Player.right_click_target): a placed tool to pick up
 ##     (gold), or an empty tile next to the player to place
-##     the held item on (white, or red if it can't go there). Nothing when
-##     the mouse is further away.
+##     the held item on (white, or red if it can't go there). Red over a
+##     tile too far away, or the player's own tile while holding something.
 ## On a table, the outline sits up on the table's top. After a blocked try it
 ## flashes red for a moment.
 ##
@@ -68,6 +68,9 @@ func _process(delta: float) -> void:
 				&"place":
 					_rect = target.rect
 					_color = OK_COLOR if target.spot.ok else BLOCKED_COLOR
+				&"blocked":
+					_rect = target.rect
+					_color = BLOCKED_COLOR
 	if _flash > 0.0:
 		_color.a = 0.9
 	_canvas.queue_redraw()

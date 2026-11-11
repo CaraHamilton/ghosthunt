@@ -322,7 +322,7 @@ func house_object_at(point: Vector2) -> GhostInteractable:
 			continue
 		if ("item" in thing and thing.item != null) or (thing is Switchable and thing.is_lit_type()):
 			continue
-		if not thing.get_click_rect().has_point(point):
+		if not thing.is_clicked_at(point):
 			continue
 		if thing not in _nearby and not thing.get_footprint().intersects(reach):
 			continue
@@ -350,6 +350,8 @@ func left_click(point: Vector2) -> bool:
 ##   kind "place"   - an empty tile next to us, and we're holding something
 ##                    (spot = from House.get_place_spot; spot.ok is false if
 ##                    the item can't go there)
+##   kind "blocked" - a tile too far away, or the one we're standing on
+##                    while holding something (we're in the way)
 ##   kind "none"    - nothing to do
 ## `rect` is the area to highlight.
 func right_click_target(point: Vector2) -> Dictionary:
@@ -386,6 +388,10 @@ func right_click_target(point: Vector2) -> Dictionary:
 					blocked = spot
 		if not blocked.is_empty():
 			return {kind = &"place", spot = blocked, rect = blocked.rect}
+	# Our own tile (we're in the way), or too far: nothing can happen there.
+	var cell := house.tile_at(point)
+	if cell != me or selected_item:
+		return {kind = &"blocked", rect = house.tile_rect(cell)}
 	return {kind = &"none"}
 
 
@@ -407,6 +413,8 @@ func right_click(point: Vector2) -> void:
 				_place_at(target.spot)
 			else:
 				_place_highlight.flash_blocked(target.rect)
+		&"blocked":
+			_place_highlight.flash_blocked(target.rect)
 
 
 ## Drops the selected item (one of a stack) on the floor in front of us,

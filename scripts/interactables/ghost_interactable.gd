@@ -166,6 +166,12 @@ func get_click_rect() -> Rect2:
 	return get_footprint()
 
 
+## True if clicking at `point` (global) counts as clicking on it. Override to
+## match the art exactly (see Switchable); this is inside get_click_rect.
+func is_clicked_at(point: Vector2) -> bool:
+	return get_click_rect().has_point(point)
+
+
 ## Called by the player pressing E. Don't override - override _on_player_interact.
 func player_interact(player: Player) -> void:
 	_on_player_interact(player)

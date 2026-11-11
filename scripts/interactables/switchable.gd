@@ -251,9 +251,15 @@ func _on_ghost_interact(_ghost: Ghost) -> void:
 	changed = not changed
 
 
-## Right-clicking anywhere on its art counts.
+## The area its art's frame covers.
 func get_click_rect() -> Rect2:
 	return _art_node.get_art_rect() if _art_node else get_footprint()
+
+
+## Only clicks on its drawn pixels count, not the see-through parts of the
+## frame around them.
+func is_clicked_at(point: Vector2) -> bool:
+	return _art_node.is_art_at(point) if _art_node else get_footprint().has_point(point)
 
 
 func _on_player_interact(_player: Player) -> void:
