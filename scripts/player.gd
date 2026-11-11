@@ -312,15 +312,16 @@ func standing_cell() -> Vector2i:
 ## of the held tool: something the player can switch, like a sink, tub or
 ## book stack, whose art is under `point` and that's within reach (our tile
 ## and the 8 around it). The front-most one if several overlap. Null if none.
-## Fires don't count (left click with the lantern lights them), nor do
-## placed tools (right click picks those up).
+## Fires (left click with the lantern lights them), breakables (only the
+## ghost touches those) and placed tools (right click picks those up) don't
+## count.
 func house_object_at(point: Vector2) -> GhostInteractable:
 	var reach := Game.current.house.tile_rect(standing_cell()).grow(16.0)
 	var best: GhostInteractable = null
 	for thing: GhostInteractable in get_tree().get_nodes_in_group("ghost_interactables"):
 		if not thing.player_can_use or thing.is_queued_for_deletion():
 			continue
-		if ("item" in thing and thing.item != null) or (thing is Switchable and thing.is_lit_type()):
+		if ("item" in thing and thing.item != null) or (thing is Switchable and not thing.player_can_switch()):
 			continue
 		if not thing.is_clicked_at(point):
 			continue

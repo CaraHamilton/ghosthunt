@@ -137,10 +137,30 @@ func seconds_since_ghost_interaction() -> float:
 	return _game_time() - _last_interaction_time
 
 
-## A spot on the floor in front of this object where the ghost can stand
-## to reach it.
+## A spot on the floor next to this object where the ghost can stand to
+## reach it: in front of it (the way it faces) if that's open floor, else the
+## first open side of the others. If no side is open, the front anyway.
 func get_ghost_stand_point() -> Vector2:
-	return global_position + Vector2(0, ghost_reach * 0.5)
+	var fp := get_footprint()
+	var gap := ghost_reach * 0.5
+	var front := get_front_direction()
+	var sides: Array[Vector2] = [front, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT, Vector2.UP]
+	var house: House = Game.current.house if Game.current else null
+	var first := Vector2.INF
+	for dir in sides:
+		# The middle of that side of the footprint, `gap` px out.
+		var spot := fp.get_center() + dir * (fp.size / 2.0 + Vector2.ONE * gap)
+		if first == Vector2.INF:
+			first = spot
+		if house == null or house.is_walkable(spot):
+			return spot
+	return first
+
+
+## Which way this object faces (where the ghost prefers to stand to use it).
+## Down unless overridden (see Switchable).
+func get_front_direction() -> Vector2:
+	return Vector2.DOWN
 
 
 ## Seconds of game time (stops while paused, follows Engine.time_scale).

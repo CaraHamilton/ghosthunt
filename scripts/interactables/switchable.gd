@@ -14,9 +14,18 @@ extends GhostInteractable
 ##       over. The player can knock it over and set it right again (E).
 ##   "<facing>_on" (e.g. "down_on"): the ghost and the player can both
 ##       switch it either way.
+##   "<facing>_played" (e.g. "right_played"): an animation, like a rocking
+##       chair rocking. The ghost or the player sets it going and it plays
+##       for `play_time` seconds, then stops by itself. Same rules as "_on"
+##       (the ghost does it at any sanity, EMF 1-2).
 ##   "<facing>_lit" (e.g. "down_lit"): a fire. Only the player can light it
 ##       and put it out, with the lantern (F) standing next to it - not E.
 ##       The ghost leaves it alone.
+##   "<facing>_broken" (e.g. "down_broken"): a breakable, like a jar. Only
+##       the ghost can break it (once sanity is below 70% - see
+##       Ghost.break_sanity_threshold), and nobody can fix it. The player can't use it at all.
+##       Breaking it always makes the ghost appear for 2-3 seconds, and
+##       gives off EMF 4 (or 5 for ghost types that show EMF 5).
 ## A tag with several frames loops as an animation. A facing with no tag of
 ## its own uses the one for the frame it shows (a "left" one showing "right"
 ## uses "right_knocked").
@@ -69,6 +78,8 @@ extends GhostInteractable
 	set(value):
 		show_while_changed = value
 		_update_art()
+## For a "_played" animation: how long (seconds) it plays each time.
+@export var play_time := 5.0
 @export_group("UV Residue")
 ## Where the centre of the UV residue goes, relative to the origin (before
 ## `raise`): on the top of the object in the art (a sink's counter, the top
@@ -120,6 +131,8 @@ var _shift := Vector2.ZERO
 var _snap_ok := true
 ## In the editor: draws the residue preview over the art.
 var _residue_preview: Node2D
+## Seconds left of a "_played" animation (0 when it isn't playing).
+var _play_time_left := 0.0
 
 
 func _ready() -> void:
@@ -147,6 +160,10 @@ func _ready() -> void:
 		# Up on a table, its light (a candle's flame) goes up with the art.
 		if is_instance_valid(show_while_changed):
 			show_while_changed.position.y -= _lift
+		# Breakables are the ghost's alone: no E or click zone for the player.
+		_update_art()
+		if is_breakable():
+			player_can_use = false
 	super()
 	_update_art()
 
@@ -198,15 +215,29 @@ func change_tag() -> String:
 	if _art_node == null:
 		return ""
 	var base := _art_node.facing_tag()
-	for kind: String in ["_knocked", "_on", "_lit"]:
+	for kind: String in ["_knocked", "_on", "_lit", "_broken", "_played"]:
 		if _art_node.has_tag(base + kind):
 			return base + kind
 	return ""
 
 
-## True if the ghost can only change it one way (a "_knocked" tag).
+## True if the ghost can only change it one way (a "_knocked" or "_broken"
+## tag).
 func is_one_way() -> bool:
-	return change_tag().ends_with("_knocked")
+	var tag := change_tag()
+	return tag.ends_with("_knocked") or tag.ends_with("_broken")
+
+
+## True for a breakable (a "_broken" tag): once the ghost breaks it, it stays
+## broken.
+func is_breakable() -> bool:
+	return change_tag().ends_with("_broken")
+
+
+## True if the player can switch it with a click or E: not fires (the
+## lantern lights those) or breakables (only the ghost touches those).
+func player_can_switch() -> bool:
+	return not is_lit_type() and not is_breakable()
 
 
 ## True for a fire (a "_lit" tag): only the player's lantern lights it.
@@ -214,11 +245,14 @@ func is_lit_type() -> bool:
 	return change_tag().ends_with("_lit")
 
 
-## The ghost never touches fires, and only knocks things over once the
-## player's sanity is low enough (Ghost.knock_sanity_threshold).
+## The ghost never touches fires, only knocks things over once the player's
+## sanity is low enough (Ghost.knock_sanity_threshold), and only breaks
+## things once it's lower still (Ghost.break_sanity_threshold).
 func ghost_can_use(ghost: Ghost) -> bool:
 	if is_lit_type():
 		return false
+	if is_breakable():
+		return ghost.can_break_things
 	return ghost.can_knock_things if is_one_way() else true
 
 
@@ -232,12 +266,17 @@ func light_with_lantern() -> void:
 	changed = not changed
 
 
-## Knocked over: 2-3 EMF (30% chance of a 5). Switched on: 1-2 (10%).
+## Broken: EMF 4 (50% chance of a 5). Knocked over: 2-3 (30%). Switched on:
+## 1-2 (10%). (The 5 only for ghost types that show EMF 5.)
 func emf_levels() -> Vector2i:
+	if is_breakable():
+		return Vector2i(4, 4)
 	return Vector2i(2, 3) if is_one_way() else Vector2i(1, 2)
 
 
 func emf_5_chance() -> float:
+	if is_breakable():
+		return 0.5
 	return 0.3 if is_one_way() else 0.1
 
 
@@ -247,8 +286,26 @@ func can_ghost_interact() -> bool:
 	return super()
 
 
-func _on_ghost_interact(_ghost: Ghost) -> void:
+func _on_ghost_interact(ghost: Ghost) -> void:
+	if is_played_type():
+		_start_playing()
+		return
 	changed = not changed
+	# Breaking something always shows the ghost for a moment.
+	if is_breakable():
+		ghost.start_appearance()
+
+
+## The way it faces, from `facing` (a sink facing left is used from its left).
+func get_front_direction() -> Vector2:
+	match facing:
+		Prop.Facing.RIGHT:
+			return Vector2.RIGHT
+		Prop.Facing.LEFT:
+			return Vector2.LEFT
+		Prop.Facing.UP:
+			return Vector2.UP
+	return Vector2.DOWN
 
 
 ## The area its art's frame covers.
@@ -263,13 +320,40 @@ func is_clicked_at(point: Vector2) -> bool:
 
 
 func _on_player_interact(_player: Player) -> void:
-	if is_lit_type():
-		return  # fires are lit with the lantern, not E
+	if not player_can_switch():
+		return  # fires are lit with the lantern; breakables stay broken
+	if is_played_type():
+		_start_playing()
+		return
 	changed = not changed
+
+
+## True for an animation that plays for a while (a "_played" tag).
+func is_played_type() -> bool:
+	return change_tag().ends_with("_played")
+
+
+## Plays its "_played" animation for `play_time` seconds (from the start
+## again if it's already playing).
+func _start_playing() -> void:
+	changed = true
+	_play_time_left = play_time
+
+
+func _physics_process(delta: float) -> void:
+	if _play_time_left <= 0.0:
+		return
+	_play_time_left -= delta
+	if _play_time_left <= 0.0:
+		changed = false
 
 
 func describe_last_interaction() -> String:
 	var thing := String(name).capitalize().to_lower()
+	if is_breakable():
+		return "broke the %s" % thing
+	if is_played_type():
+		return "set the %s going" % thing
 	if is_one_way():
 		return "knocked over the %s" % thing
 	return "switched %s the %s" % ["on" if changed else "off", thing]

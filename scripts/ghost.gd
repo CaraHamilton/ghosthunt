@@ -22,9 +22,11 @@ extends CharacterBody2D
 ## Hunts only start once the player's sanity is low enough. During a hunt,
 ## touching the player catches them (costing them sanity) and ends the hunt.
 ##
-## Appearances: every so often (at any sanity) the ghost
-## simply becomes visible for 2-5 seconds wherever it is, carrying on with
-## whatever it was doing. It doesn't go after the player and is harmless.
+## Appearances: whenever the ghost breaks something (a jar... only below 70%
+## sanity) it becomes
+## visible for 2-3 seconds where it is, carrying on with whatever it was
+## doing. It doesn't go after the player and is harmless. It never just
+## appears at random.
 ##
 ## The node's origin is the floor point under the ghost. What *kind* of ghost
 ## it is (Banshee, Poltergeist, Sentry, Marionette, Demon, Phantom, Fox, Cold,
@@ -99,39 +101,32 @@ const GLOW_LIGHT_LAYER := 4
 ## The ghost won't start a hunt on its own if the player is closer than this.
 @export var min_hunt_distance := 64.0
 ## The ghost only starts hunts on its own once the player's sanity is below
-## this fraction of full (0.75 = 75%).
-@export_range(0.0, 1.0) var hunt_sanity_threshold := 0.75
+## this fraction of full (0.7 = 70%).
+@export_range(0.0, 1.0) var hunt_sanity_threshold := 0.7
 @export var appear_time := 1.0
 @export var catch_radius := 10.0
 
 @export_group("Appearances")
-## An appearance: the ghost becomes visible for a few seconds wherever it is,
-## but carries on with whatever it was doing (wandering, possessing the
-## doll...) - it doesn't go after the player and can't catch them.
-## Chance (0-1) of an appearance each `appearance_check_interval` once off
-## cooldown.
-@export var appearance_chance := 0.2
-@export var appearance_check_interval := 1.0
-## Random wait (seconds) after each appearance - and from the start of the
-## game - before the next one.
-@export var min_appearance_cooldown := 90.0
-@export var max_appearance_cooldown := 150.0
+## An appearance: the ghost becomes visible for a few seconds where it is,
+## but carries on with whatever it was doing - it doesn't go after the
+## player and can't catch them. It happens every time the ghost breaks
+## something (see Switchable.is_breakable), never at random.
 ## How long (seconds) an appearance lasts, picked at random each time
 ## (counted from when it starts fading in).
 @export var min_appearance_time := 2.0
-@export var max_appearance_time := 5.0
+@export var max_appearance_time := 3.0
 ## A hunt can't start during an appearance, nor for this many seconds after
 ## one ends.
 @export var hunt_delay_after_appearance := 15.0
-## The ghost only starts appearances once the player's sanity is below this
-## fraction of full (0.75 = 75%).
-@export_range(0.0, 1.0) var appearance_sanity_threshold := 0.75
-
 @export_group("Getting more violent")
 ## Early on the ghost only switches things on and off (sinks...). Once the
-## player's sanity is below this fraction of full (0.8 = 80%), it also starts
+## player's sanity is below this fraction of full (0.85 = 85%), it also starts
 ## knocking things over (book stacks...).
-@export_range(0.0, 1.0) var knock_sanity_threshold := 0.8
+@export_range(0.0, 1.0) var knock_sanity_threshold := 0.85
+## Below this fraction of full (0.7 = 70%) it also breaks things (jars...) -
+## and every break makes it appear for a moment, so this is also when
+## appearances start.
+@export_range(0.0, 1.0) var break_sanity_threshold := 0.7
 
 @export_group("Wandering")
 @export var wander_speed := 22.0
@@ -190,11 +185,19 @@ var is_hunting: bool:
 var can_knock_things: bool:
 	get:
 		return player == null or player.sanity_ratio < knock_sanity_threshold
+## True once the player's sanity is low enough for the ghost to break things
+## (see break_sanity_threshold).
+var can_break_things: bool:
+	get:
+		return player == null or player.sanity_ratio < break_sanity_threshold
 ## True while holy water has it frozen in place (see freeze).
 var is_frozen: bool:
 	get:
 		return _frozen_time_left > 0.0
 var _frozen_time_left := 0.0
+## Debug: which sanity stages have been announced (see _debug_sanity_stages).
+var _announced_knocking := false
+var _announced_breaking := false
 ## True if the ghost can see the player this frame.
 var sees_player := false
 ## Where the ghost last saw the player (INF if it never has). Remembered
@@ -210,8 +213,6 @@ var _hunts_locked := true
 var _hunt_check_timer := 0.0
 ## Seconds left in the current appearance (0 when there isn't one).
 var _appearance_time_left := 0.0
-var _appearance_cooldown := 0.0
-var _appearance_check_timer := 0.0
 var _wander_target := Vector2.INF
 var _wander_pause := 0.0
 var _stuck_time := 0.0
@@ -250,11 +251,11 @@ func _ready() -> void:
 	if favorite_room == "":
 		favorite_room = house.get_room_names().pick_random()
 	_start_hunt_cooldown()
-	_start_appearance_cooldown()
 	behavior.on_spawned()
 
 
 func _physics_process(delta: float) -> void:
+	_debug_sanity_stages()
 	if is_frozen:
 		_update_frozen(delta)
 		return
@@ -571,8 +572,9 @@ func _update_frozen(delta: float) -> void:
 	queue_redraw()
 
 
-## Shows the ghost for `duration` seconds without changing what it's doing
-## (ignores cooldown and sanity). Does nothing during a hunt. No hunt can
+## Shows the ghost for `duration` seconds (default: min_appearance_time to
+## max_appearance_time) without changing what it's doing. Called when it
+## breaks something. Does nothing during a hunt. No hunt can
 ## start until `hunt_delay_after_appearance` seconds after it ends.
 func start_appearance(duration := -1.0) -> void:
 	if is_hunting or is_appearing:
@@ -581,45 +583,38 @@ func start_appearance(duration := -1.0) -> void:
 		duration = randf_range(min_appearance_time, max_appearance_time)
 	_appearance_time_left = duration
 	is_manifested = true
-	# Where it appeared gives off EMF 4 (or 5, half the time, for ghosts that
-	# show EMF 5).
-	if Game.current:
-		Game.current.add_emf_source(global_position, 4, 4, 0.5)
 	if OS.is_debug_build():
 		print("[debug] Ghost: appearing for %.1fs" % duration)
 	appearance_started.emit()
 
 
-## Counts down the current appearance, or maybe starts one.
+
+## Debug: prints once when sanity drops below the knocking and breaking
+## thresholds (85% and 70% by default).
+func _debug_sanity_stages() -> void:
+	if not OS.is_debug_build() or player == null:
+		return
+	if can_knock_things and not _announced_knocking:
+		_announced_knocking = true
+		print("[debug] Sanity below %d%%: the ghost can knock things over now" % roundi(knock_sanity_threshold * 100.0))
+	if can_break_things and not _announced_breaking:
+		_announced_breaking = true
+		var hunt := behavior.get_hunt_sanity_threshold(hunt_sanity_threshold)
+		print("[debug] Sanity below %d%%: the ghost can break things (and appear)%s now" % [roundi(break_sanity_threshold * 100.0), " and hunt" if is_equal_approx(hunt, break_sanity_threshold) else ""])
+		if not is_equal_approx(hunt, break_sanity_threshold):
+			print("[debug] (hunts start below %d%%)" % roundi(hunt * 100.0))
+
+## Counts down the current appearance.
 func _update_appearance(delta: float) -> void:
-	if is_hunting:
+	if is_hunting or not is_appearing:
 		return
-	if is_appearing:
-		_appearance_time_left -= delta
-		if _appearance_time_left <= 0.0:
-			_appearance_time_left = 0.0
-			is_manifested = false
-			_start_appearance_cooldown()
-			# No hunt straight after an appearance.
-			_hunt_cooldown = maxf(_hunt_cooldown, hunt_delay_after_appearance)
-			appearance_ended.emit()
-		return
-	_appearance_cooldown -= delta
-	if _appearance_cooldown > 0.0:
-		return
-	_appearance_check_timer -= delta
-	if _appearance_check_timer > 0.0:
-		return
-	_appearance_check_timer = appearance_check_interval
-	if player and player.sanity_ratio >= appearance_sanity_threshold:
-		return  # too early in the game to show itself
-	if randf() < appearance_chance:
-		start_appearance()
-
-
-func _start_appearance_cooldown() -> void:
-	_appearance_cooldown = randf_range(min_appearance_cooldown, max_appearance_cooldown)
-	_appearance_check_timer = 0.0
+	_appearance_time_left -= delta
+	if _appearance_time_left <= 0.0:
+		_appearance_time_left = 0.0
+		is_manifested = false
+		# No hunt straight after an appearance.
+		_hunt_cooldown = maxf(_hunt_cooldown, hunt_delay_after_appearance)
+		appearance_ended.emit()
 
 
 func _start_hunt_cooldown() -> void:
