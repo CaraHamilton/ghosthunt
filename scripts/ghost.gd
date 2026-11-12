@@ -397,6 +397,7 @@ func start_hunt() -> void:
 	is_manifested = true
 	if OS.is_debug_build():
 		print("[debug] Ghost: hunt started in the %s" % _room_name())
+	Sfx.play("ghost/hunt_start")
 	set_state(State.APPEARING)
 	hunt_started.emit()
 
@@ -585,6 +586,7 @@ func start_appearance(duration := -1.0) -> void:
 	is_manifested = true
 	if OS.is_debug_build():
 		print("[debug] Ghost: appearing for %.1fs" % duration)
+	Sfx.play("ghost/appear", global_position)
 	appearance_started.emit()
 
 

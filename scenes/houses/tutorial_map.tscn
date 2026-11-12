@@ -47,7 +47,7 @@ tile_set = ExtResource("2_qriy4")
 [node name="WallDecor" type="TileMapLayer" parent="." unique_id=1739204655]
 z_index = 10
 y_sort_enabled = true
-tile_map_data = PackedByteArray("AAADAAAABAAAAAAAAAADAAEABAAAAAEAAAAWAAAABAAAAAAAAAAWAAEABAAAAAEAAAAOAAEABAAAAAAAAAAOAAIABAAAAAEAAAA=")
+tile_map_data = PackedByteArray("AAAWAAAABAAAAAAAAAAWAAEABAAAAAEAAAAOAAEABAAAAAAAAAAOAAIABAAAAAEAAAAGAA0ABAAAAAAAAAAGAA4ABAAAAAEAAAAAAA0ABAAAAAAAAAAAAA4ABAAAAAEAAAAPAA0ABAAAAAAAAAAPAA4ABAAAAAEAAAAHAAAABAAAAAAAAAAHAAEABAAAAAEAAAA=")
 tile_set = ExtResource("2_qriy4")
 collision_enabled = false
 navigation_enabled = false
@@ -120,7 +120,7 @@ y_sort_enabled = true
 position = Vector2(456, 272)
 
 [node name="PurpleBed" parent="Furniture" unique_id=1241269602 instance=ExtResource("12_ak3kv")]
-position = Vector2(408, 88)
+position = Vector2(408, 80)
 footprint = Vector2(48, 32)
 
 [node name="OakNightstand" parent="Furniture" unique_id=2098263074 instance=ExtResource("16_5ppp2")]
@@ -164,7 +164,6 @@ position = Vector2(160, 64)
 
 [node name="OakKitchenSink" parent="Furniture" unique_id=1482115036 instance=ExtResource("6_k8jrs")]
 position = Vector2(128, 64)
-play_time = null
 residue_position = Vector2(0, -24)
 
 [node name="OakDresser" parent="Furniture" unique_id=1085786907 instance=ExtResource("16_g6ehn")]
@@ -235,7 +234,6 @@ facing = 1
 
 [node name="GrayFireplace" parent="Furniture" unique_id=1447865753 instance=ExtResource("22_bhs67")]
 position = Vector2(288, 272)
-play_time = null
 
 [node name="GreenCouch" parent="Furniture" unique_id=796872995 instance=ExtResource("21_34e02")]
 position = Vector2(288, 320)
@@ -298,72 +296,56 @@ position = Vector2(200, 304)
 
 [node name="BookStack" parent="Furniture" unique_id=113220838 instance=ExtResource("17_i0qh6")]
 position = Vector2(216, 272)
-play_time = null
 
 [node name="BookStack2" parent="Furniture" unique_id=533618341 instance=ExtResource("17_i0qh6")]
 position = Vector2(360, 192)
-play_time = null
 
 [node name="BookStack3" parent="Furniture" unique_id=801951387 instance=ExtResource("17_i0qh6")]
 position = Vector2(120, 264)
-play_time = null
 
 [node name="Candles" parent="Furniture" unique_id=31646590 instance=ExtResource("26_o6uuj")]
 position = Vector2(216, 376)
-play_time = null
 
 [node name="Candles2" parent="Furniture" unique_id=458403302 instance=ExtResource("26_o6uuj")]
 position = Vector2(472, 368)
-play_time = null
 
 [node name="Candles3" parent="Furniture" unique_id=1654937340 instance=ExtResource("26_o6uuj")]
 position = Vector2(368, 184)
-play_time = null
 
 [node name="Candles4" parent="Furniture" unique_id=1189680589 instance=ExtResource("26_o6uuj")]
 position = Vector2(144, 136)
-play_time = null
 
 [node name="Candles5" parent="Furniture" unique_id=677347598 instance=ExtResource("26_o6uuj")]
 position = Vector2(120, 296)
-play_time = null
 
 [node name="Candles6" parent="Furniture" unique_id=799067656 instance=ExtResource("26_o6uuj")]
 position = Vector2(24, 120)
-play_time = null
 
 [node name="Candles7" parent="Furniture" unique_id=504836339 instance=ExtResource("26_o6uuj")]
 position = Vector2(440, 64)
-play_time = null
 
 [node name="Candles8" parent="Furniture" unique_id=1166571011 instance=ExtResource("26_o6uuj")]
 position = Vector2(376, 264)
-play_time = null
 
 [node name="GreenBathSink" parent="Furniture" unique_id=1525961326 instance=ExtResource("28_14v83")]
 position = Vector2(472, 352)
-play_time = null
 residue_position = Vector2(4, -28)
 
 [node name="OakTub" parent="Furniture" unique_id=353646779 instance=ExtResource("9_1epbi")]
 position = Vector2(384, 320)
-play_time = null
 residue_position = Vector2(-12, -18)
 
 [node name="EmptyJar" parent="Furniture" unique_id=1594905741 instance=ExtResource("28_ii8ak")]
 position = Vector2(88, 56)
-play_time = null
 
 [node name="EmptyJar4" parent="Furniture" unique_id=1618535489 instance=ExtResource("28_ii8ak")]
 position = Vector2(72, 56)
 
 [node name="EmptyJar2" parent="Furniture" unique_id=1922107305 instance=ExtResource("28_ii8ak")]
 position = Vector2(8, 304)
-play_time = null
 
 [node name="EmptyJar3" parent="Furniture" unique_id=1893580019 instance=ExtResource("28_ii8ak")]
 position = Vector2(24, 304)
-play_time = null
 
 [node name="PurpleRockingChair" parent="Furniture" unique_id=880106828 instance=ExtResource("15_d25jf")]
 position = Vector2(272.51276, 135.48071)

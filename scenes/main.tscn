@@ -36,6 +36,7 @@ corner_radius_bottom_left = 4
 [node name="Main" type="Node2D" unique_id=18073823]
 y_sort_enabled = true
 script = ExtResource("1_game")
+play_background_ambience = false
 
 [node name="House" parent="." unique_id=845306811 instance=ExtResource("2_tefeu")]
 

@@ -50,6 +50,7 @@ extends GhostInteractable
 	set(value):
 		changed = value
 		_update_art()
+		_update_loop_sound()
 ## The object's picture or Aseprite sheet.
 @export var art: Texture2D:
 	set(value):
@@ -80,6 +81,21 @@ extends GhostInteractable
 		_update_art()
 ## For a "_played" animation: how long (seconds) it plays each time.
 @export var play_time := 5.0
+@export_group("Sound")
+## Plays when it changes to its other look: switched on, knocked over, broken,
+## set going, lit. Empty uses the default sound for its tag (see
+## DEFAULT_SOUNDS), so every sink shares one sound unless it has its own.
+@export var change_sound: AudioStream
+## Plays when it changes back: switched off, set right, put out. Empty uses
+## the default for its tag.
+@export var change_back_sound: AudioStream
+## Loops the whole time it shows its other look - water running, a fire
+## crackling, a chair creaking while it rocks. None if empty.
+@export var loop_sound: AudioStream
+## How loud the change sounds are (dB; 0 = as exported, -6 = about half).
+@export var sound_volume_db := 0.0
+## How loud the loop is.
+@export var loop_volume_db := -6.0
 @export_group("UV Residue")
 ## Where the centre of the UV residue goes, relative to the origin (before
 ## `raise`): on the top of the object in the art (a sink's counter, the top
@@ -119,6 +135,17 @@ extends GhostInteractable
 		raise = value
 		_update_art()
 
+## The sounds used when change_sound / change_back_sound are empty, by tag:
+## [changing to the other look, changing back]. Names of files in
+## res://audio/sfx/ (see Sfx). "" = no sound.
+const DEFAULT_SOUNDS := {
+	"_on": ["objects/switch_on", "objects/switch_off"],
+	"_knocked": ["objects/knock_over", "objects/set_right"],
+	"_broken": ["objects/break", ""],
+	"_played": ["objects/start_playing", ""],
+	"_lit": ["objects/light_fire", "objects/put_out_fire"],
+}
+
 ## Draws `art` (a Prop just for its drawing). Not saved in the scene.
 var _art_node: Prop
 ## How far (px) the art is actually drawn above the origin (from snapping,
@@ -133,6 +160,8 @@ var _snap_ok := true
 var _residue_preview: Node2D
 ## Seconds left of a "_played" animation (0 when it isn't playing).
 var _play_time_left := 0.0
+## Plays loop_sound while it shows its other look (made when first needed).
+var _loop_player: AudioStreamPlayer2D
 
 
 func _ready() -> void:
@@ -166,6 +195,7 @@ func _ready() -> void:
 			player_can_use = false
 	super()
 	_update_art()
+	_update_loop_sound()
 
 
 func _notification(what: int) -> void:
@@ -264,6 +294,7 @@ func in_lantern_reach(point: Vector2) -> bool:
 ## Called by the lantern (F): lights it, or puts it out.
 func light_with_lantern() -> void:
 	changed = not changed
+	_play_change_sound()
 
 
 ## Broken: EMF 4 (50% chance of a 5). Knocked over: 2-3 (30%). Switched on:
@@ -291,6 +322,7 @@ func _on_ghost_interact(ghost: Ghost) -> void:
 		_start_playing()
 		return
 	changed = not changed
+	_play_change_sound()
 	# Breaking something always shows the ghost for a moment.
 	if is_breakable():
 		ghost.start_appearance()
@@ -326,6 +358,7 @@ func _on_player_interact(_player: Player) -> void:
 		_start_playing()
 		return
 	changed = not changed
+	_play_change_sound()
 
 
 ## True for an animation that plays for a while (a "_played" tag).
@@ -338,6 +371,7 @@ func is_played_type() -> bool:
 func _start_playing() -> void:
 	changed = true
 	_play_time_left = play_time
+	_play_change_sound()
 
 
 func _physics_process(delta: float) -> void:
@@ -443,3 +477,40 @@ func _draw_residue_preview() -> void:
 	var c := Color(0.35, 1, 0.45, 0.9)
 	_residue_preview.draw_line(g - Vector2(2, 0), g + Vector2(2, 0), c, 1.0)
 	_residue_preview.draw_line(g - Vector2(0, 2), g + Vector2(0, 2), c, 1.0)
+
+
+# --- Sound ----------------------------------------------------------------------
+
+## Plays change_sound (or change_back_sound) where it stands - or its tag's
+## default if that's empty. Call right after `changed` flips.
+func _play_change_sound() -> void:
+	var sound: Variant = change_sound if changed else change_back_sound
+	if sound == null:
+		var tag := change_tag()
+		for kind: String in DEFAULT_SOUNDS:
+			if tag.ends_with(kind):
+				sound = DEFAULT_SOUNDS[kind][0 if changed else 1]
+	Sfx.play(sound, global_position, sound_volume_db)
+
+
+## Starts loop_sound while it shows its other look, and stops it after.
+func _update_loop_sound() -> void:
+	if Engine.is_editor_hint() or not is_inside_tree() or loop_sound == null:
+		return
+	if not changed:
+		if _loop_player:
+			_loop_player.stop()
+		return
+	if _loop_player == null:
+		_loop_player = AudioStreamPlayer2D.new()
+		_loop_player.stream = loop_sound
+		_loop_player.bus = Sfx.BUS
+		_loop_player.volume_db = loop_volume_db
+		_loop_player.max_distance = Sfx.MAX_DISTANCE
+		_loop_player.attenuation = Sfx.ATTENUATION
+		# Starts over when it ends, for files exported without a loop.
+		_loop_player.finished.connect(func():
+			if changed: _loop_player.play())
+		add_child(_loop_player)
+	if not _loop_player.playing:
+		_loop_player.play()

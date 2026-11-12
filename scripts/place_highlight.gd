@@ -44,6 +44,7 @@ func _ready() -> void:
 func flash_blocked(rect := Rect2()) -> void:
 	_flash = FLASH_TIME
 	_flash_rect = rect
+	Sfx.play("ui/blocked")
 
 
 func _process(delta: float) -> void:

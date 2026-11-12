@@ -44,6 +44,13 @@ const LIGHT_LAYER := 3
 
 @export var walk_speed := 70.0
 
+@export_group("Sound")
+## Frames of the walk (and hold) animations where a foot lands - a footstep
+## plays on each. Frames count from 0.
+@export var footstep_frames: Array[int] = [1, 3]
+## How loud her footsteps are (dB; 0 = as exported, -6 = about half).
+@export var footstep_volume_db := -4.0
+
 @export_group("Sanity")
 @export var max_sanity := 100.0
 ## Sanity at the start of the game. Lower it to test hunts sooner.
@@ -99,6 +106,7 @@ func _ready() -> void:
 	add_child(_place_highlight)
 	inventory.changed.connect(_update_held_item)
 	sprite.frame_changed.connect(_sync_held_item)
+	sprite.frame_changed.connect(_play_footstep)
 	sprite.animation_changed.connect(_sync_held_item)
 	_update_animation(false)
 
@@ -247,6 +255,7 @@ func select_slot(slot: int) -> void:
 	_set_using_item(false)
 	selected_slot = slot
 	inventory.changed.emit()
+	Sfx.play("ui/select_slot")
 
 
 ## Picks up an item that's on the floor (`from_node` is its world node).
@@ -260,6 +269,7 @@ func pick_up(item: ItemInstance, from_node: Node2D) -> bool:
 	# Into the selected slot if it's free, else the first free one.
 	inventory.add_item(item, selected_slot)
 	item.on_picked_up(self)
+	Sfx.play("tools/pick_up")
 	return true
 
 
@@ -298,7 +308,8 @@ func place_selected() -> void:
 func _place_at(spot: Dictionary) -> void:
 	_set_using_item(false)
 	var item := inventory.remove_from_slot(selected_slot, 1)
-	ItemPickup.place(item, Game.current.world, spot)
+	var node := ItemPickup.place(item, Game.current.world, spot)
+	Sfx.play("tools/set_down", node.global_position)
 
 
 # --- Mouse ----------------------------------------------------------------------
@@ -548,3 +559,11 @@ func _draw() -> void:
 	draw_set_transform(Vector2(0, 0), 0.0, Vector2(1.0, 0.45))
 	draw_circle(Vector2.ZERO, 6.0, Color(0, 0, 0, 0.3))
 	draw_set_transform(Vector2.ZERO)
+
+
+## A footstep when the walk animation reaches a frame where a foot lands.
+func _play_footstep() -> void:
+	if not sprite.is_playing() or is_dead:
+		return
+	if footstep_frames.has(sprite.frame):
+		Sfx.play("player/footstep", null, footstep_volume_db)
