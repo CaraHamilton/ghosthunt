@@ -6,8 +6,6 @@ need to change any code. Any name without a file stays silent.
 - Use `.wav` for short sounds (`.ogg` and `.mp3` work too).
 - For variety, number the takes: `footstep_1.wav`, `footstep_2.wav`, `footstep_3.wav`...
   The game picks one at random each time and nudges its pitch a little.
-- Debug runs print `[sfx] No sound file yet for "..."` the first time a missing
-  sound would have played. That's your to-do list.
 
 ## Player
 | File | When |

@@ -4,15 +4,18 @@ extends CharacterBody2D
 ## toolbar slot with 1-9 or the mouse wheel.
 ##   Left mouse / F  uses the selected item while held (the doll and fog
 ##                   machine have no use in hand). Left-clicking a house
-##                   object within reach (sink, tub, book stack...) uses
-##                   that instead - see house_object_at.
+##                   object (sink, tub, book stack...) uses that instead,
+##                   if it's within USE_REACH (8 px) of her feet - or does
+##                   nothing if it's further. See left_click.
 ##   Right mouse     on her own tile or the 8 around it: picks up a placed
 ##                   tool (whatever she's holding), or puts the selected
 ##                   item down on an empty tile. Hold it to see which first.
 ##                   See right_click_target.
 ##   Q               places the selected item on the tile in front of her
 ##                   when let go (holding it shows which tile first).
-##   E / Space       uses the closest nearby object (or picks up an item).
+##   E / Space       uses the closest house object within USE_REACH, or
+##                   picks up the closest placed tool on her tile or the 8
+##                   around it. See _interact_target.
 ## One item per tile; tables and other surfaces take items too. There's
 ## nowhere to hide: during a hunt, run and break the ghost's line of sight.
 ##
@@ -29,6 +32,10 @@ const INVENTORY_SIZE := 9
 const TOOLBAR_SLOTS := 9
 ## How far in front of the player dropped items land (px).
 const DROP_DISTANCE := 10.0
+## How close (px) the edge of her feet (her collision box) must be to a house
+## object - its footprint, or for decor up on a table the tile it sits on - to
+## use it: left click, E, or the lantern on a fire. Any way she faces.
+const USE_REACH := 8.0
 ## Corner correction: walking straight into the corner of a wall or piece of
 ## furniture, overlapping it by up to this many px, slides her around it
 ## instead of stopping her dead.
@@ -77,11 +84,6 @@ var selected_item: ItemInstance:
 	get:
 		return inventory.get_item(selected_slot)
 
-## Things the player is standing next to and can use with E (player-usable
-## GhostInteractables like sinks, items on the floor).
-var _nearby: Array[Node2D] = []
-## The one the E key acts on right now (the closest).
-var _focused: Node2D = null
 ## After closing a menu, ignore the use button until it's released, so the
 ## press that closed the journal doesn't instantly reopen it.
 var _use_blocked_until_release := false
@@ -115,7 +117,6 @@ func _physics_process(delta: float) -> void:
 	if not is_dead and is_in_house():
 		lose_sanity(sanity_drain_per_second * delta)
 	_update_item_use(delta)
-	_update_focus()
 	if is_dead:
 		velocity = Vector2.ZERO
 		return
@@ -203,8 +204,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not event.is_action_pressed("interact"):
 		return
-	if _focused and _focused.has_method("player_interact"):
-		_focused.player_interact(self)
+	var target := _interact_target()
+	if target:
+		target.player_interact(self)
 	get_viewport().set_input_as_handled()
 
 
@@ -260,12 +262,9 @@ func select_slot(slot: int) -> void:
 
 ## Picks up an item that's on the floor (`from_node` is its world node).
 ## Returns false if there's no room.
-func pick_up(item: ItemInstance, from_node: Node2D) -> bool:
+func pick_up(item: ItemInstance, _from_node: Node2D) -> bool:
 	if not inventory.has_room_for(item):
 		return false
-	unregister_interactable(from_node)
-	if from_node == _focused:
-		_focused = null
 	# Into the selected slot if it's free, else the first free one.
 	inventory.add_item(item, selected_slot)
 	item.on_picked_up(self)
@@ -330,37 +329,56 @@ func standing_cell() -> Vector2i:
 
 ## The house object a left click at `point` (world space) would use instead
 ## of the held tool: something the player can switch, like a sink, tub or
-## book stack, whose art is under `point` and that's within reach (our tile
-## and the 8 around it). The front-most one if several overlap. Null if none.
-## Fires (left click with the lantern lights them), breakables (only the
-## ghost touches those) and placed tools (right click picks those up) don't
-## count.
+## book stack, whose art (or tile, for decor) is under `point` - near or far
+## (left_click checks the reach). The front-most one if several overlap. Null
+## if none. Fires (left click with the lantern lights them), breakables (only
+## the ghost touches those) and placed tools (right click picks those up)
+## don't count - see _is_house_object.
 func house_object_at(point: Vector2) -> GhostInteractable:
-	var reach := Game.current.house.tile_rect(standing_cell()).grow(16.0)
 	var best: GhostInteractable = null
 	for thing: GhostInteractable in get_tree().get_nodes_in_group("ghost_interactables"):
-		if not thing.player_can_use or thing.is_queued_for_deletion():
-			continue
-		if ("item" in thing and thing.item != null) or (thing is Switchable and not thing.player_can_switch()):
-			continue
-		if not thing.is_clicked_at(point):
-			continue
-		if thing not in _nearby and not thing.get_footprint().intersects(reach):
+		if not _is_house_object(thing) or not thing.is_clicked_at(point):
 			continue
 		if best == null or thing.global_position.y > best.global_position.y:
 			best = thing
+	if best and _covered_at(best, point):
+		return null  # the click lands on what's drawn in front of it
 	return best
 
 
+## True if something drawn in front of `thing` (furniture like a table, or
+## decor the player can't use, like a lit candle) has a pixel at `point` -
+## so a click there is on that, not on `thing` behind it.
+func _covered_at(thing: Node2D, point: Vector2) -> bool:
+	var front_of := thing.global_position.y
+	for prop: Prop in Game.current.house.find_children("*", "Prop", true, false):
+		if prop.flat or prop.art == null or prop.get_parent() is Switchable:
+			continue  # rugs (under everything); a Switchable's own art (below)
+		if prop.global_position.y > front_of and prop.is_art_at(point):
+			return true
+	for other in get_tree().get_nodes_in_group("ghost_interactables"):
+		if other == thing or not other is Switchable or other._art_node == null:
+			continue
+		if other.global_position.y > front_of and other._art_node.is_art_at(point):
+			return true
+	return false
+
+
 ## Left click at `point`: uses the house object there, if any (see
-## house_object_at). Returns true if it did - then the held tool isn't used
-## for this click.
+## house_object_at) and it's within reach (can_reach). Returns true if the
+## click was on a house object - then the held tool isn't used for this
+## click, even if the object was too far away to use.
 func left_click(point: Vector2) -> bool:
 	if is_dead or in_menu:
 		return false
 	var thing := house_object_at(point)
 	if thing == null:
 		return false
+	if not can_reach(thing):
+		# Too far away: nothing happens (the held tool isn't used either) -
+		# except holy water, which is thrown at a spot, so a far-off sink
+		# under the mouse shouldn't stop the throw.
+		return not (selected_item is HolyWaterItem)
 	thing.player_interact(self)
 	return true
 
@@ -410,9 +428,11 @@ func right_click_target(point: Vector2) -> Dictionary:
 					blocked = spot
 		if not blocked.is_empty():
 			return {kind = &"place", spot = blocked, rect = blocked.rect}
-	# Our own tile (we're in the way), or too far: nothing can happen there.
-	var cell := house.tile_at(point)
-	if cell != me or placeable:
+	# Holding something that can be put down: our own tile (we're in the
+	# way) or too far - red. Empty-handed (or holding the journal), only
+	# placed tools to pick up get an outline.
+	if placeable:
+		var cell := house.tile_at(point)
 		return {kind = &"blocked", rect = house.tile_rect(cell)}
 	return {kind = &"none"}
 
@@ -482,33 +502,62 @@ func _set_using_item(value: bool) -> void:
 	queue_redraw()
 
 
-## Called by objects' interaction zones when the player walks into range.
-## Each must have `player_interact(player)`.
-func register_interactable(item: Node2D) -> void:
-	if item not in _nearby:
-		_nearby.append(item)
+## Her feet (her collision box), in global coordinates.
+func feet_rect() -> Rect2:
+	var size: Vector2 = (_feet.shape as RectangleShape2D).size
+	return Rect2(_feet.global_position - size / 2.0, size)
 
 
-func unregister_interactable(item: Node2D) -> void:
-	_nearby.erase(item)
+## True if `thing` (a house object) is close enough to use: within USE_REACH
+## px of the edge of her feet - its footprint, or the tile it sits on if
+## it's decor up on a table (see GhostInteractable.get_reach_area).
+func can_reach(thing: GhostInteractable) -> bool:
+	return feet_rect().grow(USE_REACH).intersects(thing.get_reach_area(), true)
 
 
-## Picks which nearby object E acts on (the closest).
-func _update_focus() -> void:
-	_focused = null if is_dead else _closest_interactable()
-
-
-func _closest_interactable() -> Node2D:
+## What E / Space uses: the closest of
+##   - a house object she can use (a sink, a book stack...) within reach
+##     (can_reach)
+##   - a placed tool on her tile or the 8 around it, to pick up - the same
+##     tools right click can pick up
+## Null if there's nothing.
+func _interact_target() -> Node2D:
+	if is_dead or in_menu:
+		return null
+	# [node, the area to measure to]
+	var candidates: Array = []
+	for thing: GhostInteractable in get_tree().get_nodes_in_group("ghost_interactables"):
+		if _is_house_object(thing) and can_reach(thing):
+			candidates.append([thing, thing.get_reach_area()])
+	var house := Game.current.house
+	var me := standing_cell()
+	for node in get_tree().get_nodes_in_group(House.PLACED_GROUP):
+		if node.is_queued_for_deletion() or not ("item" in node) or node.item == null:
+			continue  # (snapped decor like book stacks is in the group too)
+		var cell: Variant = node.get_meta("place_tile", null)
+		if cell != null and absi(cell.x - me.x) <= 1 and absi(cell.y - me.y) <= 1:
+			candidates.append([node, house.tile_rect(cell)])
+	var feet := feet_rect().get_center()
 	var best: Node2D = null
 	var best_dist := INF
-	for thing in _nearby:
-		if not is_instance_valid(thing):
-			continue
-		var d := global_position.distance_squared_to(thing.global_position)
+	for c in candidates:
+		var area: Rect2 = c[1]
+		var d := feet.distance_to(feet.clamp(area.position, area.end))
 		if d < best_dist:
 			best_dist = d
-			best = thing
+			best = c[0]
 	return best
+
+
+## True for a house object the player can use (click or E): not a fire (the
+## lantern lights those), a breakable (only the ghost touches those) or a
+## placed tool (those get picked up instead).
+func _is_house_object(thing: GhostInteractable) -> bool:
+	if not thing.player_can_use or thing.is_queued_for_deletion():
+		return false
+	if "item" in thing and thing.item != null:
+		return false
+	return not (thing is Switchable and not thing.player_can_switch())
 
 
 # --- Art ------------------------------------------------------------------------

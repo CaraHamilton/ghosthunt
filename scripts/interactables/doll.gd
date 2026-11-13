@@ -17,10 +17,7 @@ var item: DollItem:
 
 ## How far (px) above its position the doll is drawn, when it's placed on a
 ## table (see ItemPickup.elevation). Set before adding it to the scene.
-var elevation := 0.0:
-	set(value):
-		player_zone_raise = value
-		elevation = value
+var elevation := 0.0
 
 ## How long (seconds) a possession lasts, picked at random each time.
 @export var min_possess_time := 5.0

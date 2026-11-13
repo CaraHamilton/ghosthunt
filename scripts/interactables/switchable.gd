@@ -138,6 +138,9 @@ extends GhostInteractable
 ## The sounds used when change_sound / change_back_sound are empty, by tag:
 ## [changing to the other look, changing back]. Names of files in
 ## res://audio/sfx/ (see Sfx). "" = no sound.
+## The footprint of snapped decor (snap_to_tile): one whole tile.
+const TILE_FOOTPRINT := Vector2(16, 16)
+
 const DEFAULT_SOUNDS := {
 	"_on": ["objects/switch_on", "objects/switch_off"],
 	"_knocked": ["objects/knock_over", "objects/set_right"],
@@ -162,6 +165,9 @@ var _residue_preview: Node2D
 var _play_time_left := 0.0
 ## Plays loop_sound while it shows its other look (made when first needed).
 var _loop_player: AudioStreamPlayer2D
+## Snapped decor: the tile it sits on as drawn (up on the table's top if it's
+## on one). Clicking anywhere on it uses the decor, not just its art.
+var _tile_click_rect := Rect2()
 
 
 func _ready() -> void:
@@ -174,6 +180,7 @@ func _ready() -> void:
 			if spot.get("ok", false):
 				global_position = spot.position
 				_lift = spot.elevation
+				_tile_click_rect = spot.rect
 				# Its tile is taken: no tools placed on top of it.
 				set_meta("place_tile", spot.cell)
 				add_to_group(House.PLACED_GROUP)
@@ -182,7 +189,6 @@ func _ready() -> void:
 		footprint = current_footprint()
 		# Up on a table it's out of the way; the table blocks instead.
 		solid = solid and _lift == 0.0
-		player_zone_raise = _lift
 		residue_offset = residue_position - Vector2(0, _lift)
 		residue_texture = residue_art
 		residue_flip_h = residue_flip
@@ -232,8 +238,11 @@ func _house() -> House:
 	return node as House
 
 
-## The footprint for the way it's facing.
+## The footprint for the way it's facing. Snapped decor (snap_to_tile) always
+## takes exactly one tile, TILE_FOOTPRINT, whatever size its art is.
 func current_footprint() -> Vector2:
+	if snap_to_tile:
+		return TILE_FOOTPRINT
 	if (facing == Prop.Facing.RIGHT or facing == Prop.Facing.LEFT) and side_footprint != Vector2.ZERO:
 		return side_footprint
 	return footprint
@@ -282,13 +291,24 @@ func ghost_can_use(ghost: Ghost) -> bool:
 	if is_lit_type():
 		return false
 	if is_breakable():
-		return ghost.can_break_things
+		return ghost.can_break_things and ghost.break_cooldown_left <= 0.0
 	return ghost.can_knock_things if is_one_way() else true
 
 
-## True if `point` (the player) is close enough to light it.
-func in_lantern_reach(point: Vector2) -> bool:
-	return get_footprint().grow(player_reach).has_point(point)
+## True if `player` can light it with the lantern: within Player.USE_REACH
+## of her feet, like any house object (for decor up on a table, of its tile).
+func in_lantern_reach(player: Player) -> bool:
+	return player.can_reach(self)
+
+
+## Up on a table, the ghost has to reach the tile it sits on (from the
+## nearest open side of the table), not the table's front edge where its
+## origin is.
+func get_reach_area() -> Rect2:
+	var house := _house()
+	if _lift > 0.0 and has_meta("place_tile") and house:
+		return house.tile_rect(get_meta("place_tile"))
+	return super()
 
 
 ## Called by the lantern (F): lights it, or puts it out.
@@ -323,9 +343,11 @@ func _on_ghost_interact(ghost: Ghost) -> void:
 		return
 	changed = not changed
 	_play_change_sound()
-	# Breaking something always shows the ghost for a moment.
+	# Breaking something always shows the ghost for a moment - and it can't
+	# break anything else for a while (Ghost.min_break_cooldown).
 	if is_breakable():
 		ghost.start_appearance()
+		ghost.start_break_cooldown()
 
 
 ## The way it faces, from `facing` (a sink facing left is used from its left).
@@ -340,14 +362,18 @@ func get_front_direction() -> Vector2:
 	return Vector2.DOWN
 
 
-## The area its art's frame covers.
+## The area its art's frame covers - and, for snapped decor, the whole tile
+## it sits on.
 func get_click_rect() -> Rect2:
-	return _art_node.get_art_rect() if _art_node else get_footprint()
+	var rect := _art_node.get_art_rect() if _art_node else get_footprint()
+	return rect.merge(_tile_click_rect) if _tile_click_rect.has_area() else rect
 
 
-## Only clicks on its drawn pixels count, not the see-through parts of the
-## frame around them.
+## Snapped decor: anywhere on the tile it sits on, or on its art. Everything
+## else: only its drawn pixels, not the see-through parts of the frame.
 func is_clicked_at(point: Vector2) -> bool:
+	if _tile_click_rect.has_point(point):
+		return true  # anywhere on its tile (snapped decor)
 	return _art_node.is_art_at(point) if _art_node else get_footprint().has_point(point)
 
 

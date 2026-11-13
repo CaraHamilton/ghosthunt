@@ -24,7 +24,9 @@ extends CharacterBody2D
 ##
 ## Appearances: whenever the ghost breaks something (a jar... only below 70%
 ## sanity) it becomes
-## visible for 2-3 seconds where it is, carrying on with whatever it was
+## visible for 2-3 seconds where it is. It stays put the whole time: it fades
+## in floating, switches to its chase animation once it's fully visible, and
+## fades out again in the chase pose. Then it carries on with whatever it was
 ## doing. It doesn't go after the player and is harmless. It never just
 ## appears at random.
 ##
@@ -56,6 +58,8 @@ enum State {
 const HUNT_STATES := [State.APPEARING, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
 const WORLD_LAYER := 1
 const VISIBLE_ALPHA := 0.85
+## Seconds the ghost stops, facing an object, after using it.
+const INTERACT_PAUSE := 1.0
 ## Light mask layer only the ghost's sprite is on (as well as the world
 ## layer, so the lantern still lights it). Its Glow light shines on just this
 ## layer, so the ghost glows softly without lighting anything around it - the
@@ -113,6 +117,8 @@ const GLOW_LIGHT_LAYER := 4
 ## something (see Switchable.is_breakable), never at random.
 ## How long (seconds) an appearance lasts, picked at random each time
 ## (counted from when it starts fading in).
+## The ghost floats while fading in (appear_time), then shows its chase
+## animation for the rest of it, and while it fades out.
 @export var min_appearance_time := 2.0
 @export var max_appearance_time := 3.0
 ## A hunt can't start during an appearance, nor for this many seconds after
@@ -127,6 +133,12 @@ const GLOW_LIGHT_LAYER := 4
 ## and every break makes it appear for a moment, so this is also when
 ## appearances start.
 @export_range(0.0, 1.0) var break_sanity_threshold := 0.7
+## After breaking something, the ghost can't break anything else for a
+## random number of seconds between these, so each break (and the appearance
+## that comes with it) is its own event. Switching things on and knocking
+## them over carry on as normal.
+@export var min_break_cooldown := 30.0
+@export var max_break_cooldown := 60.0
 
 @export_group("Wandering")
 @export var wander_speed := 22.0
@@ -198,6 +210,8 @@ var _frozen_time_left := 0.0
 ## Debug: which sanity stages have been announced (see _debug_sanity_stages).
 var _announced_knocking := false
 var _announced_breaking := false
+## Seconds until the ghost may break something again (see min_break_cooldown).
+var break_cooldown_left := 0.0
 ## True if the ghost can see the player this frame.
 var sees_player := false
 ## Where the ghost last saw the player (INF if it never has). Remembered
@@ -213,6 +227,9 @@ var _hunts_locked := true
 var _hunt_check_timer := 0.0
 ## Seconds left in the current appearance (0 when there isn't one).
 var _appearance_time_left := 0.0
+## True from when an appearance has fully faded in until it has fully faded
+## out again: the ghost shows its chase animation.
+var _appearance_chase := false
 var _wander_target := Vector2.INF
 var _wander_pause := 0.0
 var _stuck_time := 0.0
@@ -256,6 +273,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_debug_sanity_stages()
+	break_cooldown_left = maxf(0.0, break_cooldown_left - delta)
 	if is_frozen:
 		_update_frozen(delta)
 		return
@@ -369,10 +387,30 @@ func _update_animation() -> void:
 		else:
 			_facing = "down" if move.y > 0.0 else "up"
 			sprite.flip_h = false
-	var chasing := state in [State.CHASING, State.INVESTIGATING]
+	var chasing := state in [State.CHASING, State.INVESTIGATING] or _appearance_chase
 	var anim := StringName(("chase_" if chasing else "float_") + _facing)
 	if sprite.animation != anim and sprite.sprite_frames.has_animation(anim):
 		sprite.play(anim)
+
+
+## Turns the ghost to face `area` (an object it's using): towards the
+## nearest point of it - up, down, left or right. It keeps facing that way
+## until it moves again.
+func face_toward(area: Rect2) -> void:
+	var nearest := global_position.clamp(area.position, area.end)
+	var dir := nearest - global_position
+	if dir.length() < 0.5:
+		dir = area.get_center() - global_position  # standing on it (the doll)
+	if dir.length() < 0.5:
+		return
+	var sprite := $Sprite as AnimatedSprite2D
+	if absf(dir.x) > absf(dir.y):
+		_facing = "side"
+		sprite.flip_h = dir.x > 0.0
+	else:
+		_facing = "down" if dir.y > 0.0 else "up"
+		sprite.flip_h = false
+	_update_animation()
 
 
 ## Switches state. Ghost types can call this to force a state change.
@@ -530,6 +568,10 @@ func _try_interact(delta: float) -> void:
 				or not item.can_ghost_interact():
 			continue
 		if randf() < behavior.get_interaction_chance(item, item.ghost_interaction_chance):
+			# Stop for a moment, facing it (it carries on wandering after).
+			_wander_pause = maxf(_wander_pause, INTERACT_PAUSE)
+			velocity = Vector2.ZERO
+			face_toward(item.get_reach_area())
 			item.ghost_interact(self)
 			behavior.on_interacted(item)
 			interacted.emit(item)
@@ -584,6 +626,10 @@ func start_appearance(duration := -1.0) -> void:
 		duration = randf_range(min_appearance_time, max_appearance_time)
 	_appearance_time_left = duration
 	is_manifested = true
+	# Stay put until it has faded out again.
+	_appearance_chase = false
+	_wander_pause = maxf(_wander_pause, duration + appear_time)
+	velocity = Vector2.ZERO
 	if OS.is_debug_build():
 		print("[debug] Ghost: appearing for %.1fs" % duration)
 	Sfx.play("ghost/appear", global_position)
@@ -608,6 +654,11 @@ func _debug_sanity_stages() -> void:
 
 ## Counts down the current appearance.
 func _update_appearance(delta: float) -> void:
+	# Chase pose once fully visible, until it has faded out again.
+	if is_appearing and _fade_alpha_reached():
+		_appearance_chase = true
+	elif not is_appearing and modulate.a <= _hidden_alpha():
+		_appearance_chase = false
 	if is_hunting or not is_appearing:
 		return
 	_appearance_time_left -= delta
@@ -617,6 +668,13 @@ func _update_appearance(delta: float) -> void:
 		# No hunt straight after an appearance.
 		_hunt_cooldown = maxf(_hunt_cooldown, hunt_delay_after_appearance)
 		appearance_ended.emit()
+
+
+## Called when it breaks something: no more breaking for a while.
+func start_break_cooldown() -> void:
+	break_cooldown_left = randf_range(min_break_cooldown, max_break_cooldown)
+	if OS.is_debug_build():
+		print("[debug] Ghost: can't break anything else for %.0fs" % break_cooldown_left)
 
 
 func _start_hunt_cooldown() -> void:
@@ -630,6 +688,7 @@ func _wander(delta: float) -> void:
 	if _wander_pause > 0.0:
 		_wander_pause -= delta
 		velocity = Vector2.ZERO
+		move_and_slide()  # (so it reads as standing still, keeping the way it faces)
 		return
 	if _wander_target == Vector2.INF:
 		var room := _pick_wander_room()
@@ -648,17 +707,24 @@ func _wander(delta: float) -> void:
 		_wander_pause = randf_range(min_wander_pause, max_wander_pause)
 
 
-## A walkable spot next to a random interactable in `room`, or INF if the
-## room has none.
+## A walkable spot next to a random interactable in `room` that the ghost
+## can still do something with (not one it has already knocked over or
+## broken), or INF if the room has none.
 func _object_stand_point_in(room: String) -> Vector2:
 	var items := get_tree().get_nodes_in_group("ghost_interactables").filter(
 		func(item): return item.ghost_can_use(self) \
-			and house.room_at(item.get_footprint().get_center()) == room)
+			and not (item is Switchable and item.is_one_way() and item.changed) \
+			and house.room_at(item.get_reach_area().get_center()) == room)
 	if items.is_empty():
 		return Vector2.INF
 	var item: GhostInteractable = items.pick_random()
 	var spot := item.get_ghost_stand_point()
-	return spot if house.is_walkable(spot) else _random_point_near(spot, 8.0)
+	if house.is_walkable(spot):
+		return spot
+	var near := _random_point_near(spot, 8.0)
+	if near == global_position and OS.is_debug_build():
+		print("[debug] Ghost: wanted to visit %s but there's no open floor next to it" % item.name)
+	return near
 
 
 func _pick_wander_room() -> String:
@@ -676,6 +742,11 @@ func _pick_wander_room() -> String:
 func _update_fade(delta: float) -> void:
 	var target := VISIBLE_ALPHA if is_manifested else _hidden_alpha()
 	modulate.a = move_toward(modulate.a, target, VISIBLE_ALPHA / appear_time * delta)
+
+
+## True once the ghost has fully faded in.
+func _fade_alpha_reached() -> bool:
+	return modulate.a >= VISIBLE_ALPHA - 0.001
 
 
 func _hidden_alpha() -> float:

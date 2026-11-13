@@ -14,8 +14,7 @@ extends Object
 ## sound robotic.
 ##
 ## A name with no file yet plays nothing, so sounds can be hooked up before
-## they're made. (Debug builds print each missing name once, as a to-do list
-## of files to make.)
+## they're made (see res://audio/sfx/README.md for every name).
 ##
 ## Anything can also pass an AudioStream instead of a name (e.g. a sound set
 ## in the Inspector) - including an AudioStreamRandomizer, Godot's own
@@ -82,8 +81,6 @@ static func get_stream(sound: Variant) -> AudioStream:
 	var key := String(sound)
 	if not _cache.has(key):
 		_cache[key] = _load(key)
-		if _cache[key] == null and OS.is_debug_build():
-			print("[sfx] No sound file yet for \"%s\" (add %s%s.wav, or %s_1.wav, _2...)" % [key, SFX_DIR, key, key])
 	return _cache[key]
 
 

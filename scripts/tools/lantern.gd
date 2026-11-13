@@ -2,8 +2,8 @@ class_name LanternItem
 extends ItemInstance
 ## The lantern: the player's only light. It glows on its own (no need to hold
 ## F) whenever it's the selected toolbar item, or lying on the floor. Carried
-## but not selected, it's off and the player is in the dark. F next to a
-## fireplace lights it, or puts it out.
+## but not selected, it's off and the player is in the dark. F (or left click)
+## within reach of a fireplace or candle lights it or puts it out.
 ##
 ## The light itself is res://scenes/lantern_light.tscn (tweak its colour and
 ## size there). It moves between the player and the lantern's floor node.
@@ -32,8 +32,9 @@ func on_dropped(node: Node2D) -> void:
 	_attach(node, _floor_offset(node), true)
 
 
-## F next to a fireplace (a Switchable with a "_lit" tag) lights it, or puts
-## it out. The closest one in reach, if several.
+## F (or left click) within reach of a fireplace or candle (a Switchable with
+## a "_lit" tag - see Switchable.in_lantern_reach) lights it or puts it out.
+## The closest one, if several.
 func start_use() -> void:
 	if holder == null:
 		return
@@ -41,7 +42,7 @@ func start_use() -> void:
 	var best_dist := INF
 	for thing in holder.get_tree().get_nodes_in_group("ghost_interactables"):
 		var fire := thing as Switchable
-		if fire == null or not fire.is_lit_type() or not fire.in_lantern_reach(holder.global_position):
+		if fire == null or not fire.is_lit_type() or not fire.in_lantern_reach(holder):
 			continue
 		var d := holder.global_position.distance_squared_to(fire.get_footprint().get_center())
 		if d < best_dist:
