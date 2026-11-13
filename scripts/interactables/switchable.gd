@@ -284,15 +284,10 @@ func is_lit_type() -> bool:
 	return change_tag().ends_with("_lit")
 
 
-## The ghost never touches fires, only knocks things over once the player's
-## sanity is low enough (Ghost.knock_sanity_threshold), and only breaks
-## things once it's lower still (Ghost.break_sanity_threshold).
-func ghost_can_use(ghost: Ghost) -> bool:
-	if is_lit_type():
-		return false
-	if is_breakable():
-		return ghost.can_break_things and ghost.break_cooldown_left <= 0.0
-	return ghost.can_knock_things if is_one_way() else true
+## The ghost never touches fires. (When it may knock things over or break
+## them - sanity, the break cooldown - is the ghost's call: see Ghost.may_use.)
+func ghost_can_use(_ghost: Ghost) -> bool:
+	return not is_lit_type()
 
 
 ## True if `player` can light it with the lantern: within Player.USE_REACH
@@ -337,17 +332,15 @@ func can_ghost_interact() -> bool:
 	return super()
 
 
-func _on_ghost_interact(ghost: Ghost) -> void:
+## The ghost switches it, knocks it over, breaks it or sets it going. (What
+## the ghost itself does after breaking something - appearing - is in
+## Ghost._after_using.)
+func _on_ghost_interact(_ghost: Ghost) -> void:
 	if is_played_type():
 		_start_playing()
 		return
 	changed = not changed
 	_play_change_sound()
-	# Breaking something always shows the ghost for a moment - and it can't
-	# break anything else for a while (Ghost.min_break_cooldown).
-	if is_breakable():
-		ghost.start_appearance()
-		ghost.start_break_cooldown()
 
 
 ## The way it faces, from `facing` (a sink facing left is used from its left).

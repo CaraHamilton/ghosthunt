@@ -11,6 +11,8 @@ const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_rea
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
 
+@export_group("Debug")
+# (Also handy for testing: Player -> Sanity -> Start Sanity.)
 ## Debug: draw the ghost faintly while it's invisible.
 @export var debug_show_ghost := false
 ## Debug: show the exact sanity percentage on the sanity bar (players
@@ -19,6 +21,7 @@ static var current: Game
 ## Debug: start the game with sanity right at the point where the ghost is
 ## allowed to hunt (its hunt_sanity_threshold), to test hunts without waiting.
 @export var debug_start_at_hunt_threshold := false
+@export_group("")
 
 ## How long (s) EMF from something the ghost did lasts (see EMFSource).
 @export var emf_duration := 60.0
@@ -82,6 +85,16 @@ func add_emf_source(at: Variant, min_level: int, max_level: int, chance_5: float
 	return source
 
 
+## The strongest EMF within `reach` px of `point` right now (0 if none) - what
+## an EMF reader there shows (see EMFReader).
+func emf_level_at(point: Vector2, reach: float) -> int:
+	var best := 0
+	for source in emf_sources:
+		if source.reaches(point, reach):
+			best = maxi(best, source.level)
+	return best
+
+
 ## Seconds of game time (stops while paused, follows Engine.time_scale).
 static func game_time() -> float:
 	return Engine.get_physics_frames() / float(Engine.physics_ticks_per_second)
@@ -130,6 +143,9 @@ func _process(delta: float) -> void:
 			get_tree().reload_current_scene()
 		return
 	survived_time += delta  # shown on the game over screen
+	# Faded EMF (and EMF from objects that are gone) stops showing.
+	var now := game_time()
+	emf_sources = emf_sources.filter(func(s: EMFSource) -> bool: return s.is_active(now))
 	_update_sanity_bar()
 
 

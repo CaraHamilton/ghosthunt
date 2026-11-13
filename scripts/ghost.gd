@@ -46,7 +46,7 @@ signal interacted(item: GhostInteractable)
 
 enum State {
 	IDLE,          ## invisible, wandering (mostly around its favourite room)
-	APPEARING,     ## hunt just started: fading in (harmless)
+	HUNT_START,    ## hunt just started: fading in, standing still (harmless)
 	INVESTIGATING, ## hunt: walking to where it last saw the player
 	CHASING,       ## hunt: can see the player, going straight for them
 	SEARCHING,     ## hunt: prowling around the last-seen spot until time runs out
@@ -55,7 +55,16 @@ enum State {
 	POSSESSING,    ## invisible, standing on the doll and possessing it
 }
 
-const HUNT_STATES := [State.APPEARING, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
+const HUNT_STATES := [State.HUNT_START, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
+## The phases of an appearance (see the Appearances settings). Not a State:
+## the ghost carries on in whatever state it was in (wandering, heading home)
+## - it just holds still until the appearance is over.
+enum Appearance {
+	NONE,
+	FADING_IN,   ## fading in, floating
+	LUNGING,     ## fully visible, in its chase animation
+	FADING_OUT,  ## fading out, still in its chase animation
+}
 const WORLD_LAYER := 1
 const VISIBLE_ALPHA := 0.85
 ## Seconds the ghost stops, facing an object, after using it.
@@ -107,7 +116,9 @@ const GLOW_LIGHT_LAYER := 4
 ## The ghost only starts hunts on its own once the player's sanity is below
 ## this fraction of full (0.7 = 70%).
 @export_range(0.0, 1.0) var hunt_sanity_threshold := 0.7
-@export var appear_time := 1.0
+## How long (seconds) the ghost takes to fade in or out - at the start and
+## end of a hunt, and of an appearance.
+@export var fade_time := 1.0
 @export var catch_radius := 10.0
 
 @export_group("Appearances")
@@ -117,8 +128,9 @@ const GLOW_LIGHT_LAYER := 4
 ## something (see Switchable.is_breakable), never at random.
 ## How long (seconds) an appearance lasts, picked at random each time
 ## (counted from when it starts fading in).
-## The ghost floats while fading in (appear_time), then shows its chase
-## animation for the rest of it, and while it fades out.
+## It goes through Appearance.FADING_IN (floating, fade_time), LUNGING (its
+## chase animation, the rest of that time) and FADING_OUT (chase animation,
+## fade_time), standing still throughout.
 @export var min_appearance_time := 2.0
 @export var max_appearance_time := 3.0
 ## A hunt can't start during an appearance, nor for this many seconds after
@@ -169,9 +181,9 @@ const GLOW_LIGHT_LAYER := 4
 ## The tint while it's frozen.
 @export var frozen_tint := Color(0.6, 0.85, 1.0)
 
-@export_group("Debug")
-## Draw the ghost faintly even while it's invisible.
-@export var debug_reveal := false
+## Draw the ghost faintly even while it's invisible. Set from Main's Debug
+## Show Ghost setting (Game.debug_show_ghost).
+var debug_reveal := false
 
 @export_group("")
 ## How often (seconds) the ghost recalculates its path to a moving target.
@@ -185,10 +197,12 @@ var favorite_room := ""
 var state := State.IDLE
 ## True while the player can see the ghost (during a hunt or an appearance).
 var is_manifested := false
-## True during an appearance (see the Appearances settings).
+## Which part of an appearance it's in (NONE when it isn't appearing).
+var appearance := Appearance.NONE
+## True during an appearance (any phase) - see the Appearances settings.
 var is_appearing: bool:
 	get:
-		return _appearance_time_left > 0.0
+		return appearance != Appearance.NONE
 var is_hunting: bool:
 	get:
 		return state in HUNT_STATES
@@ -219,17 +233,20 @@ var sees_player := false
 var last_seen_position := Vector2.INF
 
 var _state_time := 0.0
+## Seconds until the ghost may start a hunt on its own (see _try_start_hunt).
+## Counts down all the time.
 var _hunt_cooldown := 0.0
 ## True while the player's sanity is too high for hunts. Dropping below the
 ## threshold starts a fresh cooldown, so a hunt never fires the instant it's
 ## allowed - the ghost merely *can* hunt from then on.
 var _hunts_locked := true
 var _hunt_check_timer := 0.0
-## Seconds left in the current appearance (0 when there isn't one).
-var _appearance_time_left := 0.0
-## True from when an appearance has fully faded in until it has fully faded
-## out again: the ghost shows its chase animation.
-var _appearance_chase := false
+## Seconds left in the current appearance phase, and how long the LUNGING
+## phase lasts this time.
+var _appearance_phase_left := 0.0
+var _lunge_time := 0.0
+## Seconds left of holding still (see hold_still).
+var _hold_time_left := 0.0
 var _wander_target := Vector2.INF
 var _wander_pause := 0.0
 var _stuck_time := 0.0
@@ -242,7 +259,6 @@ var _search_center := Vector2.ZERO
 var _path := PackedVector2Array()
 var _path_target := Vector2.INF
 var _repath_timer := 0.0
-var _t := 0.0
 ## Which way the sprite faces: "down", "up" or "side".
 var _facing := "down"
 ## The doll being possessed (or walked to, to possess it), and how many
@@ -274,14 +290,30 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_debug_sanity_stages()
 	break_cooldown_left = maxf(0.0, break_cooldown_left - delta)
+	_hunt_cooldown = maxf(0.0, _hunt_cooldown - delta)
 	if is_frozen:
 		_update_frozen(delta)
 		return
-	_t += delta
 	_state_time += delta
 	behavior.process(delta)
 	_update_sight()
 
+	if _hold_time_left > 0.0:
+		# Holding still (using something, or appearing) - in any state.
+		_hold_time_left -= delta
+		velocity = Vector2.ZERO
+		move_and_slide()
+	else:
+		_run_state(delta)
+
+	_update_appearance(delta)
+	_update_animation()
+	_update_fade(delta)
+	queue_redraw()
+
+
+## What the ghost does this frame in its current state.
+func _run_state(delta: float) -> void:
 	match state:
 		State.IDLE:
 			_time_away = 0.0 if house.room_at(global_position) == favorite_room else _time_away + delta
@@ -289,9 +321,9 @@ func _physics_process(delta: float) -> void:
 			_try_interact(delta)
 			_try_start_hunt(delta)
 
-		State.APPEARING:
+		State.HUNT_START:
 			velocity = Vector2.ZERO
-			if _state_time >= appear_time:
+			if _state_time >= fade_time:
 				_pursue()
 
 		State.INVESTIGATING:
@@ -300,8 +332,7 @@ func _physics_process(delta: float) -> void:
 			else:
 				var speed := behavior.get_investigate_speed(player.walk_speed * investigate_speed_factor)
 				_follow_path_to(last_seen_position, speed, delta, false)
-				_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
-				if global_position.distance_to(last_seen_position) < 6.0 or _stuck_time > 1.0:
+				if _arrived_or_stuck(last_seen_position, 6.0, delta):
 					_start_search(last_seen_position)
 				_check_catch()
 
@@ -327,9 +358,7 @@ func _physics_process(delta: float) -> void:
 			else:
 				var speed := behavior.get_search_speed(player.walk_speed * search_speed_factor)
 				_follow_path_to(_wander_target, speed, delta, false)
-				_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
-				if global_position.distance_to(_wander_target) < 4.0 or _stuck_time > 1.0:
-					_stuck_time = 0.0
+				if _arrived_or_stuck(_wander_target, 4.0, delta):
 					_wander_target = _random_point_near(_search_center, search_radius)
 				_check_catch()
 
@@ -356,8 +385,7 @@ func _physics_process(delta: float) -> void:
 			elif not _doll.is_possessed:
 				# Still getting onto the doll.
 				_follow_path_to(_doll.global_position, wander_speed, delta, false)
-				_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
-				if global_position.distance_to(_doll.global_position) < 2.0 or _stuck_time > 1.0:
+				if _arrived_or_stuck(_doll.global_position, 2.0, delta):
 					velocity = Vector2.ZERO
 					_doll.on_possessed(self)
 			else:
@@ -366,10 +394,6 @@ func _physics_process(delta: float) -> void:
 				if _possess_time_left <= 0.0:
 					end_possession()
 
-	_update_appearance(delta)
-	_update_animation()
-	_update_fade(delta)
-	queue_redraw()
 
 
 ## Plays "chase_*" while the ghost is going after the player (chasing, or
@@ -387,7 +411,8 @@ func _update_animation() -> void:
 		else:
 			_facing = "down" if move.y > 0.0 else "up"
 			sprite.flip_h = false
-	var chasing := state in [State.CHASING, State.INVESTIGATING] or _appearance_chase
+	var lunging := appearance == Appearance.LUNGING or appearance == Appearance.FADING_OUT
+	var chasing := state in [State.CHASING, State.INVESTIGATING] or lunging
 	var anim := StringName(("chase_" if chasing else "float_") + _facing)
 	if sprite.animation != anim and sprite.sprite_frames.has_animation(anim):
 		sprite.play(anim)
@@ -431,12 +456,13 @@ func set_state(new_state: State) -> void:
 func start_hunt() -> void:
 	if is_hunting or is_appearing:
 		return
+	_hold_time_left = 0.0
 	end_possession()
 	is_manifested = true
 	if OS.is_debug_build():
 		print("[debug] Ghost: hunt started in the %s" % _room_name())
 	Sfx.play("ghost/hunt_start")
-	set_state(State.APPEARING)
+	set_state(State.HUNT_START)
 	hunt_started.emit()
 
 
@@ -522,27 +548,35 @@ func end_possession() -> void:
 	set_state(State.IDLE)
 
 
+## Starts a hunt on its own (while wandering or heading home) when ALL of
+## these hold:
+##   1. sanity is below the hunt threshold (hunt_sanity_threshold, or the
+##      ghost type's own - GhostBehavior.get_hunt_sanity_threshold)
+##   2. the hunt cooldown is over: a random min_hunt_cooldown-
+##      max_hunt_cooldown seconds, started when sanity first drops below the
+##      threshold and again after every hunt - and never less than
+##      hunt_delay_after_appearance after an appearance
+##   3. the player is at least min_hunt_distance away
+##   4. a roll comes up, once every hunt_check_interval (current_hunt_chance)
 func _try_start_hunt(delta: float) -> void:
 	if state == State.POSSESSING:
 		return  # it just went for the doll this frame
 	var threshold := behavior.get_hunt_sanity_threshold(hunt_sanity_threshold)
 	if player.sanity_ratio >= threshold:
-		_hunts_locked = true  # the player's mind is still too strong
+		_hunts_locked = true  # 1. the player's mind is still too strong
 		return
 	if _hunts_locked:
-		# Sanity just dropped low enough: hunts are now possible, but only
-		# after a fresh random wait.
+		# Sanity just dropped low enough: hunts are possible from now on, but
+		# only after a fresh random wait.
 		_hunts_locked = false
 		_start_hunt_cooldown()
-		return
-	_hunt_cooldown -= delta
 	if _hunt_cooldown > 0.0:
-		return
+		return  # 2.
 	_hunt_check_timer -= delta
 	if _hunt_check_timer > 0.0:
 		return
 	_hunt_check_timer = hunt_check_interval
-	var far_enough := global_position.distance_to(player.global_position) >= min_hunt_distance
+	var far_enough := global_position.distance_to(player.global_position) >= min_hunt_distance  # 3.
 	if far_enough and randf() < behavior.get_hunt_chance(current_hunt_chance(threshold)):
 		start_hunt()
 
@@ -564,18 +598,47 @@ func _try_interact(delta: float) -> void:
 		return
 	_interact_timer = interact_check_interval
 	for item: GhostInteractable in get_tree().get_nodes_in_group("ghost_interactables"):
-		if not item.ghost_can_use(self) or not item.is_in_ghost_reach(global_position) \
+		if not may_use(item) or not item.is_in_ghost_reach(global_position) \
 				or not item.can_ghost_interact():
 			continue
 		if randf() < behavior.get_interaction_chance(item, item.ghost_interaction_chance):
-			# Stop for a moment, facing it (it carries on wandering after).
-			_wander_pause = maxf(_wander_pause, INTERACT_PAUSE)
-			velocity = Vector2.ZERO
+			# Stop for a moment, facing it (then it carries on).
+			hold_still(INTERACT_PAUSE)
 			face_toward(item.get_reach_area())
 			item.ghost_interact(self)
+			_after_using(item)
 			behavior.on_interacted(item)
 			interacted.emit(item)
 			return
+
+
+## Whether the ghost may use `item` at all right now (reach and the object's
+## own cooldown aside):
+##   - never things it doesn't touch (fires; the doll, unless its type
+##     possesses dolls) - the object says (GhostInteractable.ghost_can_use)
+##   - knockables (book stacks) only below knock_sanity_threshold
+##   - breakables (jars) only below break_sanity_threshold, and not during
+##     the break cooldown
+##   - everything else (sinks, tubs, the rocking chair) at any sanity
+func may_use(item: GhostInteractable) -> bool:
+	if not item.ghost_can_use(self):
+		return false
+	if item is Switchable:
+		if item.is_breakable():
+			return can_break_things and break_cooldown_left <= 0.0
+		if item.is_one_way():
+			return can_knock_things
+	return true
+
+
+## What the ghost does after using `item`: breaking something makes it appear
+## (and starts the break cooldown); the doll gets possessed.
+func _after_using(item: GhostInteractable) -> void:
+	if item is Switchable and item.is_breakable():
+		start_appearance()
+		start_break_cooldown()
+	elif item is Doll:
+		possess(item, item.random_possess_time())
 
 
 ## Called when a holy water flask splashes the ghost. Only counts while it's
@@ -624,17 +687,17 @@ func start_appearance(duration := -1.0) -> void:
 		return
 	if duration <= 0.0:
 		duration = randf_range(min_appearance_time, max_appearance_time)
-	_appearance_time_left = duration
+	# `duration` counts from the start of the fade-in to the start of the
+	# fade-out; it holds still until it has faded out again.
+	appearance = Appearance.FADING_IN
+	_appearance_phase_left = fade_time
+	_lunge_time = maxf(0.0, duration - fade_time)
 	is_manifested = true
-	# Stay put until it has faded out again.
-	_appearance_chase = false
-	_wander_pause = maxf(_wander_pause, duration + appear_time)
-	velocity = Vector2.ZERO
+	hold_still(duration + fade_time)
 	if OS.is_debug_build():
 		print("[debug] Ghost: appearing for %.1fs" % duration)
 	Sfx.play("ghost/appear", global_position)
 	appearance_started.emit()
-
 
 
 ## Debug: prints once when sanity drops below the knocking and breaking
@@ -652,22 +715,34 @@ func _debug_sanity_stages() -> void:
 		if not is_equal_approx(hunt, break_sanity_threshold):
 			print("[debug] (hunts start below %d%%)" % roundi(hunt * 100.0))
 
-## Counts down the current appearance.
+## Moves the current appearance on through its phases (see Appearance).
 func _update_appearance(delta: float) -> void:
-	# Chase pose once fully visible, until it has faded out again.
-	if is_appearing and _fade_alpha_reached():
-		_appearance_chase = true
-	elif not is_appearing and modulate.a <= _hidden_alpha():
-		_appearance_chase = false
-	if is_hunting or not is_appearing:
+	if appearance == Appearance.NONE:
 		return
-	_appearance_time_left -= delta
-	if _appearance_time_left <= 0.0:
-		_appearance_time_left = 0.0
-		is_manifested = false
-		# No hunt straight after an appearance.
-		_hunt_cooldown = maxf(_hunt_cooldown, hunt_delay_after_appearance)
-		appearance_ended.emit()
+	_appearance_phase_left -= delta
+	if _appearance_phase_left > 0.0:
+		return
+	match appearance:
+		Appearance.FADING_IN:
+			appearance = Appearance.LUNGING
+			_appearance_phase_left = _lunge_time
+		Appearance.LUNGING:
+			appearance = Appearance.FADING_OUT
+			_appearance_phase_left = fade_time
+			is_manifested = false
+			# No hunt straight after an appearance.
+			_hunt_cooldown = maxf(_hunt_cooldown, hunt_delay_after_appearance)
+			appearance_ended.emit()
+		Appearance.FADING_OUT:
+			appearance = Appearance.NONE
+
+
+## Stops the ghost where it is for `seconds` (or longer, if it's already
+## holding still), whatever state it's in: it doesn't move, use things or
+## start a hunt. Used when it uses something, and during appearances.
+func hold_still(seconds: float) -> void:
+	_hold_time_left = maxf(_hold_time_left, seconds)
+	velocity = Vector2.ZERO
 
 
 ## Called when it breaks something: no more breaking for a while.
@@ -699,11 +774,8 @@ func _wander(delta: float) -> void:
 				_wander_target = spot
 
 	_follow_path_to(_wander_target, wander_speed, delta, false)
-	# Give up on a target we can't reach.
-	_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
-	if global_position.distance_to(_wander_target) < 4.0 or _stuck_time > 1.0:
+	if _arrived_or_stuck(_wander_target, 4.0, delta):  # (or gives up on it)
 		_wander_target = Vector2.INF
-		_stuck_time = 0.0
 		_wander_pause = randf_range(min_wander_pause, max_wander_pause)
 
 
@@ -712,7 +784,7 @@ func _wander(delta: float) -> void:
 ## broken), or INF if the room has none.
 func _object_stand_point_in(room: String) -> Vector2:
 	var items := get_tree().get_nodes_in_group("ghost_interactables").filter(
-		func(item): return item.ghost_can_use(self) \
+		func(item): return may_use(item) \
 			and not (item is Switchable and item.is_one_way() and item.changed) \
 			and house.room_at(item.get_reach_area().get_center()) == room)
 	if items.is_empty():
@@ -741,16 +813,22 @@ func _pick_wander_room() -> String:
 
 func _update_fade(delta: float) -> void:
 	var target := VISIBLE_ALPHA if is_manifested else _hidden_alpha()
-	modulate.a = move_toward(modulate.a, target, VISIBLE_ALPHA / appear_time * delta)
-
-
-## True once the ghost has fully faded in.
-func _fade_alpha_reached() -> bool:
-	return modulate.a >= VISIBLE_ALPHA - 0.001
+	modulate.a = move_toward(modulate.a, target, VISIBLE_ALPHA / fade_time * delta)
 
 
 func _hidden_alpha() -> float:
 	return 0.25 if debug_reveal else 0.0
+
+
+## True once the ghost has reached `target` (within `close` px) - or has been
+## stuck, barely moving, for over a second trying to: either way, time to move
+## on. Call once a frame while walking somewhere.
+func _arrived_or_stuck(target: Vector2, close: float, delta: float) -> bool:
+	_stuck_time = _stuck_time + delta if get_real_velocity().length() < 2.0 else 0.0
+	if global_position.distance_to(target) < close or _stuck_time > 1.0:
+		_stuck_time = 0.0
+		return true
+	return false
 
 
 ## Walks along a grid path towards `target`; collision stops it from ever

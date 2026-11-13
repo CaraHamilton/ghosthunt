@@ -57,9 +57,15 @@ func can_ghost_interact() -> bool:
 	return not is_possessed and super()
 
 
-func _on_ghost_interact(ghost: Ghost) -> void:
+## The ghost is about to possess it (see Ghost._after_using).
+func _on_ghost_interact(_ghost: Ghost) -> void:
 	_save_traces()
-	ghost.possess(self, randf_range(min_possess_time, max_possess_time))
+
+
+## How long (seconds) the next possession lasts: random, min_possess_time to
+## max_possess_time.
+func random_possess_time() -> float:
+	return randf_range(min_possess_time, max_possess_time)
 
 
 ## Called by the ghost once it's standing on the doll.
@@ -73,7 +79,7 @@ func on_released() -> void:
 	possessed_by = null
 	sprite.play(&"sit")
 	# The ghost was touching it until now: the cooldown counts from here.
-	_last_interaction_time = _game_time()
+	_last_interaction_time = Game.game_time()
 	_save_traces()
 
 

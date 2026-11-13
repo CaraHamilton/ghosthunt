@@ -13,8 +13,11 @@ extends Node
 ## Normal room temperature (°C). Each room gets a little random variation.
 @export var base_temperature := 20.0
 @export var base_variation := 0.8
-## The temperature (°C) the favourite room heads towards while the ghost is in it.
-@export var ghost_cold_temperature := 3.0
+## The coldest (°C) the favourite room of a ghost that isn't a freezing type
+## gets while the ghost is in it - just above 0, so it's hard to tell from
+## freezing at a glance. (Freezing types go below 0 instead - see
+## GhostBehavior.get_cold_temperature.)
+@export var ghost_cold_temperature := 1.0
 ## The temperature (°C) any other room heads towards while the ghost is in it.
 @export var passing_cold_temperature := 10.0
 ## The favourite room never warms above this (°C): a lingering chill.
@@ -24,6 +27,9 @@ extends Node
 @export var cooling_rate := 0.03
 ## How quickly a room warms back up once the ghost has left.
 @export var warming_rate := 0.01
+## A cooling room aims this many °C past its cold temperature (then stops at
+## it), so it actually gets there instead of creeping closer forever.
+@export var cool_past_target := 2.0
 ## How far (0-1) towards cold the favourite room already is at the start,
 ## since the ghost has been haunting it before the player arrived.
 @export var favorite_room_head_start := 0.6
@@ -51,15 +57,16 @@ func _process(delta: float) -> void:
 		return
 	var ghost_room := house.room_at(ghost.global_position)
 	for room in _temps:
-		var target: float
-		var rate: float
 		if room == ghost_room:
-			target = _cold_target(room)
-			rate = cooling_rate
+			var cold := _cold_target(room)
+			var before: float = _temps[room]
+			var aim := cold - cool_past_target
+			_temps[room] = before + (aim - before) * (1.0 - exp(-cooling_rate * delta))
+			# Stop at the cold temperature (never warm a room that's already colder).
+			_temps[room] = maxf(_temps[room], minf(cold, before))
 		else:
-			target = _rest_target(room)
-			rate = warming_rate
-		_temps[room] += (target - _temps[room]) * (1.0 - exp(-rate * delta))
+			var target := _rest_target(room)
+			_temps[room] += (target - _temps[room]) * (1.0 - exp(-warming_rate * delta))
 
 
 func get_temperature(room: String) -> float:

@@ -33,17 +33,4 @@ func process_always(delta: float) -> void:
 	if game.ghost and game.ghost.is_hunting:
 		level = randi_range(1, 4)  # as if broken
 		return
-	level = _source_level(game)
-
-
-## The strongest EMF source in reach (0 if none). Drops the ones that
-## have faded.
-func _source_level(game: Game) -> int:
-	var now := Game.game_time()
-	game.emf_sources = game.emf_sources.filter(func(s: EMFSource) -> bool: return s.is_active(now))
-	var pos := get_world_position()
-	var best := 0
-	for source: EMFSource in game.emf_sources:
-		if source.reaches(pos, reach):
-			best = maxi(best, source.level)
-	return best
+	level = game.emf_level_at(get_world_position(), reach)

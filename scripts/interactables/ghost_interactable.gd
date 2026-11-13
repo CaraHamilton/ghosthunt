@@ -102,7 +102,7 @@ func is_in_ghost_reach(point: Vector2) -> bool:
 
 
 func can_ghost_interact() -> bool:
-	return _game_time() - _last_interaction_time >= cooldown
+	return Game.game_time() - _last_interaction_time >= cooldown
 
 
 ## Whether this kind of ghost will ever touch this object (e.g. only some
@@ -113,7 +113,7 @@ func ghost_can_use(_ghost: Ghost) -> bool:
 
 ## Called by the ghost. Don't override this - override _on_ghost_interact.
 func ghost_interact(ghost: Ghost) -> void:
-	_last_interaction_time = _game_time()
+	_last_interaction_time = Game.game_time()
 	# Residue-leaving ghosts only leave it some of the time. Once there, it
 	# stays.
 	if ghost.behavior.leaves_uv_residue() and can_have_residue and randf() < RESIDUE_CHANCE:
@@ -139,7 +139,7 @@ func emf_5_chance() -> float:
 
 ## Seconds since the ghost last touched this (INF if never).
 func seconds_since_ghost_interaction() -> float:
-	return _game_time() - _last_interaction_time
+	return Game.game_time() - _last_interaction_time
 
 
 ## A spot on the floor next to this object where the ghost can stand to
@@ -166,11 +166,6 @@ func get_ghost_stand_point() -> Vector2:
 ## Down unless overridden (see Switchable).
 func get_front_direction() -> Vector2:
 	return Vector2.DOWN
-
-
-## Seconds of game time (stops while paused, follows Engine.time_scale).
-func _game_time() -> float:
-	return Engine.get_physics_frames() / float(Engine.physics_ticks_per_second)
 
 
 ## What happens when the ghost interacts. Override in each interactable.
