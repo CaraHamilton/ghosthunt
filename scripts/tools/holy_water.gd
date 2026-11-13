@@ -47,6 +47,7 @@ func start_use() -> void:
 	flask.flask_art = FLASK_ART
 	flask.splash_art = SPLASH_ART
 	Game.current.world.add_child(flask)
+	Sfx.play("tools/holy_water_throw")
 	if not player.inventory.items().has(self):
 		_free_reticle()  # that was the last flask
 

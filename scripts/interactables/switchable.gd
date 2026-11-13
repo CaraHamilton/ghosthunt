@@ -14,9 +14,18 @@ extends GhostInteractable
 ##       over. The player can knock it over and set it right again (E).
 ##   "<facing>_on" (e.g. "down_on"): the ghost and the player can both
 ##       switch it either way.
+##   "<facing>_played" (e.g. "right_played"): an animation, like a rocking
+##       chair rocking. The ghost or the player sets it going and it plays
+##       for `play_time` seconds, then stops by itself. Same rules as "_on"
+##       (the ghost does it at any sanity, EMF 1-2).
 ##   "<facing>_lit" (e.g. "down_lit"): a fire. Only the player can light it
 ##       and put it out, with the lantern (F) standing next to it - not E.
 ##       The ghost leaves it alone.
+##   "<facing>_broken" (e.g. "down_broken"): a breakable, like a jar. Only
+##       the ghost can break it (once sanity is below 70% - see
+##       Ghost.break_sanity_threshold), and nobody can fix it. The player can't use it at all.
+##       Breaking it always makes the ghost appear for 2-3 seconds, and
+##       gives off EMF 4 (or 5 for ghost types that show EMF 5).
 ## A tag with several frames loops as an animation. A facing with no tag of
 ## its own uses the one for the frame it shows (a "left" one showing "right"
 ## uses "right_knocked").
@@ -41,6 +50,7 @@ extends GhostInteractable
 	set(value):
 		changed = value
 		_update_art()
+		_update_loop_sound()
 ## The object's picture or Aseprite sheet.
 @export var art: Texture2D:
 	set(value):
@@ -69,6 +79,23 @@ extends GhostInteractable
 	set(value):
 		show_while_changed = value
 		_update_art()
+## For a "_played" animation: how long (seconds) it plays each time.
+@export var play_time := 5.0
+@export_group("Sound")
+## Plays when it changes to its other look: switched on, knocked over, broken,
+## set going, lit. Empty uses the default sound for its tag (see
+## DEFAULT_SOUNDS), so every sink shares one sound unless it has its own.
+@export var change_sound: AudioStream
+## Plays when it changes back: switched off, set right, put out. Empty uses
+## the default for its tag.
+@export var change_back_sound: AudioStream
+## Loops the whole time it shows its other look - water running, a fire
+## crackling, a chair creaking while it rocks. None if empty.
+@export var loop_sound: AudioStream
+## How loud the change sounds are (dB; 0 = as exported, -6 = about half).
+@export var sound_volume_db := 0.0
+## How loud the loop is.
+@export var loop_volume_db := -6.0
 @export_group("UV Residue")
 ## Where the centre of the UV residue goes, relative to the origin (before
 ## `raise`): on the top of the object in the art (a sink's counter, the top
@@ -108,6 +135,20 @@ extends GhostInteractable
 		raise = value
 		_update_art()
 
+## The sounds used when change_sound / change_back_sound are empty, by tag:
+## [changing to the other look, changing back]. Names of files in
+## res://audio/sfx/ (see Sfx). "" = no sound.
+## The footprint of snapped decor (snap_to_tile): one whole tile.
+const TILE_FOOTPRINT := Vector2(16, 16)
+
+const DEFAULT_SOUNDS := {
+	"_on": ["objects/switch_on", "objects/switch_off"],
+	"_knocked": ["objects/knock_over", "objects/set_right"],
+	"_broken": ["objects/break", ""],
+	"_played": ["objects/start_playing", ""],
+	"_lit": ["objects/light_fire", "objects/put_out_fire"],
+}
+
 ## Draws `art` (a Prop just for its drawing). Not saved in the scene.
 var _art_node: Prop
 ## How far (px) the art is actually drawn above the origin (from snapping,
@@ -120,6 +161,13 @@ var _shift := Vector2.ZERO
 var _snap_ok := true
 ## In the editor: draws the residue preview over the art.
 var _residue_preview: Node2D
+## Seconds left of a "_played" animation (0 when it isn't playing).
+var _play_time_left := 0.0
+## Plays loop_sound while it shows its other look (made when first needed).
+var _loop_player: AudioStreamPlayer2D
+## Snapped decor: the tile it sits on as drawn (up on the table's top if it's
+## on one). Clicking anywhere on it uses the decor, not just its art.
+var _tile_click_rect := Rect2()
 
 
 func _ready() -> void:
@@ -132,6 +180,7 @@ func _ready() -> void:
 			if spot.get("ok", false):
 				global_position = spot.position
 				_lift = spot.elevation
+				_tile_click_rect = spot.rect
 				# Its tile is taken: no tools placed on top of it.
 				set_meta("place_tile", spot.cell)
 				add_to_group(House.PLACED_GROUP)
@@ -140,15 +189,19 @@ func _ready() -> void:
 		footprint = current_footprint()
 		# Up on a table it's out of the way; the table blocks instead.
 		solid = solid and _lift == 0.0
-		player_zone_raise = _lift
 		residue_offset = residue_position - Vector2(0, _lift)
 		residue_texture = residue_art
 		residue_flip_h = residue_flip
 		# Up on a table, its light (a candle's flame) goes up with the art.
 		if is_instance_valid(show_while_changed):
 			show_while_changed.position.y -= _lift
+		# Breakables are the ghost's alone: no E or click zone for the player.
+		_update_art()
+		if is_breakable():
+			player_can_use = false
 	super()
 	_update_art()
+	_update_loop_sound()
 
 
 func _notification(what: int) -> void:
@@ -185,8 +238,11 @@ func _house() -> House:
 	return node as House
 
 
-## The footprint for the way it's facing.
+## The footprint for the way it's facing. Snapped decor (snap_to_tile) always
+## takes exactly one tile, TILE_FOOTPRINT, whatever size its art is.
 func current_footprint() -> Vector2:
+	if snap_to_tile:
+		return TILE_FOOTPRINT
 	if (facing == Prop.Facing.RIGHT or facing == Prop.Facing.LEFT) and side_footprint != Vector2.ZERO:
 		return side_footprint
 	return footprint
@@ -198,15 +254,29 @@ func change_tag() -> String:
 	if _art_node == null:
 		return ""
 	var base := _art_node.facing_tag()
-	for kind: String in ["_knocked", "_on", "_lit"]:
+	for kind: String in ["_knocked", "_on", "_lit", "_broken", "_played"]:
 		if _art_node.has_tag(base + kind):
 			return base + kind
 	return ""
 
 
-## True if the ghost can only change it one way (a "_knocked" tag).
+## True if the ghost can only change it one way (a "_knocked" or "_broken"
+## tag).
 func is_one_way() -> bool:
-	return change_tag().ends_with("_knocked")
+	var tag := change_tag()
+	return tag.ends_with("_knocked") or tag.ends_with("_broken")
+
+
+## True for a breakable (a "_broken" tag): once the ghost breaks it, it stays
+## broken.
+func is_breakable() -> bool:
+	return change_tag().ends_with("_broken")
+
+
+## True if the player can switch it with a click or E: not fires (the
+## lantern lights those) or breakables (only the ghost touches those).
+func player_can_switch() -> bool:
+	return not is_lit_type() and not is_breakable()
 
 
 ## True for a fire (a "_lit" tag): only the player's lantern lights it.
@@ -214,30 +284,50 @@ func is_lit_type() -> bool:
 	return change_tag().ends_with("_lit")
 
 
-## The ghost never touches fires, and only knocks things over once the
-## player's sanity is low enough (Ghost.knock_sanity_threshold).
+## The ghost never touches fires, only knocks things over once the player's
+## sanity is low enough (Ghost.knock_sanity_threshold), and only breaks
+## things once it's lower still (Ghost.break_sanity_threshold).
 func ghost_can_use(ghost: Ghost) -> bool:
 	if is_lit_type():
 		return false
+	if is_breakable():
+		return ghost.can_break_things and ghost.break_cooldown_left <= 0.0
 	return ghost.can_knock_things if is_one_way() else true
 
 
-## True if `point` (the player) is close enough to light it.
-func in_lantern_reach(point: Vector2) -> bool:
-	return get_footprint().grow(player_reach).has_point(point)
+## True if `player` can light it with the lantern: within Player.USE_REACH
+## of her feet, like any house object (for decor up on a table, of its tile).
+func in_lantern_reach(player: Player) -> bool:
+	return player.can_reach(self)
+
+
+## Up on a table, the ghost has to reach the tile it sits on (from the
+## nearest open side of the table), not the table's front edge where its
+## origin is.
+func get_reach_area() -> Rect2:
+	var house := _house()
+	if _lift > 0.0 and has_meta("place_tile") and house:
+		return house.tile_rect(get_meta("place_tile"))
+	return super()
 
 
 ## Called by the lantern (F): lights it, or puts it out.
 func light_with_lantern() -> void:
 	changed = not changed
+	_play_change_sound()
 
 
-## Knocked over: 2-3 EMF (30% chance of a 5). Switched on: 1-2 (10%).
+## Broken: EMF 4 (50% chance of a 5). Knocked over: 2-3 (30%). Switched on:
+## 1-2 (10%). (The 5 only for ghost types that show EMF 5.)
 func emf_levels() -> Vector2i:
+	if is_breakable():
+		return Vector2i(4, 4)
 	return Vector2i(2, 3) if is_one_way() else Vector2i(1, 2)
 
 
 func emf_5_chance() -> float:
+	if is_breakable():
+		return 0.5
 	return 0.3 if is_one_way() else 0.1
 
 
@@ -247,29 +337,83 @@ func can_ghost_interact() -> bool:
 	return super()
 
 
-func _on_ghost_interact(_ghost: Ghost) -> void:
+func _on_ghost_interact(ghost: Ghost) -> void:
+	if is_played_type():
+		_start_playing()
+		return
 	changed = not changed
+	_play_change_sound()
+	# Breaking something always shows the ghost for a moment - and it can't
+	# break anything else for a while (Ghost.min_break_cooldown).
+	if is_breakable():
+		ghost.start_appearance()
+		ghost.start_break_cooldown()
 
 
-## The area its art's frame covers.
+## The way it faces, from `facing` (a sink facing left is used from its left).
+func get_front_direction() -> Vector2:
+	match facing:
+		Prop.Facing.RIGHT:
+			return Vector2.RIGHT
+		Prop.Facing.LEFT:
+			return Vector2.LEFT
+		Prop.Facing.UP:
+			return Vector2.UP
+	return Vector2.DOWN
+
+
+## The area its art's frame covers - and, for snapped decor, the whole tile
+## it sits on.
 func get_click_rect() -> Rect2:
-	return _art_node.get_art_rect() if _art_node else get_footprint()
+	var rect := _art_node.get_art_rect() if _art_node else get_footprint()
+	return rect.merge(_tile_click_rect) if _tile_click_rect.has_area() else rect
 
 
-## Only clicks on its drawn pixels count, not the see-through parts of the
-## frame around them.
+## Snapped decor: anywhere on the tile it sits on, or on its art. Everything
+## else: only its drawn pixels, not the see-through parts of the frame.
 func is_clicked_at(point: Vector2) -> bool:
+	if _tile_click_rect.has_point(point):
+		return true  # anywhere on its tile (snapped decor)
 	return _art_node.is_art_at(point) if _art_node else get_footprint().has_point(point)
 
 
 func _on_player_interact(_player: Player) -> void:
-	if is_lit_type():
-		return  # fires are lit with the lantern, not E
+	if not player_can_switch():
+		return  # fires are lit with the lantern; breakables stay broken
+	if is_played_type():
+		_start_playing()
+		return
 	changed = not changed
+	_play_change_sound()
+
+
+## True for an animation that plays for a while (a "_played" tag).
+func is_played_type() -> bool:
+	return change_tag().ends_with("_played")
+
+
+## Plays its "_played" animation for `play_time` seconds (from the start
+## again if it's already playing).
+func _start_playing() -> void:
+	changed = true
+	_play_time_left = play_time
+	_play_change_sound()
+
+
+func _physics_process(delta: float) -> void:
+	if _play_time_left <= 0.0:
+		return
+	_play_time_left -= delta
+	if _play_time_left <= 0.0:
+		changed = false
 
 
 func describe_last_interaction() -> String:
 	var thing := String(name).capitalize().to_lower()
+	if is_breakable():
+		return "broke the %s" % thing
+	if is_played_type():
+		return "set the %s going" % thing
 	if is_one_way():
 		return "knocked over the %s" % thing
 	return "switched %s the %s" % ["on" if changed else "off", thing]
@@ -359,3 +503,40 @@ func _draw_residue_preview() -> void:
 	var c := Color(0.35, 1, 0.45, 0.9)
 	_residue_preview.draw_line(g - Vector2(2, 0), g + Vector2(2, 0), c, 1.0)
 	_residue_preview.draw_line(g - Vector2(0, 2), g + Vector2(0, 2), c, 1.0)
+
+
+# --- Sound ----------------------------------------------------------------------
+
+## Plays change_sound (or change_back_sound) where it stands - or its tag's
+## default if that's empty. Call right after `changed` flips.
+func _play_change_sound() -> void:
+	var sound: Variant = change_sound if changed else change_back_sound
+	if sound == null:
+		var tag := change_tag()
+		for kind: String in DEFAULT_SOUNDS:
+			if tag.ends_with(kind):
+				sound = DEFAULT_SOUNDS[kind][0 if changed else 1]
+	Sfx.play(sound, global_position, sound_volume_db)
+
+
+## Starts loop_sound while it shows its other look, and stops it after.
+func _update_loop_sound() -> void:
+	if Engine.is_editor_hint() or not is_inside_tree() or loop_sound == null:
+		return
+	if not changed:
+		if _loop_player:
+			_loop_player.stop()
+		return
+	if _loop_player == null:
+		_loop_player = AudioStreamPlayer2D.new()
+		_loop_player.stream = loop_sound
+		_loop_player.bus = Sfx.BUS
+		_loop_player.volume_db = loop_volume_db
+		_loop_player.max_distance = Sfx.MAX_DISTANCE
+		_loop_player.attenuation = Sfx.ATTENUATION
+		# Starts over when it ends, for files exported without a loop.
+		_loop_player.finished.connect(func():
+			if changed: _loop_player.play())
+		add_child(_loop_player)
+	if not _loop_player.playing:
+		_loop_player.play()

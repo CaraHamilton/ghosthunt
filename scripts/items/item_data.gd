@@ -23,6 +23,9 @@ extends Resource
 @export var floor_sprite: Texture2D
 ## If ticked, the item can be placed up on tables, counters and other
 ## surfaces (see Prop.surface). Unticked, it can only go on the floor.
+## If unticked, the item can never be put down (right click or Q) - like
+## the journal, which always stays in your hands.
+@export var can_place := true
 @export var can_place_on_surfaces := false
 ## How many fit in one slot. Tools with their own state should stay at 1.
 @export_range(1, 999) var max_stack := 1

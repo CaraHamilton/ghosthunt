@@ -69,10 +69,8 @@ animations = [{
 script = ExtResource("1_doll")
 footprint = Vector2(8, 4)
 solid = false
-ghost_reach = 24.0
 cooldown = 15.0
 player_can_use = true
-player_reach = 10.0
 
 [node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1044440230]
 position = Vector2(0, -16)

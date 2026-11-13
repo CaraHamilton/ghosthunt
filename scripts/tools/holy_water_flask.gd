@@ -68,6 +68,7 @@ func _land() -> void:
 	_height = 0.0
 	z_index = 0
 	global_position = target
+	Sfx.play("tools/holy_water_splash", target)
 	var splash := Rect2(target - HolyWaterItem.SPLASH_SIZE / 2.0, HolyWaterItem.SPLASH_SIZE)
 	var ghost := Game.current.ghost if Game.current else null
 	if is_instance_valid(ghost):

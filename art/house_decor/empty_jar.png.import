@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://db2oy8w1blseu"
-path="res://.godot/imported/journal.png-b8e070bd56b224aa6d19ee7b1b887622.ctex"
+uid="uid://c0tyjxkg4rulk"
+path="res://.godot/imported/empty_jar.png-e65ea0a5dbbda949cb5933cff860f243.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/held/journal.png"
-dest_files=["res://.godot/imported/journal.png-b8e070bd56b224aa6d19ee7b1b887622.ctex"]
+source_file="res://art/house_decor/empty_jar.png"
+dest_files=["res://.godot/imported/empty_jar.png-e65ea0a5dbbda949cb5933cff860f243.ctex"]
 
 [params]
 

@@ -6,7 +6,7 @@ extends Node2D
 const GhostScene := preload("res://scenes/ghost.tscn")
 ## Items the player starts with, by id (see res://items/). Stackable ones
 ## (holy water) start as a full stack.
-const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_reader", &"doll", &"uv_light", &"journal", &"fog_machine", &"holy_water"]
+const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_reader", &"doll", &"uv_light", &"fog_machine", &"holy_water", &"journal"]
 
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game
@@ -22,6 +22,16 @@ static var current: Game
 
 ## How long (s) EMF from something the ghost did lasts (see EMFSource).
 @export var emf_duration := 60.0
+
+@export_group("Sound")
+## Untick to turn the background song/ambience off.
+@export var play_background_ambience := true
+## Background song or ambience, looped the whole game. Empty uses
+## res://audio/ambience/background (.ogg, .mp3 or .wav), if there is one.
+@export var background_ambience: AudioStream
+## How loud it is (dB; 0 = as exported, -6 = about half, -12 = about a quarter).
+@export var background_volume_db := -10.0
+@export_group("")
 
 @onready var house: House = $House
 @onready var world: Node2D = $World
@@ -92,6 +102,7 @@ func _ready() -> void:
 	house.build_navigation(furniture)
 	game_over_panel.visible = false
 	_spawn_ghost()
+	_start_background_ambience()
 	if debug_start_at_hunt_threshold:
 		# Just under the line where this ghost (type included) may start hunting.
 		var threshold := ghost.behavior.get_hunt_sanity_threshold(ghost.hunt_sanity_threshold)
@@ -208,3 +219,30 @@ func _flash_hurt() -> void:
 ## matches this game's ghost type.
 func is_correct_guess(guess: GhostBehavior.Type) -> bool:
 	return guess == ghost_type
+
+
+## Plays the background song/ambience on a loop, on the Ambience bus.
+func _start_background_ambience() -> void:
+	if not play_background_ambience:
+		return
+	var stream := background_ambience
+	if stream == null:
+		for ext in ["ogg", "mp3", "wav"]:
+			var path := "res://audio/ambience/background.%s" % ext
+			if ResourceLoader.exists(path):
+				stream = load(path)
+				break
+	if stream == null:
+		return
+	# .ogg and .mp3 can loop seamlessly; a .wav without a loop starts over
+	# when it ends (below).
+	if "loop" in stream:
+		stream.loop = true
+	var music := AudioStreamPlayer.new()
+	music.name = "BackgroundAmbience"
+	music.stream = stream
+	music.bus = &"Ambience"
+	music.volume_db = background_volume_db
+	music.finished.connect(music.play)
+	add_child(music)
+	music.play()

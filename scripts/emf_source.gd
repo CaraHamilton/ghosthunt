@@ -35,11 +35,15 @@ func is_active(now: float) -> bool:
 	return now - created < duration
 
 
-## True if `point` is within `reach` px of it (of the object's footprint, or
-## of the spot).
+## True if `point` is within `reach` px of it (of the object - for something
+## up on a table, the tile it sits on, see GhostInteractable.get_reach_area -
+## or of the spot).
 func reaches(point: Vector2, reach: float) -> bool:
 	if node == null:
 		return point.distance_to(position) <= reach
+	if node.has_method("get_reach_area"):
+		var area: Rect2 = node.get_reach_area()
+		return area.grow(reach).has_point(point)
 	if node.has_method("get_footprint"):
 		var area: Rect2 = node.get_footprint()
 		return area.grow(reach).has_point(point)

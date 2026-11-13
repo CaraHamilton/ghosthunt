@@ -60,7 +60,6 @@ var _ghost_in_fog := false
 
 
 func _ready() -> void:
-	super()
 	# Lets each fog tile (a child) Y-sort with the rest of the world.
 	y_sort_enabled = true
 	var game := Game.current

@@ -20,6 +20,13 @@ const SLOT_STEP := 22.0
 const SLOT_SIZE := 20.0
 const ICON_SIZE := 16.0
 
+## How see-through the bar's background is (1 = solid, 0 = invisible). The
+## icons, counts and selection box stay solid.
+@export_range(0.0, 1.0) var background_opacity := 0.8:
+	set(value):
+		background_opacity = value
+		queue_redraw()
+
 var player: Player:
 	set(value):
 		player = value
@@ -47,7 +54,7 @@ func slot_rect(i: int) -> Rect2:
 func _draw() -> void:
 	if player == null:
 		return
-	draw_texture(BAR, Vector2.ZERO)
+	draw_texture(BAR, Vector2.ZERO, Color(1, 1, 1, background_opacity))
 	var font := get_theme_default_font()
 	for i in Player.TOOLBAR_SLOTS:
 		var rect := slot_rect(i)

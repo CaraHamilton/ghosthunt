@@ -11,8 +11,6 @@ extends Node2D
 const DEFAULT_SCENE_PATH := "res://scenes/item_pickup.tscn"
 ## Width/height (px) of the item's icon when drawn on the floor.
 const FLOOR_ICON_SIZE := 12.0
-## How close (px) the player must be to pick it up.
-const PICKUP_REACH := 12.0
 
 ## The item lying here (set before the node is added to the scene).
 var item: ItemInstance
@@ -46,25 +44,6 @@ static func place(item: ItemInstance, world: Node2D, spot: Dictionary) -> Node2D
 	node.set_meta("place_tile", spot.cell)
 	node.add_to_group(House.PLACED_GROUP)
 	return node
-
-
-func _ready() -> void:
-	var zone := Area2D.new()
-	zone.collision_layer = 0
-	zone.collision_mask = 2  # player
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	# Stretched up to cover the item when it's raised onto a table, so it can
-	# be picked up from the table's front or from beside the item.
-	rect.size = Vector2.ONE * (FLOOR_ICON_SIZE + PICKUP_REACH * 2.0) + Vector2(0, elevation)
-	shape.shape = rect
-	shape.position = Vector2(0, -FLOOR_ICON_SIZE / 2.0 - elevation / 2.0)
-	zone.add_child(shape)
-	add_child(zone)
-	zone.body_entered.connect(func(body):
-		if body is Player: body.register_interactable(self))
-	zone.body_exited.connect(func(body):
-		if body is Player: body.unregister_interactable(self))
 
 
 func _physics_process(delta: float) -> void:

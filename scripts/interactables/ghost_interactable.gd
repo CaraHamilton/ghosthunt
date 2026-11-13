@@ -18,18 +18,18 @@ extends StaticBody2D
 ## Solid furniture blocks the player and ghost. Turn off for small loose
 ## objects (like a ball) that should be walked over and can move around.
 @export var solid := true
-## How close (px) the ghost must be to the footprint to interact.
-@export var ghost_reach := 20.0
+## How close (px) the ghost must be to the footprint (for decor up on a
+## table, the tile it sits on) to interact. The same 12 px for everything.
+@export var ghost_reach := 12.0
 ## Chance (0-1) per ghost check that the ghost interacts while in reach.
 @export_range(0.0, 1.0) var ghost_interaction_chance := 0.35
 ## Seconds after an interaction before the ghost can trigger this again.
 @export var cooldown := 6.0
 
 @export_group("Player")
-## If true, the player can also use this object with E when standing next to it.
+## If true, the player can also use this object - left click or E, within
+## Player.USE_REACH of it.
 @export var player_can_use := false
-## How close (px) the player must be to the footprint to use it.
-@export var player_reach := 14.0
 
 ## Chance (0-1) that a residue-leaving ghost leaves UV residue each time it
 ## touches something.
@@ -53,10 +53,6 @@ var has_residue := false:
 		if _residue_glow:
 			_residue_glow.visible = has_residue
 
-## Extra height (px) the player's use zone reaches up above the footprint -
-## e.g. for a doll placed up on a table. Set before the node is ready.
-var player_zone_raise := 0.0
-
 var _last_interaction_time := -INF
 var _residue_glow: ResidueGlow
 
@@ -76,8 +72,6 @@ func _ready() -> void:
 		shape.shape = rect
 		shape.position = Vector2(0, -footprint.y / 2.0)
 		add_child(shape)
-	if player_can_use:
-		_build_player_zone()
 	if can_have_residue:
 		_residue_glow = ResidueGlow.new()
 		_residue_glow.position = residue_offset
@@ -92,8 +86,19 @@ func get_footprint() -> Rect2:
 	return Rect2(global_position + Vector2(-footprint.x / 2.0, -footprint.y), footprint)
 
 
+## The area the ghost has to get close to, to touch this: its footprint -
+## or, for something up on a table, the tile it sits on (see Switchable).
+func get_reach_area() -> Rect2:
+	return get_footprint()
+
+
+## How close (px) the ghost must be to get_reach_area() to touch this.
+func get_ghost_reach() -> float:
+	return ghost_reach
+
+
 func is_in_ghost_reach(point: Vector2) -> bool:
-	return get_footprint().grow(ghost_reach).has_point(point)
+	return get_reach_area().grow(get_ghost_reach()).has_point(point)
 
 
 func can_ghost_interact() -> bool:
@@ -137,10 +142,30 @@ func seconds_since_ghost_interaction() -> float:
 	return _game_time() - _last_interaction_time
 
 
-## A spot on the floor in front of this object where the ghost can stand
-## to reach it.
+## A spot on the floor next to this object where the ghost can stand to
+## reach it: in front of it (the way it faces) if that's open floor, else the
+## first open side of the others. If no side is open, the front anyway.
 func get_ghost_stand_point() -> Vector2:
-	return global_position + Vector2(0, ghost_reach * 0.5)
+	var fp := get_reach_area()
+	var gap := get_ghost_reach() * 0.5
+	var front := get_front_direction()
+	var sides: Array[Vector2] = [front, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT, Vector2.UP]
+	var house: House = Game.current.house if Game.current else null
+	var first := Vector2.INF
+	for dir in sides:
+		# The middle of that side of the footprint, `gap` px out.
+		var spot := fp.get_center() + dir * (fp.size / 2.0 + Vector2.ONE * gap)
+		if first == Vector2.INF:
+			first = spot
+		if house == null or house.is_walkable(spot):
+			return spot
+	return first
+
+
+## Which way this object faces (where the ghost prefers to stand to use it).
+## Down unless overridden (see Switchable).
+func get_front_direction() -> Vector2:
+	return Vector2.DOWN
 
 
 ## Seconds of game time (stops while paused, follows Engine.time_scale).
@@ -180,20 +205,3 @@ func player_interact(player: Player) -> void:
 ## What happens when the player uses this. Override in each interactable.
 func _on_player_interact(_player: Player) -> void:
 	pass
-
-
-func _build_player_zone() -> void:
-	var zone := Area2D.new()
-	zone.collision_layer = 0
-	zone.collision_mask = 2  # player
-	var zone_shape := CollisionShape2D.new()
-	var zone_rect := RectangleShape2D.new()
-	zone_rect.size = footprint + Vector2.ONE * player_reach * 2.0 + Vector2(0, player_zone_raise)
-	zone_shape.shape = zone_rect
-	zone_shape.position = Vector2(0, -footprint.y / 2.0 - player_zone_raise / 2.0)
-	zone.add_child(zone_shape)
-	add_child(zone)
-	zone.body_entered.connect(func(body):
-		if body is Player: body.register_interactable(self))
-	zone.body_exited.connect(func(body):
-		if body is Player: body.unregister_interactable(self))

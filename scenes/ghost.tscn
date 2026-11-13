@@ -220,6 +220,7 @@ fill_to = Vector2(0.5, 0)
 collision_layer = 0
 motion_mode = 1
 script = ExtResource("1_ghost")
+flicker_during_hunts = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=649594747]
 shape = SubResource("CircleShape2D_ghost")
