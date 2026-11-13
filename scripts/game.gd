@@ -6,7 +6,7 @@ extends Node2D
 const GhostScene := preload("res://scenes/ghost.tscn")
 ## Items the player starts with, by id (see res://items/). Stackable ones
 ## (holy water) start as a full stack.
-const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_reader", &"doll", &"uv_light", &"journal", &"fog_machine", &"holy_water"]
+const STARTING_ITEMS: Array[StringName] = [&"lantern", &"thermometer", &"emf_reader", &"doll", &"uv_light", &"fog_machine", &"holy_water", &"journal"]
 
 ## The running game, so items can find the house, ghost, etc.
 static var current: Game

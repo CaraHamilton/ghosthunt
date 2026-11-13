@@ -44,7 +44,7 @@ play_background_ambience = false
 y_sort_enabled = true
 
 [node name="Player" parent="World" unique_id=1055623004 instance=ExtResource("3_player")]
-position = Vector2(30, 319)
+position = Vector2(248, 370)
 
 [node name="Darkness" type="CanvasModulate" parent="." unique_id=388993979]
 visible = false
@@ -96,6 +96,7 @@ grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
 script = ExtResource("6_toolbar")
+background_opacity = 0.6
 
 [node name="Readout" type="Label" parent="HUD/Toolbar" unique_id=1111702031]
 visible = false

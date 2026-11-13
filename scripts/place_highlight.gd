@@ -56,7 +56,7 @@ func _process(delta: float) -> void:
 		if _flash > 0.0 and _flash_rect.has_area():
 			_rect = _flash_rect
 			_color = BLOCKED_COLOR
-		elif (aiming or _flash > 0.0) and player.selected_item != null:
+		elif (aiming or _flash > 0.0) and player.can_place_selected():
 			var spot := player.place_spot()
 			_rect = spot.rect
 			_color = OK_COLOR if spot.ok else BLOCKED_COLOR

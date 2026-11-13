@@ -290,10 +290,19 @@ func place_spot() -> Dictionary:
 	return Game.current.house.get_place_spot(place_target(), on_surfaces)
 
 
+## True if the selected item can be put down (not empty, and not an item
+## like the journal that never leaves your hands - ItemData.can_place).
+func can_place_selected() -> bool:
+	return selected_item != null and selected_item.data.can_place
+
+
 ## Places the selected item (one of a stack) on the tile in front of us -
 ## on the floor, or on a table there. Does nothing if that tile is blocked.
 func place_selected() -> void:
 	if selected_item == null:
+		return
+	if not can_place_selected():
+		_place_highlight.flash_blocked()  # (the journal can't be put down)
 		return
 	var game := Game.current
 	var spot := place_spot()
@@ -386,7 +395,8 @@ func right_click_target(point: Vector2) -> Dictionary:
 			return {kind = &"pick_up", node = node, rect = raised}
 
 	# An empty tile next to us to put the held item on.
-	if selected_item:
+	var placeable := can_place_selected()
+	if placeable:
 		var on_surfaces := selected_item.data.can_place_on_surfaces
 		var blocked := {}
 		for dy in range(-1, 2):
@@ -402,7 +412,7 @@ func right_click_target(point: Vector2) -> Dictionary:
 			return {kind = &"place", spot = blocked, rect = blocked.rect}
 	# Our own tile (we're in the way), or too far: nothing can happen there.
 	var cell := house.tile_at(point)
-	if cell != me or selected_item:
+	if cell != me or placeable:
 		return {kind = &"blocked", rect = house.tile_rect(cell)}
 	return {kind = &"none"}
 
