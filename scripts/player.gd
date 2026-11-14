@@ -365,12 +365,19 @@ func _covered_at(thing: Node2D, point: Vector2) -> bool:
 
 
 ## Left click at `point`: uses the house object there, if any (see
-## house_object_at) and it's within reach (can_reach). Returns true if the
+## house_object_at) and it's within reach (can_reach). Things outside the
+## house the player can click (group "player_clickables", like the trailer's
+## PotionCabinet) work the same way. Returns true if the
 ## click was on a house object - then the held tool isn't used for this
 ## click, even if the object was too far away to use.
 func left_click(point: Vector2) -> bool:
 	if is_dead or in_menu:
 		return false
+	for clickable in get_tree().get_nodes_in_group("player_clickables"):
+		if clickable.is_clicked_at(point):
+			if feet_rect().grow(USE_REACH).intersects(clickable.get_reach_area(), true):
+				clickable.player_interact(self)
+			return true  # (too far away: nothing happens)
 	var thing := house_object_at(point)
 	if thing == null:
 		return false
@@ -517,7 +524,7 @@ func can_reach(thing: GhostInteractable) -> bool:
 
 ## What E / Space uses: the closest of
 ##   - a house object she can use (a sink, a book stack...) within reach
-##     (can_reach)
+##     (can_reach), or a "player_clickables" thing (the potion cabinet)
 ##   - a placed tool on her tile or the 8 around it, to pick up - the same
 ##     tools right click can pick up
 ## Null if there's nothing.
@@ -529,6 +536,9 @@ func _interact_target() -> Node2D:
 	for thing: GhostInteractable in get_tree().get_nodes_in_group("ghost_interactables"):
 		if _is_house_object(thing) and can_reach(thing):
 			candidates.append([thing, thing.get_reach_area()])
+	for clickable in get_tree().get_nodes_in_group("player_clickables"):
+		if feet_rect().grow(USE_REACH).intersects(clickable.get_reach_area(), true):
+			candidates.append([clickable, clickable.get_reach_area()])
 	var house := Game.current.house
 	var me := standing_cell()
 	for node in get_tree().get_nodes_in_group(House.PLACED_GROUP):

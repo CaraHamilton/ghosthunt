@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://blrguj7j8engo" path="res://scripts/outside.gd" id="1_outside"]
 [ext_resource type="PackedScene" path="res://scenes/door.tscn" id="2_door"]
+[ext_resource type="PackedScene" path="res://scenes/potion_cabinet.tscn" id="3_cabinet"]
 
 [node name="Trailer" type="Node2D" unique_id=421399813]
 script = ExtResource("1_outside")
@@ -17,3 +18,6 @@ position = Vector2(80, 0)
 door_id = &"trailer"
 size = Vector2(16, 2)
 exit_offset = Vector2(0, 12)
+
+[node name="PotionCabinet" parent="." instance=ExtResource("3_cabinet")]
+position = Vector2(28, 16)

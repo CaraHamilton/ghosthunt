@@ -43,3 +43,10 @@ Change Sound, Change Back Sound, and Loop Sound (loops while it's on, lit or roc
 |---|---|
 | `ghost/appear` | The ghost appears (after breaking something) |
 | `ghost/hunt_start` | A hunt starts (heard everywhere) |
+
+## Ritual
+| File | When |
+|---|---|
+| `ritual/start` | Starting the ritual with a potion |
+| `ritual/success` | The right potion: the ghost evaporates (in the world, at the ghost) |
+| `ritual/fail` | The wrong potion: the ghost attacks (in the world, at the ghost) |

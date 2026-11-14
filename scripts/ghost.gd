@@ -53,6 +53,7 @@ enum State {
 	VANISHING,     ## fading out at the end of a hunt
 	RETURNING,     ## invisible, heading back to its favourite room
 	POSSESSING,    ## invisible, standing on the doll and possessing it
+	RITUAL,        ## caught in the player's ritual: Game moves it (see begin_ritual)
 }
 
 const HUNT_STATES := [State.HUNT_START, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
@@ -65,6 +66,8 @@ enum Appearance {
 	LUNGING,     ## fully visible, in its chase animation
 	FADING_OUT,  ## fading out, still in its chase animation
 }
+## How fast (px/s) the ghost flies at the player when a ritual fails.
+const RITUAL_ATTACK_SPEED := 90.0
 const WORLD_LAYER := 1
 const VISIBLE_ALPHA := 0.85
 ## Seconds the ghost stops, facing an object, after using it.
@@ -265,6 +268,9 @@ var _facing := "down"
 ## seconds of possession are left once the ghost is standing on it.
 var _doll: Doll = null
 var _possess_time_left := 0.0
+## Where it's flying to attack the player after a failed ritual (INF when
+## it isn't).
+var _ritual_attack_target := Vector2.INF
 
 
 ## Call before adding the ghost to the scene.
@@ -394,6 +400,15 @@ func _run_state(delta: float) -> void:
 				if _possess_time_left <= 0.0:
 					end_possession()
 
+		State.RITUAL:
+			velocity = Vector2.ZERO
+			if _ritual_attack_target != Vector2.INF:
+				# Flying straight at the player, through anything in the way.
+				global_position = global_position.move_toward(_ritual_attack_target, RITUAL_ATTACK_SPEED * delta)
+				if global_position.distance_to(_ritual_attack_target) < 1.0:
+					_ritual_attack_target = Vector2.INF
+					caught_player.emit()
+
 
 
 ## Plays "chase_*" while the ghost is going after the player (chasing, or
@@ -411,7 +426,8 @@ func _update_animation() -> void:
 		else:
 			_facing = "down" if move.y > 0.0 else "up"
 			sprite.flip_h = false
-	var lunging := appearance == Appearance.LUNGING or appearance == Appearance.FADING_OUT
+	var lunging := appearance == Appearance.LUNGING or appearance == Appearance.FADING_OUT \
+		or (state == State.RITUAL and _ritual_attack_target != Vector2.INF)
 	var chasing := state in [State.CHASING, State.INVESTIGATING] or lunging
 	var anim := StringName(("chase_" if chasing else "float_") + _facing)
 	if sprite.animation != anim and sprite.sprite_frames.has_animation(anim):
@@ -549,6 +565,53 @@ func end_possession() -> void:
 	_wander_target = Vector2.INF
 	_wander_pause = randf_range(min_wander_pause, max_wander_pause)
 	set_state(State.IDLE)
+
+
+# --- The ritual (see Game.start_ritual) ----------------------------------------
+
+## The player has started the ritual: whatever the ghost was doing stops
+## (it vanishes if it was showing), and from now on only the ritual moves it
+## (appear_for_ritual, ritual_attack, evaporate).
+func begin_ritual() -> void:
+	end_possession()
+	appearance = Appearance.NONE
+	is_manifested = false
+	_hold_time_left = 0.0
+	_frozen_time_left = 0.0
+	$Sprite.modulate = Color.WHITE
+	$Sprite.play()
+	velocity = Vector2.ZERO
+	set_state(State.RITUAL)
+
+
+## The ritual pulls it to `spot`, where it fades in facing `look_at`.
+func appear_for_ritual(spot: Vector2, look_at: Vector2) -> void:
+	modulate.a = 0.0
+	global_position = spot
+	is_manifested = true  # fades in (see _update_fade)
+	face_toward(Rect2(look_at, Vector2.ZERO))
+	Sfx.play("ghost/appear", global_position)
+
+
+## The ritual failed: it flies straight at `target` (the player) in its
+## chase animation, and emits caught_player when it gets there.
+func ritual_attack(target: Vector2) -> void:
+	face_toward(Rect2(target, Vector2.ZERO))
+	_ritual_attack_target = target
+	Sfx.play("ghost/hunt_start")
+
+
+## The ritual worked: it flares white, swells and fades away for good over
+## `time` seconds. (It isn't freed - other things still look it up - just
+## stopped and hidden.)
+func evaporate(time: float) -> void:
+	is_manifested = false
+	set_physics_process(false)
+	var tween := create_tween().set_parallel()
+	tween.tween_property($Sprite, "modulate", Color(3.0, 3.0, 3.0), time * 0.4)
+	tween.tween_property(self, "scale", Vector2(1.6, 1.6), time).set_ease(Tween.EASE_IN)
+	tween.tween_property(self, "modulate:a", 0.0, time).set_ease(Tween.EASE_IN)
+	tween.chain().tween_callback(hide)
 
 
 ## Starts a hunt on its own (while wandering or heading home) when ALL of
