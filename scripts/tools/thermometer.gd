@@ -25,13 +25,19 @@ func process_always(delta: float) -> void:
 	var game := Game.current
 	if game == null:
 		return
-	# In a doorway, keep reading the last room it was in.
-	var room := game.house.room_at(get_world_position())
-	if room != "":
-		_room = room
-	if _room == "":
-		return
-	var actual := game.temperatures.get_temperature(_room)
+	var pos := get_world_position()
+	var actual: float
+	var outside := game.outside_area_at(pos)
+	if outside:
+		actual = outside.temperature  # out in the yard
+	else:
+		# In a doorway, keep reading the last room it was in.
+		var room := game.house.room_at(pos)
+		if room != "":
+			_room = room
+		if _room == "":
+			return
+		actual = game.temperatures.get_temperature(_room)
 	if is_nan(reading):
 		reading = actual
 	var step := (actual - reading) * (1.0 - exp(-response_rate * delta))

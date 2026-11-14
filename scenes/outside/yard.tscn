@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://c71ep0l1no0js"]
+
+[ext_resource type="Script" uid="uid://blrguj7j8engo" path="res://scripts/outside.gd" id="1_outside"]
+[ext_resource type="PackedScene" path="res://scenes/door.tscn" id="2_door"]
+
+[sub_resource type="TileSet" id="TileSet_74kp6"]
+
+[node name="Yard" type="Node2D" unique_id=392890839]
+script = ExtResource("1_outside")
+size = Vector2(160, 128)
+
+[node name="FrontDoor" parent="." unique_id=2053193664 instance=ExtResource("2_door")]
+position = Vector2(80, 8)
+exit_offset = Vector2(0, 22)
+
+[node name="Ground" type="TileMapLayer" parent="." unique_id=1855571197]
+tile_set = SubResource("TileSet_74kp6")
+
+[node name="TrailerDoor" parent="." unique_id=953952556 instance=ExtResource("2_door")]
+position = Vector2(80, 128)
+door_id = &"trailer"
+size = Vector2(16, 2)
+exit_offset = Vector2(0, -12)

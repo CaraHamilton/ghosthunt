@@ -480,8 +480,11 @@ func get_current_chase_speed() -> float:
 	return behavior.get_chase_speed(player.walk_speed * factor)
 
 
-## True if nothing solid (walls, furniture) is between the ghost and player.
+## True if nothing solid (walls, furniture) is between the ghost and player -
+## and the player is in the house at all (it never sees them outside).
 func can_see_player() -> bool:
+	if not player.is_in_house():
+		return false
 	var query := PhysicsRayQueryParameters2D.create(global_position, player.global_position, WORLD_LAYER)
 	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
@@ -550,6 +553,7 @@ func end_possession() -> void:
 
 ## Starts a hunt on its own (while wandering or heading home) when ALL of
 ## these hold:
+##   0. the player is in the house (outside is safe - see Outside)
 ##   1. sanity is below the hunt threshold (hunt_sanity_threshold, or the
 ##      ghost type's own - GhostBehavior.get_hunt_sanity_threshold)
 ##   2. the hunt cooldown is over: a random min_hunt_cooldown-
@@ -561,6 +565,8 @@ func end_possession() -> void:
 func _try_start_hunt(delta: float) -> void:
 	if state == State.POSSESSING:
 		return  # it just went for the doll this frame
+	if not player.is_in_house():
+		return  # 0. outside, the player is safe
 	var threshold := behavior.get_hunt_sanity_threshold(hunt_sanity_threshold)
 	if player.sanity_ratio >= threshold:
 		_hunts_locked = true  # 1. the player's mind is still too strong

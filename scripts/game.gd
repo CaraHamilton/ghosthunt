@@ -64,6 +64,18 @@ var ghost_type: GhostBehavior.Type
 ## What the EMF reader can pick up right now (see EMFSource).
 var emf_sources: Array[EMFSource] = []
 
+## How long (s) the screen takes to fade out (and back in) going through a
+## door.
+const DOOR_FADE_TIME := 0.3
+## Doors do nothing for this long (s) after the game starts - the player may
+## start standing on one.
+const DOOR_START_GRACE := 0.5
+
+var _fade: ColorRect
+var _traveling := false
+## The Darkness colour indoors (from the scene); outdoor areas have their own.
+var _inside_darkness := Color.BLACK
+
 
 ## Something the ghost did now gives off EMF: `at` is the object (a Node2D,
 ## followed if it moves) or a spot (Vector2). The level is rolled from
@@ -108,7 +120,9 @@ func _ready() -> void:
 	darkness.visible = true
 	$HUD.visible = true
 	player.global_position = house.get_player_start()
-	_fit_camera_to_house()
+	_inside_darkness = darkness.color
+	_build_fade()
+	_enter_current_area()
 	var furniture: Array[Rect2] = []
 	for obstacle in get_tree().get_nodes_in_group("nav_obstacles"):
 		furniture.append(obstacle.get_footprint())
@@ -149,10 +163,11 @@ func _process(delta: float) -> void:
 	_update_sanity_bar()
 
 
-## Stops the camera scrolling far past the edges of the painted map.
-func _fit_camera_to_house() -> void:
+## Stops the camera scrolling far past the edges of `bounds` (the house, or
+## the outdoor area the player is in).
+func _fit_camera_to(bounds: Rect2) -> void:
 	var camera := player.get_node("Camera2D") as Camera2D
-	var area := house.get_bounds().grow(24.0)
+	var area := bounds.grow(24.0)
 	camera.limit_left = floori(area.position.x)
 	camera.limit_top = floori(area.position.y)
 	camera.limit_right = ceili(area.end.x)
@@ -262,3 +277,68 @@ func _start_background_ambience() -> void:
 	music.finished.connect(music.play)
 	add_child(music)
 	music.play()
+
+
+# --- Going outside ----------------------------------------------------------------
+
+## The outdoor area (see Outside) that `point` is in, or null - e.g. in the
+## house.
+func outside_area_at(point: Vector2) -> Outside:
+	for area: Outside in get_tree().get_nodes_in_group("outside_areas"):
+		if area.get_bounds().has_point(point):
+			return area
+	return null
+
+
+## Called by a Door when the player walks onto it: fades out, moves the player
+## to the other door (the one with the same door_id), sets the camera and
+## lighting up for where they are now, and fades back in. The house keeps
+## running all the while.
+func go_through(door: Door) -> void:
+	if _traveling or is_game_over or game_time() < DOOR_START_GRACE:
+		return
+	var to := door.get_partner()
+	if to == null:
+		push_warning("Door %s has no other door with door_id \"%s\"" % [door.name, door.door_id])
+		return
+	_traveling = true
+	player.set_in_menu(true)  # no walking or using things mid-fade
+	var tween := create_tween()
+	tween.tween_property(_fade, "color:a", 1.0, DOOR_FADE_TIME)
+	await tween.finished
+	player.global_position = to.get_exit_point()
+	_enter_current_area()
+	(player.get_node("Camera2D") as Camera2D).reset_smoothing()
+	tween = create_tween()
+	tween.tween_property(_fade, "color:a", 0.0, DOOR_FADE_TIME)
+	await tween.finished
+	if not is_game_over:
+		player.set_in_menu(false)
+	_traveling = false
+	if OS.is_debug_build():
+		var area := outside_area_at(player.global_position)
+		print("[debug] The player went to the %s" % (area.name.to_lower() if area else "house"))
+
+
+## Sets the camera limits and the darkness for wherever the player is: the
+## house, or an outdoor area.
+func _enter_current_area() -> void:
+	var outside := outside_area_at(player.global_position)
+	if outside:
+		_fit_camera_to(outside.get_bounds())
+		darkness.color = outside.darkness
+	else:
+		_fit_camera_to(house.get_bounds())
+		darkness.color = _inside_darkness
+
+
+## The black screen used to fade between areas (over everything, HUD too).
+func _build_fade() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	_fade = ColorRect.new()
+	_fade.color = Color(0, 0, 0, 0)
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(_fade)
+	add_child(layer)

@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://ctcgw18vqywkr"]
+
+[ext_resource type="Script" uid="uid://blrguj7j8engo" path="res://scripts/outside.gd" id="1_outside"]
+[ext_resource type="PackedScene" path="res://scenes/door.tscn" id="2_door"]
+
+[node name="Trailer" type="Node2D" unique_id=421399813]
+script = ExtResource("1_outside")
+size = Vector2(160, 96)
+darkness = Color(0.78, 0.72, 0.62, 1)
+temperature = 18.0
+ground_color = Color(0.29, 0.231, 0.18, 1)
+ground_color_dark = Color(0.263, 0.208, 0.165, 1)
+door_paths = false
+
+[node name="TrailerDoor" parent="." unique_id=1963476286 instance=ExtResource("2_door")]
+position = Vector2(80, 0)
+door_id = &"trailer"
+size = Vector2(16, 2)
+exit_offset = Vector2(0, 12)

@@ -8,6 +8,9 @@
 [ext_resource type="PackedScene" uid="uid://pfuqxolbbngk" path="res://scenes/journal_panel.tscn" id="8_journal"]
 [ext_resource type="Script" uid="uid://cqat3hj66g6aw" path="res://scripts/ui/thermometer_overlay.gd" id="9_thermo"]
 [ext_resource type="Script" uid="uid://cqdwroiwuhum4" path="res://scripts/ui/emf_overlay.gd" id="10_emf"]
+[ext_resource type="PackedScene" path="res://scenes/outside/yard.tscn" id="11_yard"]
+[ext_resource type="PackedScene" path="res://scenes/door.tscn" id="12_door"]
+[ext_resource type="PackedScene" path="res://scenes/outside/trailer.tscn" id="13_trailer"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sanity_bg"]
 bg_color = Color(0.07, 0.05, 0.09, 0.85)
@@ -39,6 +42,17 @@ script = ExtResource("1_game")
 play_background_ambience = false
 
 [node name="House" parent="." unique_id=845306811 instance=ExtResource("2_tefeu")]
+
+[node name="HouseFrontDoor" parent="." unique_id=685979573 instance=ExtResource("12_door")]
+position = Vector2(248, 390)
+size = Vector2(16, 2)
+exit_offset = Vector2(0, -12)
+
+[node name="Yard" parent="." unique_id=1039390062 instance=ExtResource("11_yard")]
+position = Vector2(1200, 0)
+
+[node name="Trailer" parent="." instance=ExtResource("13_trailer")]
+position = Vector2(2400, 0)
 
 [node name="World" type="Node2D" parent="." unique_id=649530017]
 y_sort_enabled = true
