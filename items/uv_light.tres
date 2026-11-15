@@ -8,11 +8,12 @@
 
 [resource]
 script = ExtResource("1_data")
-can_place_on_surfaces = true
 id = &"uv_light"
 display_name = "UV Light"
 description = "Reveals ghost residue on things the ghost has touched."
 icon = ExtResource("2_q6t3v")
 held_sheet = ExtResource("3_held")
 floor_sprite = ExtResource("1_6vive")
+can_place_on_surfaces = true
+footprint = Vector2(12, 8)
 instance_script = ExtResource("2_script")

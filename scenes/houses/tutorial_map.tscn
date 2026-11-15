@@ -78,9 +78,9 @@ room_name = "Bedroom"
 
 [node name="LivingRoom" type="ReferenceRect" parent="Rooms" unique_id=464221223]
 offset_left = 128.0
-offset_top = 256.0
+offset_top = 248.0
 offset_right = 368.0
-offset_bottom = 384.0
+offset_bottom = 376.0
 mouse_filter = 2
 border_color = Color(0.45, 0.9, 1, 1)
 border_width = 2.0
@@ -217,19 +217,19 @@ facing = 1
 footprint = Vector2(32, 64)
 
 [node name="OakChair2" parent="Furniture" unique_id=65781380 instance=ExtResource("14_11kvn")]
-position = Vector2(-8, 312)
+position = Vector2(-8, 320)
 facing = 1
 
 [node name="OakChair3" parent="Furniture" unique_id=2057486810 instance=ExtResource("14_11kvn")]
-position = Vector2(40, 344)
+position = Vector2(40, 352)
 facing = 3
 
 [node name="OakChair4" parent="Furniture" unique_id=382964523 instance=ExtResource("14_11kvn")]
-position = Vector2(40, 312)
+position = Vector2(40, 320)
 facing = 3
 
 [node name="OakChair5" parent="Furniture" unique_id=991387345 instance=ExtResource("14_11kvn")]
-position = Vector2(-8, 344)
+position = Vector2(-8, 352)
 facing = 1
 
 [node name="GrayFireplace" parent="Furniture" unique_id=1447865753 instance=ExtResource("22_bhs67")]

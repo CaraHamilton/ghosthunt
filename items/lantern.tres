@@ -8,11 +8,12 @@
 
 [resource]
 script = ExtResource("1_data")
-can_place_on_surfaces = true
 id = &"lantern"
 display_name = "Lantern"
 description = "Lights the way while it's in your hand. Set it down to light up a room."
 icon = ExtResource("2_ep1sl")
 held_sheet = ExtResource("1_kuaus")
 floor_sprite = ExtResource("3_floor")
+can_place_on_surfaces = true
+footprint = Vector2(10, 10)
 instance_script = ExtResource("2_script")

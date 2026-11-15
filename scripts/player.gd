@@ -30,8 +30,6 @@ signal sanity_depleted
 ## TOOLBAR_SLOTS of them (all of them, for now).
 const INVENTORY_SIZE := 9
 const TOOLBAR_SLOTS := 9
-## How far in front of the player dropped items land (px).
-const DROP_DISTANCE := 10.0
 ## How close (px) the edge of her feet (her collision box) must be to a house
 ## object - its footprint, or for decor up on a table the tile it sits on - to
 ## use it: left click, E, or the lantern on a fire. Any way she faces.
@@ -260,9 +258,9 @@ func select_slot(slot: int) -> void:
 	Sfx.play("ui/select_slot")
 
 
-## Picks up an item that's on the floor (`from_node` is its world node).
+## Picks up an item that's on the floor (its world node frees itself).
 ## Returns false if there's no room.
-func pick_up(item: ItemInstance, _from_node: Node2D) -> bool:
+func pick_up(item: ItemInstance) -> bool:
 	if not inventory.has_room_for(item):
 		return false
 	# Into the selected slot if it's free, else the first free one.
@@ -277,9 +275,7 @@ func pick_up(item: ItemInstance, _from_node: Node2D) -> bool:
 func place_target() -> Vector2i:
 	var dir := Vector2i(signi(roundi(facing.x)), 0) if absf(facing.x) > absf(facing.y) \
 		else Vector2i(0, 1 if facing.y > 0.0 else -1)
-	# Our tile is the one under the middle of our feet (the collision shape),
-	# not the very bottom edge of the sprite.
-	return Game.current.house.tile_at(global_position + _feet.position) + dir
+	return standing_cell() + dir
 
 
 ## Where the selected item would be placed (see House.get_place_spot): the
@@ -303,7 +299,6 @@ func place_selected() -> void:
 	if not can_place_selected():
 		_place_highlight.flash_blocked()  # (the journal can't be put down)
 		return
-	var game := Game.current
 	var spot := place_spot()
 	if not spot.ok:
 		_place_highlight.flash_blocked()
@@ -322,9 +317,30 @@ func _place_at(spot: Dictionary) -> void:
 
 # --- Mouse ----------------------------------------------------------------------
 
-## The tile under the middle of our feet.
+## The tile under the middle of our feet (the collision shape), not the very
+## bottom edge of the sprite.
 func standing_cell() -> Vector2i:
 	return Game.current.house.tile_at(global_position + _feet.position)
+
+
+## True if `cell` is our own tile or one of the 8 around it - the tiles we
+## can place on or pick up from.
+func is_next_to(cell: Vector2i) -> bool:
+	var me := standing_cell()
+	return absi(cell.x - me.x) <= 1 and absi(cell.y - me.y) <= 1
+
+
+## Tools placed on a tile next to us (see is_next_to), each as
+## [world node, its tile].
+func _placed_tools_near() -> Array:
+	var found := []
+	for node in get_tree().get_nodes_in_group(House.PLACED_GROUP):
+		if node.is_queued_for_deletion() or not ("item" in node) or node.item == null:
+			continue  # (snapped decor like book stacks is in the group too)
+		var cell: Variant = node.get_meta("place_tile", null)
+		if cell != null and is_next_to(cell):
+			found.append([node, cell])
+	return found
 
 
 ## The house object a left click at `point` (world space) would use instead
@@ -395,43 +411,39 @@ func left_click(point: Vector2) -> bool:
 ##   kind "pick_up" - a tool we placed is there: its tile, its outline or
 ##                    its picture (node = its world node)
 ##   kind "place"   - we're holding something, and the mouse is on a table's
-##                    picture (its top - see _furniture_target) or an empty
-##                    tile next to us (spot = from House.get_place_spot;
-##                    spot.ok is false if the item can't go there)
-##   kind "blocked" - other furniture's picture, a tile too far away, or the
-##                    one we're standing on while holding something
-## Whatever is drawn under the mouse wins: a click on furniture is never on
-## the floor hidden behind it.
+##                    picture (its top - see _furniture_target) or on a tile
+##                    next to us (spot = from House.get_place_spot; spot.ok
+##                    is false if the item can't go there)
+##   kind "blocked" - a tile too far away, or the one we're standing on
+##                    while holding something
+## A table's picture wins over the floor behind it. Other furniture and decor
+## are ignored: clicking on their picture is clicking on the floor tile under
+## the mouse.
 ##   kind "none"    - nothing to do
 ## `rect` is the area to highlight.
 func right_click_target(point: Vector2) -> Dictionary:
 	var house := Game.current.house
 	var me := standing_cell()
-	var near := func(cell: Vector2i) -> bool:
-		return absi(cell.x - me.x) <= 1 and absi(cell.y - me.y) <= 1
 
-	# A placed tool (on the floor, or raised up on a table).
-	for node in get_tree().get_nodes_in_group(House.PLACED_GROUP):
-		if node.is_queued_for_deletion() or not ("item" in node) or node.item == null:
-			continue  # (snapped decor like book stacks is in the group too)
-		var cell: Variant = node.get_meta("place_tile", null)
-		if cell == null or not near.call(cell):
-			continue
-		# Its tile, the outline shown when it was placed (up on the table top
-		# for a table), or its picture.
-		var rect := house.tile_rect(cell)
+	# A placed tool (on the floor, or raised up on a table): its tile, the
+	# outline shown when it was placed (up on the table top for a table), or
+	# its picture.
+	for found in _placed_tools_near():
+		var node: Node2D = found[0]
+		var rect := house.tile_rect(found[1])
 		var outline: Rect2 = node.get_meta("place_rect", rect)
 		var on_art: bool = node.has_method("get_art_rect") and node.get_art_rect().has_point(point)
 		if rect.has_point(point) or outline.has_point(point) or on_art:
 			return {kind = &"pick_up", node = node, rect = outline}
 
 	var placeable := can_place_selected()
-	# On a piece of furniture's picture: the click is on that furniture - its
-	# top, if it's a table or the like - never the floor hidden behind it.
+	# On a table's (or other surface's) picture: the click is on its top,
+	# never the floor hidden behind it. Other furniture and decor don't
+	# count - clicks go straight through them to the floor tile underneath.
 	if placeable:
-		var furniture := furniture_at(point)
-		if furniture:
-			return _furniture_target(furniture, point, near)
+		var surface := surface_at(point)
+		if surface:
+			return _furniture_target(surface, point)
 
 	# An empty tile next to us to put the held item on.
 	if placeable:
@@ -457,27 +469,26 @@ func right_click_target(point: Vector2) -> Dictionary:
 	return {kind = &"none"}
 
 
-## The front-most piece of furniture (or house object) whose picture has a
-## pixel at `point`, or null. Rugs don't count - they're under everything.
-func furniture_at(point: Vector2) -> Prop:
+## The front-most table, desk or other surface (Prop.surface) whose picture
+## has a pixel at `point`, or null. Other furniture is ignored, even when
+## it's drawn in front.
+func surface_at(point: Vector2) -> Prop:
 	var best: Prop = null
 	for prop: Prop in Game.current.house.find_children("*", "Prop", true, false):
-		if prop.flat or prop.art == null or not prop.is_visible_in_tree():
+		if not prop.surface or prop.flat or prop.art == null or not prop.is_visible_in_tree():
 			continue
 		if (best == null or prop.global_position.y > best.global_position.y) and prop.is_art_at(point):
 			best = prop
 	return best
 
 
-## Right click on `furniture`'s picture at `point`, holding a placeable
-## item. A table (or anything with a surface) takes it on the tile of its top
-## under the mouse: the column under the mouse, and the row whose table top
-## (lifted surface_height px) is under it - the back row if the mouse is up
-## on the art above the top. Anything else is in the way (red).
-func _furniture_target(furniture: Prop, point: Vector2, near: Callable) -> Dictionary:
+## Right click on a table's (`furniture`, a Prop with a surface) picture at
+## `point`, holding a placeable item: it goes on the tile of its top under
+## the mouse - the column under the mouse, and the row whose table top
+## (lifted surface_height px) is under it, or the back row if the mouse is
+## up on the art above the top.
+func _furniture_target(furniture: Prop, point: Vector2) -> Dictionary:
 	var house := Game.current.house
-	if not furniture.surface:
-		return {kind = &"blocked", rect = house.tile_rect(house.tile_at(point))}
 	# Its top's tiles are the ones whose middle is on it (furniture that's off
 	# the grid by half a tile only takes items on some of the tiles it
 	# touches); take the one nearest the mouse.
@@ -497,7 +508,7 @@ func _furniture_target(furniture: Prop, point: Vector2, near: Callable) -> Dicti
 	var spot := house.get_place_spot(cell, selected_item.data.can_place_on_surfaces)
 	var top := house.tile_rect(cell)
 	spot.rect = Rect2(top.position - Vector2(0, furniture.surface_height), top.size)
-	if not near.call(cell) or cell == standing_cell():
+	if not is_next_to(cell) or cell == standing_cell():
 		spot.ok = false  # too far away
 	return {kind = &"place", spot = spot, rect = spot.rect}
 
@@ -522,20 +533,6 @@ func right_click(point: Vector2) -> void:
 				_place_highlight.flash_blocked(target.rect)
 		&"blocked":
 			_place_highlight.flash_blocked(target.rect)
-
-
-## Drops the selected item (one of a stack) on the floor in front of us,
-## anywhere - not on the tile grid. (Not on a key yet: Q places instead.)
-func drop_selected() -> void:
-	if selected_item == null:
-		return
-	_set_using_item(false)
-	var item := inventory.remove_from_slot(selected_slot, 1)
-	var spot := global_position + facing * DROP_DISTANCE
-	var game := Game.current
-	if not game.house.is_walkable(spot):
-		spot = global_position  # too close to a wall: drop it at our feet
-	ItemPickup.drop(item, game.world, spot)
 
 
 ## Uses the selected item while the use button is held, and keeps every
@@ -598,13 +595,8 @@ func _interact_target() -> Node2D:
 		if feet_rect().grow(USE_REACH).intersects(clickable.get_reach_area(), true):
 			candidates.append([clickable, clickable.get_reach_area()])
 	var house := Game.current.house
-	var me := standing_cell()
-	for node in get_tree().get_nodes_in_group(House.PLACED_GROUP):
-		if node.is_queued_for_deletion() or not ("item" in node) or node.item == null:
-			continue  # (snapped decor like book stacks is in the group too)
-		var cell: Variant = node.get_meta("place_tile", null)
-		if cell != null and absi(cell.x - me.x) <= 1 and absi(cell.y - me.y) <= 1:
-			candidates.append([node, house.tile_rect(cell)])
+	for found in _placed_tools_near():
+		candidates.append([found[0], house.tile_rect(found[1])])
 	var feet := feet_rect().get_center()
 	var best: Node2D = null
 	var best_dist := INF

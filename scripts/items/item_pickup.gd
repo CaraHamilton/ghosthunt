@@ -11,6 +11,9 @@ extends Node2D
 const DEFAULT_SCENE_PATH := "res://scenes/item_pickup.tscn"
 ## Width/height (px) of the item's icon when drawn on the floor.
 const FLOOR_ICON_SIZE := 12.0
+## Physics layer 3 ("placed_tools"): placed tools. The player's collision
+## mask includes it, the ghost's doesn't.
+const PLACED_TOOLS_LAYER := 4
 
 ## The item lying here (set before the node is added to the scene).
 var item: ItemInstance
@@ -46,7 +49,32 @@ static func place(item: ItemInstance, world: Node2D, spot: Dictionary) -> Node2D
 	# a table) - right click shows the same one to pick it up.
 	node.set_meta("place_rect", spot.rect)
 	node.add_to_group(House.PLACED_GROUP)
+	if spot.surface == null:
+		_add_blocker(node, item.data.footprint)
 	return node
+
+
+## Makes a tool placed on the floor solid for the player: a box of the
+## item's `footprint` size (ItemData, at most 16x16) in the middle of the
+## tile, on the "placed_tools" physics layer. The player collides with that
+## layer, the ghost doesn't, so ghosts pass straight over it. It's a child of
+## the item's node, so it goes when the item is picked up. (Tools on tables
+## don't need one - the table already blocks.)
+static func _add_blocker(node: Node2D, footprint: Vector2) -> void:
+	var size := footprint.clamp(Vector2.ZERO, Vector2(16, 16))
+	if size.x <= 0.0 or size.y <= 0.0:
+		return  # no footprint: the player walks over it too
+	var body := StaticBody2D.new()
+	body.name = "Blocker"
+	body.collision_layer = PLACED_TOOLS_LAYER
+	body.collision_mask = 0
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = size
+	shape.shape = rect
+	shape.position = Vector2(0, -8)  # the tile's middle (the node sits on its bottom edge)
+	body.add_child(shape)
+	node.add_child(body)
 
 
 func _physics_process(delta: float) -> void:
@@ -55,7 +83,7 @@ func _physics_process(delta: float) -> void:
 
 ## Called by the player pressing E. (Nothing happens if the toolbar is full.)
 func player_interact(player: Player) -> void:
-	if player.pick_up(item, self):
+	if player.pick_up(item):
 		queue_free()
 
 

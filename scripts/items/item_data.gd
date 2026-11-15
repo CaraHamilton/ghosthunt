@@ -21,12 +21,20 @@ extends Resource
 ## This item lying on the floor, drawn at full size with its bottom-centre on
 ## the spot it was dropped. Empty = a small version of the icon.
 @export var floor_sprite: Texture2D
-## If ticked, the item can be placed up on tables, counters and other
-## surfaces (see Prop.surface). Unticked, it can only go on the floor.
 ## If unticked, the item can never be put down (right click or Q) - like
 ## the journal, which always stays in your hands.
 @export var can_place := true
+## If ticked, the item can be placed up on tables, counters and other
+## surfaces (see Prop.surface). Unticked, it can only go on the floor.
 @export var can_place_on_surfaces := false
+## The patch of floor (width, depth in px) the player bumps into when this
+## item is placed on a floor tile - match it to the bottom of its art. It
+## sits in the middle of the tile and is capped at the tile (16x16). Ghosts
+## walk through it either way. The item still takes the whole tile: nothing
+## else can be placed there.
+## Keep it at least 5 wide and 11 deep if a row of these should stop the
+## player; anything smaller leaves gaps they can squeeze through.
+@export var footprint := Vector2(16, 16)
 ## How many fit in one slot. Tools with their own state should stay at 1.
 @export_range(1, 999) var max_stack := 1
 ## Script (extending ItemInstance) that gives this item its behaviour.

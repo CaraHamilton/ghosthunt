@@ -88,7 +88,7 @@ func describe_last_interaction() -> String:
 
 
 func _on_player_interact(player: Player) -> void:
-	if not player.pick_up(item, self):
+	if not player.pick_up(item):
 		return
 	if possessed_by:
 		possessed_by.end_possession()
