@@ -1,6 +1,6 @@
-class_name DemonBehavior
+class_name WendigoBehavior
 extends GhostBehavior
-## Demon. Override GhostBehavior hooks here to give it its own behaviour.
+## Wendigo. Override GhostBehavior hooks here to give it its own behaviour.
 
 
 ## Freezing ghost: its favourite room drops below 0 °C. Rooms it only passes
@@ -9,11 +9,11 @@ func get_cold_temperature(base_temperature: float, is_favorite_room: bool) -> fl
 	return FREEZING_TEMPERATURE if is_favorite_room else base_temperature
 
 
-## Demons can leave EMF 5 on what they touch and where they appear.
-func shows_emf_5() -> bool:
+## Wendigos show up as a figure in the fog machine's fog.
+func shows_in_fog() -> bool:
 	return true
 
 
-## Demons possess the doll when it's near them.
-func possesses_doll() -> bool:
+## Wendigos freeze for a moment when holy water splashes them.
+func reacts_to_holy_water() -> bool:
 	return true

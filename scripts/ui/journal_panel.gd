@@ -52,13 +52,20 @@ func _ready() -> void:
 		row.pressed.connect(_on_evidence_pressed.bind(evidence))
 		evidence_list.add_child(row)
 		_evidence_rows[evidence] = row
+	# The ghost types go in two columns, so the page fits on screen.
+	var columns := GridContainer.new()
+	columns.columns = 2
+	columns.add_theme_constant_override("h_separation", 16)
+	columns.add_theme_constant_override("v_separation", ghost_list.get_theme_constant("separation"))
+	ghost_list.add_child(columns)
 	for type: GhostBehavior.Type in GhostBehavior.Type.values():
 		var row := Label.new()
 		row.text = GhostBehavior.type_name(type)
 		row.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_font_size_override("font_size", 18)
 		row.add_theme_color_override("font_color", INK)
-		ghost_list.add_child(row)
+		columns.add_child(row)
 		_ghost_rows[type] = row
 	close_button.pressed.connect(close)
 

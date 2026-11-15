@@ -42,6 +42,7 @@ Change Sound, Change Back Sound, and Loop Sound (loops while it's on, lit or roc
 | File | When |
 |---|---|
 | `ghost/appear` | The ghost appears (after breaking something) |
+| `ghost/ghost_cry` | The ghost cries as it switches to its chase animation during an appearance (in the world, at the ghost) |
 | `ghost/hunt_start` | A hunt starts (heard everywhere) |
 
 ## Ritual

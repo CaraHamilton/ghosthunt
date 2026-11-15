@@ -31,8 +31,8 @@ extends CharacterBody2D
 ## appears at random.
 ##
 ## The node's origin is the floor point under the ghost. What *kind* of ghost
-## it is (Banshee, Poltergeist, Sentry, Marionette, Demon, Phantom, Fox, Cold,
-## Fae) lives in `behavior` - see scripts/ghost_types/. Every ghost looks the
+## it is (Banshee, Poltergeist, Sentry, Marionette, Wraith, Phantom, Hell Hound,
+## Wendigo, Fae, Beldam, High Priest, Fury, Imp) lives in `behavior` - see scripts/ghost_types/. Every ghost looks the
 ## same, so the player has to work out the type from how it behaves.
 
 signal hunt_started
@@ -271,6 +271,9 @@ var _possess_time_left := 0.0
 ## Where it's flying to attack the player after a failed ritual (INF when
 ## it isn't).
 var _ritual_attack_target := Vector2.INF
+## True once the ghost has cried at the player this hunt (it cries the
+## first time it starts chasing them in each hunt).
+var _cried_this_hunt := false
 
 
 ## Call before adding the ghost to the scene.
@@ -463,6 +466,10 @@ func set_state(new_state: State) -> void:
 	_out_of_sight_time = 0.0
 	_chase_sight_time = 0.0  # every new chase starts at the slow start speed
 	_path_target = Vector2.INF
+	if new_state == State.CHASING and not _cried_this_hunt:
+		# It's spotted the player: a cry, only the first time each hunt.
+		_cried_this_hunt = true
+		Sfx.play("ghost/ghost_cry", global_position)
 	if old_state != new_state:
 		behavior.on_state_changed(old_state, new_state)
 
@@ -474,6 +481,7 @@ func start_hunt() -> void:
 		return
 	_hold_time_left = 0.0
 	end_possession()
+	_cried_this_hunt = false
 	is_manifested = true
 	if OS.is_debug_build():
 		print("[debug] Ghost: hunt started in the %s" % _room_name())
@@ -793,8 +801,9 @@ func _update_appearance(delta: float) -> void:
 		return
 	match appearance:
 		Appearance.FADING_IN:
-			appearance = Appearance.LUNGING
+			appearance = Appearance.LUNGING  # switches to its chase animation
 			_appearance_phase_left = _lunge_time
+			Sfx.play("ghost/ghost_cry", global_position)
 		Appearance.LUNGING:
 			appearance = Appearance.FADING_OUT
 			_appearance_phase_left = fade_time

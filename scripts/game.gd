@@ -134,7 +134,7 @@ func _ready() -> void:
 	# while painting the map - they cover/darken the editor view too.)
 	darkness.visible = true
 	$HUD.visible = true
-	player.global_position = house.get_player_start()
+	player.global_position = _player_start()
 	_inside_darkness = darkness.color
 	_build_fade()
 	potion_menu = PotionMenu.new()
@@ -385,6 +385,16 @@ func _start_background_ambience() -> void:
 
 
 # --- Going outside ----------------------------------------------------------------
+
+## Where the player starts: in the area ticked as the start area (see
+## Outside.is_start_area - the trailer), or the house's player start if none
+## is.
+func _player_start() -> Vector2:
+	for area: Outside in get_tree().get_nodes_in_group("outside_areas"):
+		if area.is_start_area:
+			return area.get_player_start()
+	return house.get_player_start()
+
 
 ## The outdoor area (see Outside) that `point` is in, or null - e.g. in the
 ## house.

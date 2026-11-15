@@ -14,11 +14,15 @@ const COLORS := {
 	GhostBehavior.Type.POLTERGEIST: Color("e08a2e"),
 	GhostBehavior.Type.SENTRY: Color("8a8f9e"),
 	GhostBehavior.Type.MARIONETTE: Color("c23b3b"),
-	GhostBehavior.Type.DEMON: Color("6b1a1a"),
+	GhostBehavior.Type.WRAITH: Color("6b1a1a"),
 	GhostBehavior.Type.PHANTOM: Color("7c6fd6"),
-	GhostBehavior.Type.FOX: Color("d9662b"),
-	GhostBehavior.Type.COLD: Color("7fd3f0"),
+	GhostBehavior.Type.HELL_HOUND: Color("d9662b"),
+	GhostBehavior.Type.WENDIGO: Color("7fd3f0"),
 	GhostBehavior.Type.FAE: Color("6fcf6a"),
+	GhostBehavior.Type.BELDAM: Color("b8b04a"),
+	GhostBehavior.Type.HIGH_PRIEST: Color("e8d9a8"),
+	GhostBehavior.Type.FURY: Color("e0303a"),
+	GhostBehavior.Type.IMP: Color("9b3fd1"),
 }
 
 ## Which ghost this potion captures.

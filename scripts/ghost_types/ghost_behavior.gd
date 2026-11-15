@@ -1,15 +1,16 @@
 class_name GhostBehavior
 extends RefCounted
 ## Base class for type-specific ghost behaviour. Each ghost type (Banshee,
-## Poltergeist, Sentry, Marionette, Demon, Phantom, Fox, Cold, Fae) extends
-## this and overrides the hooks it cares about.
+## Poltergeist, Sentry, Marionette, Wraith, Phantom, Hell Hound, Wendigo, Fae,
+## Beldam, High Priest, Fury, Imp) extends this and overrides the hooks it cares
+## about.
 ## The defaults do nothing, so every ghost currently acts the same.
 ##
 ## To add a behaviour: override a hook in the type's script. If you need a
 ## hook that doesn't exist yet, add it here with a do-nothing default and
 ## call it from ghost.gd.
 
-enum Type { BANSHEE, POLTERGEIST, SENTRY, MARIONETTE, DEMON, PHANTOM, FOX, COLD, FAE }
+enum Type { BANSHEE, POLTERGEIST, SENTRY, MARIONETTE, WRAITH, PHANTOM, HELL_HOUND, WENDIGO, FAE, BELDAM, HIGH_PRIEST, FURY, IMP }
 
 ## The ghost this behaviour drives. Set before `on_spawned()` is called.
 var ghost: Ghost
@@ -26,16 +27,24 @@ static func create(type: Type) -> GhostBehavior:
 			return SentryBehavior.new()
 		Type.MARIONETTE:
 			return MarionetteBehavior.new()
-		Type.DEMON:
-			return DemonBehavior.new()
+		Type.WRAITH:
+			return WraithBehavior.new()
 		Type.PHANTOM:
 			return PhantomBehavior.new()
-		Type.FOX:
-			return FoxBehavior.new()
-		Type.COLD:
-			return ColdBehavior.new()
+		Type.HELL_HOUND:
+			return HellHoundBehavior.new()
+		Type.WENDIGO:
+			return WendigoBehavior.new()
 		Type.FAE:
 			return FaeBehavior.new()
+		Type.BELDAM:
+			return BeldamBehavior.new()
+		Type.HIGH_PRIEST:
+			return HighPriestBehavior.new()
+		Type.FURY:
+			return FuryBehavior.new()
+		Type.IMP:
+			return ImpBehavior.new()
 	push_error("Unknown ghost type: %s" % type)
 	return GhostBehavior.new()
 
@@ -130,7 +139,7 @@ func get_return_home_chance(base_chance: float) -> float:
 	return base_chance
 
 
-## What freezing ghost types (Banshee, Sentry, Marionette, Demon, Cold)
+## What freezing ghost types (Banshee, Sentry, Marionette, Wraith, Wendigo, Fury)
 ## chill their favourite room towards, in °C - cold enough that it reliably reads below
 ## zero.
 const FREEZING_TEMPERATURE := -8.0

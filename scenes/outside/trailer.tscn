@@ -12,6 +12,7 @@ temperature = 18.0
 ground_color = Color(0.29, 0.231, 0.18, 1)
 ground_color_dark = Color(0.263, 0.208, 0.165, 1)
 door_paths = false
+is_start_area = true
 
 [node name="TrailerDoor" parent="." unique_id=1963476286 instance=ExtResource("2_door")]
 position = Vector2(80, 0)

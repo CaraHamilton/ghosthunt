@@ -22,6 +22,10 @@ extends Node2D
 @export var darkness := Color(0.22, 0.24, 0.36)
 ## The temperature (°C) a thermometer reads out here.
 @export var temperature := 9.0
+## Tick on one area to start the game in it (instead of the house). The
+## player appears at a Marker2D child named "PlayerStart", or in the middle
+## of the area if there isn't one.
+@export var is_start_area := false
 
 @export_group("Placeholder")
 ## The placeholder ground (a checker of these two colours), drawn until the
@@ -59,6 +63,12 @@ func _ready() -> void:
 ## The area, in global coordinates.
 func get_bounds() -> Rect2:
 	return Rect2(global_position, size)
+
+
+## Where the player appears when the game starts here (see is_start_area).
+func get_player_start() -> Vector2:
+	var marker := get_node_or_null("PlayerStart") as Node2D
+	return marker.global_position if marker else get_bounds().get_center()
 
 
 func _build_edges() -> void:
