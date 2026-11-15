@@ -133,11 +133,11 @@ position = Vector2(288, 64)
 position = Vector2(328, 80)
 
 [node name="PurpleFancyChair2" parent="Furniture" unique_id=839130499 instance=ExtResource("25_a8bwx")]
-position = Vector2(272, 168)
+position = Vector2(264, 168)
 facing = 1
 
 [node name="OakCoffeeTable" parent="Furniture" unique_id=1702428740 instance=ExtResource("19_hen61")]
-position = Vector2(304, 160)
+position = Vector2(296, 160)
 facing = 1
 footprint = Vector2(16, 32)
 
@@ -350,7 +350,7 @@ position = Vector2(8, 304)
 position = Vector2(24, 304)
 
 [node name="PurpleRockingChair" parent="Furniture" unique_id=880106828 instance=ExtResource("15_d25jf")]
-position = Vector2(272.51276, 135.48071)
+position = Vector2(264, 136)
 
 [node name="OakVanity2" parent="Furniture" unique_id=1171229774 instance=ExtResource("5_uig5k")]
 position = Vector2(328, 64)
