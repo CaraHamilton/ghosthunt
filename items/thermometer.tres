@@ -8,11 +8,12 @@
 
 [resource]
 script = ExtResource("1_data")
-can_place_on_surfaces = true
 id = &"thermometer"
 display_name = "Thermometer"
 description = "Reads the temperature of the room it's in. Leave it somewhere and it keeps measuring."
 icon = ExtResource("1_hgv0d")
 held_sheet = ExtResource("3_held")
 floor_sprite = ExtResource("1_q5m27")
+can_place_on_surfaces = true
+footprint = Vector2(6, 12)
 instance_script = ExtResource("2_script")

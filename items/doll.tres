@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
 [ext_resource type="Texture2D" uid="uid://ctbfdet58565a" path="res://art/toolbar_icons/doll_toolbar.png" id="1_f6h5f"]
+[ext_resource type="Texture2D" uid="uid://cfrdb08cy0ywo" path="res://art/overworld/doll_overworld.png" id="1_w2jn5"]
 [ext_resource type="Texture2D" uid="uid://wiyx05tnaar1" path="res://art/held/doll.png" id="2_held"]
 [ext_resource type="Script" uid="uid://dedh8y282hvr7" path="res://scripts/tools/doll_item.gd" id="3_script"]
 [ext_resource type="PackedScene" uid="uid://cq7iw1aw7njl1" path="res://scenes/doll.tscn" id="4_world"]
@@ -13,5 +14,7 @@ display_name = "Doll"
 description = "Some ghosts can't resist a doll left near them."
 icon = ExtResource("1_f6h5f")
 held_sheet = ExtResource("2_held")
+floor_sprite = ExtResource("1_w2jn5")
+footprint = Vector2(14, 14)
 instance_script = ExtResource("3_script")
 world_scene = ExtResource("4_world")
