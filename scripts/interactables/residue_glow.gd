@@ -1,7 +1,8 @@
 class_name ResidueGlow
 extends Node2D
-## The green glow of ghost residue on an interactable. It's always there once
-## a residue-leaving ghost has touched the object, but it's drawn "light
+## The green glow of ghost residue on an interactable. It's there from when a
+## residue-leaving ghost touches the object until it fades (see fades_at),
+## but it's drawn "light
 ## only" on its own light mask layer (UVBeam.RESIDUE_LIGHT_LAYER), so it's
 ## invisible until the UV light's beam falls on it - and only the part of it
 ## inside the beam shows.
@@ -19,6 +20,9 @@ const DEFAULT_ART := "res://art/uv_residue/handprint_default.png"
 var texture: Texture2D
 ## Mirror the picture left-right.
 var flip_h := false
+## Game time (see Game.game_time) when the residue fades away: then the
+## object's has_residue is switched off. Set when the ghost leaves residue.
+var fades_at := INF
 
 var _t := 0.0
 
@@ -35,9 +39,16 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if visible:
-		_t += delta
-		queue_redraw()
+	if not visible:
+		return
+	if Game.game_time() >= fades_at:
+		fades_at = INF
+		if OS.is_debug_build():
+			print("[debug] The UV residue on %s faded away" % get_parent().name)
+		get_parent().has_residue = false  # hides this glow
+		return
+	_t += delta
+	queue_redraw()
 
 
 func _draw() -> void:

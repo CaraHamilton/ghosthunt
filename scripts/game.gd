@@ -64,6 +64,33 @@ var ghost_type: GhostBehavior.Type
 ## What the EMF reader can pick up right now (see EMFSource).
 var emf_sources: Array[EMFSource] = []
 
+## How long (s) the screen takes to fade out (and back in) going through a
+## door.
+const DOOR_FADE_TIME := 0.3
+## Doors do nothing for this long (s) after the game starts - the player may
+## start standing on one.
+const DOOR_START_GRACE := 0.5
+
+## How long (s) the ritual's cutscene lasts, from starting it to the outcome.
+const RITUAL_TIME := 5.0
+## When (s into the ritual) the ghost appears in front of the player.
+const RITUAL_GHOST_TIME := 1.5
+## How far (px) from the player the ghost appears during the ritual.
+const RITUAL_GHOST_DISTANCE := 36.0
+
+## The potion cabinet's window (see PotionCabinet), built in _ready.
+var potion_menu: PotionMenu
+## True from starting the ritual on (it can only happen once).
+var ritual_started := false
+## The ghost type the ritual's potion was for.
+var _ritual_guess := GhostBehavior.Type.BANSHEE
+var _ritual_circle: RitualCircle
+
+var _fade: ColorRect
+var _traveling := false
+## The Darkness colour indoors (from the scene); outdoor areas have their own.
+var _inside_darkness := Color.BLACK
+
 
 ## Something the ghost did now gives off EMF: `at` is the object (a Node2D,
 ## followed if it moves) or a spot (Vector2). The level is rolled from
@@ -107,8 +134,13 @@ func _ready() -> void:
 	# while painting the map - they cover/darken the editor view too.)
 	darkness.visible = true
 	$HUD.visible = true
-	player.global_position = house.get_player_start()
-	_fit_camera_to_house()
+	player.global_position = _player_start()
+	_inside_darkness = darkness.color
+	_build_fade()
+	potion_menu = PotionMenu.new()
+	$HUD.add_child(potion_menu)
+	$HUD.move_child(potion_menu, game_over_panel.get_index())  # under the end screen
+	_enter_current_area()
 	var furniture: Array[Rect2] = []
 	for obstacle in get_tree().get_nodes_in_group("nav_obstacles"):
 		furniture.append(obstacle.get_footprint())
@@ -149,10 +181,11 @@ func _process(delta: float) -> void:
 	_update_sanity_bar()
 
 
-## Stops the camera scrolling far past the edges of the painted map.
-func _fit_camera_to_house() -> void:
+## Stops the camera scrolling far past the edges of `bounds` (the house, or
+## the outdoor area the player is in).
+func _fit_camera_to(bounds: Rect2) -> void:
 	var camera := player.get_node("Camera2D") as Camera2D
-	var area := house.get_bounds().grow(24.0)
+	var area := bounds.grow(24.0)
 	camera.limit_left = floori(area.position.x)
 	camera.limit_top = floori(area.position.y)
 	camera.limit_right = ceili(area.end.x)
@@ -200,13 +233,100 @@ func _on_ghost_caught_player() -> void:
 		return
 	times_caught += 1
 	_flash_hurt()
-	is_game_over = true
 	ghost.set_physics_process(false)
-	journal_panel.close()
 	player.die()
-	game_over_title.text = "THE GHOST GOT YOU"
-	game_over_stats.text = "You survived %d seconds." % int(survived_time)
+	if ritual_started:
+		if is_instance_valid(_ritual_circle):
+			_ritual_circle.fade_out(0.5)
+		_show_end_screen("THE RITUAL FAILED", "That wasn't a %s - it was a %s." % [
+			GhostBehavior.type_name(_ritual_guess), GhostBehavior.type_name(ghost_type)], LOSE_COLOR)
+	else:
+		_show_end_screen("THE GHOST GOT YOU", "You survived %d seconds." % int(survived_time), LOSE_COLOR)
+
+
+const LOSE_COLOR := Color(0.9, 0.3, 0.35)
+const WIN_COLOR := Color(0.55, 0.9, 0.6)
+
+
+## Ends the game with the end screen (R to play again).
+func _show_end_screen(title: String, stats: String, color: Color) -> void:
+	is_game_over = true
+	journal_panel.close()
+	potion_menu.close()
+	game_over_title.text = title
+	game_over_title.add_theme_color_override("font_color", color)
+	game_over_stats.text = stats
 	game_over_panel.visible = true
+
+
+# --- The ritual -----------------------------------------------------------------
+
+## Called when the player uses a potion. Starts the ritual if it can, and
+## returns "" - or, if it can't, why not (shown above the toolbar). The
+## ritual is a RITUAL_TIME second cutscene: the player stands in a glowing
+## circle and the ghost is pulled in front of them. If the potion matches the
+## ghost, it evaporates and the player wins; if not, it attacks - game over.
+func start_ritual(potion: PotionItem) -> String:
+	if is_game_over or ritual_started:
+		return ""
+	if not player.is_in_house():
+		return "start the ritual inside the house"
+	if ghost.is_hunting:
+		return "not while the ghost is hunting"
+	ritual_started = true
+	_ritual_guess = potion.ghost_type
+	journal_panel.close()
+	potion_menu.close()
+	player.inventory.remove_from_slot(player.inventory.slots.find(potion))
+	player.set_in_menu(true)  # the player can't move or use things now
+	ghost.begin_ritual()
+	if OS.is_debug_build():
+		print("[debug] Ritual started with the %s (the ghost is a %s)" % [
+			PotionItem.name_for(_ritual_guess), GhostBehavior.type_name(ghost_type)])
+	_run_ritual()
+	return ""
+
+
+func _run_ritual() -> void:
+	_ritual_circle = RitualCircle.new()
+	_ritual_circle.build_time = RITUAL_TIME
+	_ritual_circle.global_position = player.global_position - Vector2(0, RitualCircle.FEET_OFFSET)
+	add_child(_ritual_circle)
+	Sfx.play("ritual/start")
+	await get_tree().create_timer(RITUAL_GHOST_TIME, false, true).timeout
+	ghost.appear_for_ritual(_ritual_ghost_spot(), player.global_position)
+	await get_tree().create_timer(RITUAL_TIME - RITUAL_GHOST_TIME, false, true).timeout
+	if is_game_over:
+		return
+	_ritual_circle.flash()
+	if is_correct_guess(_ritual_guess):
+		Sfx.play("ritual/success", ghost.global_position)
+		ghost.evaporate(1.5)
+		await get_tree().create_timer(2.0, false, true).timeout
+		_ritual_circle.fade_out(1.0)
+		_show_end_screen("YOU CAPTURED THE GHOST", "It was a %s. You caught it in %d seconds." % [
+			GhostBehavior.type_name(ghost_type), int(survived_time)], WIN_COLOR)
+	else:
+		Sfx.play("ritual/fail", ghost.global_position)
+		ghost.ritual_attack(player.global_position)  # caught_player -> game over
+
+
+## Where the ghost appears during the ritual: RITUAL_GHOST_DISTANCE px from
+## the player, on open floor they can see (above them if possible, then
+## around them), closer if there's no room.
+func _ritual_ghost_spot() -> Vector2:
+	var from := player.global_position
+	var space := get_world_2d().direct_space_state
+	for distance in [RITUAL_GHOST_DISTANCE, RITUAL_GHOST_DISTANCE * 0.66, RITUAL_GHOST_DISTANCE * 0.4]:
+		for i in 8:
+			var dir := Vector2.UP.rotated(TAU * i / 8.0)
+			var spot: Vector2 = from + dir * distance
+			if not house.is_walkable(spot):
+				continue
+			var query := PhysicsRayQueryParameters2D.create(from, spot, Ghost.WORLD_LAYER)
+			if space.intersect_ray(query).is_empty():
+				return spot
+	return from + Vector2(0, -16)
 
 
 func _update_sanity_bar() -> void:
@@ -231,8 +351,8 @@ func _flash_hurt() -> void:
 	tween.tween_property(hurt_flash, "color:a", 0.0, 0.8)
 
 
-## For the identification goal later: returns true if the player's guess
-## matches this game's ghost type.
+## True if the player's guess (the ritual's potion) matches this game's ghost
+## type.
 func is_correct_guess(guess: GhostBehavior.Type) -> bool:
 	return guess == ghost_type
 
@@ -262,3 +382,78 @@ func _start_background_ambience() -> void:
 	music.finished.connect(music.play)
 	add_child(music)
 	music.play()
+
+
+# --- Going outside ----------------------------------------------------------------
+
+## Where the player starts: in the area ticked as the start area (see
+## Outside.is_start_area - the trailer), or the house's player start if none
+## is.
+func _player_start() -> Vector2:
+	for area: Outside in get_tree().get_nodes_in_group("outside_areas"):
+		if area.is_start_area:
+			return area.get_player_start()
+	return house.get_player_start()
+
+
+## The outdoor area (see Outside) that `point` is in, or null - e.g. in the
+## house.
+func outside_area_at(point: Vector2) -> Outside:
+	for area: Outside in get_tree().get_nodes_in_group("outside_areas"):
+		if area.get_bounds().has_point(point):
+			return area
+	return null
+
+
+## Called by a Door when the player walks onto it: fades out, moves the player
+## to the other door (the one with the same door_id), sets the camera and
+## lighting up for where they are now, and fades back in. The house keeps
+## running all the while.
+func go_through(door: Door) -> void:
+	if _traveling or is_game_over or game_time() < DOOR_START_GRACE:
+		return
+	var to := door.get_partner()
+	if to == null:
+		push_warning("Door %s has no other door with door_id \"%s\"" % [door.name, door.door_id])
+		return
+	_traveling = true
+	player.set_in_menu(true)  # no walking or using things mid-fade
+	var tween := create_tween()
+	tween.tween_property(_fade, "color:a", 1.0, DOOR_FADE_TIME)
+	await tween.finished
+	player.global_position = to.get_exit_point()
+	_enter_current_area()
+	(player.get_node("Camera2D") as Camera2D).reset_smoothing()
+	tween = create_tween()
+	tween.tween_property(_fade, "color:a", 0.0, DOOR_FADE_TIME)
+	await tween.finished
+	if not is_game_over:
+		player.set_in_menu(false)
+	_traveling = false
+	if OS.is_debug_build():
+		var area := outside_area_at(player.global_position)
+		print("[debug] The player went to the %s" % (area.name.to_lower() if area else "house"))
+
+
+## Sets the camera limits and the darkness for wherever the player is: the
+## house, or an outdoor area.
+func _enter_current_area() -> void:
+	var outside := outside_area_at(player.global_position)
+	if outside:
+		_fit_camera_to(outside.get_bounds())
+		darkness.color = outside.darkness
+	else:
+		_fit_camera_to(house.get_bounds())
+		darkness.color = _inside_darkness
+
+
+## The black screen used to fade between areas (over everything, HUD too).
+func _build_fade() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	_fade = ColorRect.new()
+	_fade.color = Color(0, 0, 0, 0)
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(_fade)
+	add_child(layer)

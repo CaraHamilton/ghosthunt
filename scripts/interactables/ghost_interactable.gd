@@ -34,6 +34,10 @@ extends StaticBody2D
 ## Chance (0-1) that a residue-leaving ghost leaves UV residue each time it
 ## touches something.
 const RESIDUE_CHANCE := 0.5
+## UV residue fades away a random RESIDUE_MIN_TIME-RESIDUE_MAX_TIME seconds
+## after it's left (a fresh touch that leaves residue starts it over).
+const RESIDUE_MIN_TIME := 90.0
+const RESIDUE_MAX_TIME := 120.0
 
 ## Whether residue-leaving ghosts leave UV residue on this (false for the
 ## doll). Set by each interactable, in _init.
@@ -114,12 +118,14 @@ func ghost_can_use(_ghost: Ghost) -> bool:
 ## Called by the ghost. Don't override this - override _on_ghost_interact.
 func ghost_interact(ghost: Ghost) -> void:
 	_last_interaction_time = Game.game_time()
-	# Residue-leaving ghosts only leave it some of the time. Once there, it
-	# stays.
+	# Residue-leaving ghosts only leave it some of the time. It fades away
+	# after a while (see RESIDUE_MIN_TIME).
 	if ghost.behavior.leaves_uv_residue() and can_have_residue and randf() < RESIDUE_CHANCE:
-		if OS.is_debug_build() and not has_residue:
-			print("[debug] The ghost left UV residue on %s" % name)
+		var lasts := randf_range(RESIDUE_MIN_TIME, RESIDUE_MAX_TIME)
+		if OS.is_debug_build():
+			print("[debug] The ghost left UV residue on %s (fades in %ds)" % [name, int(lasts)])
 		has_residue = true
+		_residue_glow.fades_at = Game.game_time() + lasts
 	_on_ghost_interact(ghost)
 	if Game.current:
 		var levels := emf_levels()

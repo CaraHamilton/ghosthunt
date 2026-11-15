@@ -31,8 +31,8 @@ extends CharacterBody2D
 ## appears at random.
 ##
 ## The node's origin is the floor point under the ghost. What *kind* of ghost
-## it is (Banshee, Poltergeist, Sentry, Marionette, Demon, Phantom, Fox, Cold,
-## Fae) lives in `behavior` - see scripts/ghost_types/. Every ghost looks the
+## it is (Banshee, Poltergeist, Sentry, Marionette, Wraith, Phantom, Hell Hound,
+## Wendigo, Fae, Beldam, High Priest, Fury, Imp) lives in `behavior` - see scripts/ghost_types/. Every ghost looks the
 ## same, so the player has to work out the type from how it behaves.
 
 signal hunt_started
@@ -53,6 +53,7 @@ enum State {
 	VANISHING,     ## fading out at the end of a hunt
 	RETURNING,     ## invisible, heading back to its favourite room
 	POSSESSING,    ## invisible, standing on the doll and possessing it
+	RITUAL,        ## caught in the player's ritual: Game moves it (see begin_ritual)
 }
 
 const HUNT_STATES := [State.HUNT_START, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
@@ -65,6 +66,8 @@ enum Appearance {
 	LUNGING,     ## fully visible, in its chase animation
 	FADING_OUT,  ## fading out, still in its chase animation
 }
+## How fast (px/s) the ghost flies at the player when a ritual fails.
+const RITUAL_ATTACK_SPEED := 90.0
 const WORLD_LAYER := 1
 const VISIBLE_ALPHA := 0.85
 ## Seconds the ghost stops, facing an object, after using it.
@@ -265,6 +268,12 @@ var _facing := "down"
 ## seconds of possession are left once the ghost is standing on it.
 var _doll: Doll = null
 var _possess_time_left := 0.0
+## Where it's flying to attack the player after a failed ritual (INF when
+## it isn't).
+var _ritual_attack_target := Vector2.INF
+## True once the ghost has cried at the player this hunt (it cries the
+## first time it starts chasing them in each hunt).
+var _cried_this_hunt := false
 
 
 ## Call before adding the ghost to the scene.
@@ -394,6 +403,15 @@ func _run_state(delta: float) -> void:
 				if _possess_time_left <= 0.0:
 					end_possession()
 
+		State.RITUAL:
+			velocity = Vector2.ZERO
+			if _ritual_attack_target != Vector2.INF:
+				# Flying straight at the player, through anything in the way.
+				global_position = global_position.move_toward(_ritual_attack_target, RITUAL_ATTACK_SPEED * delta)
+				if global_position.distance_to(_ritual_attack_target) < 1.0:
+					_ritual_attack_target = Vector2.INF
+					caught_player.emit()
+
 
 
 ## Plays "chase_*" while the ghost is going after the player (chasing, or
@@ -411,7 +429,8 @@ func _update_animation() -> void:
 		else:
 			_facing = "down" if move.y > 0.0 else "up"
 			sprite.flip_h = false
-	var lunging := appearance == Appearance.LUNGING or appearance == Appearance.FADING_OUT
+	var lunging := appearance == Appearance.LUNGING or appearance == Appearance.FADING_OUT \
+		or (state == State.RITUAL and _ritual_attack_target != Vector2.INF)
 	var chasing := state in [State.CHASING, State.INVESTIGATING] or lunging
 	var anim := StringName(("chase_" if chasing else "float_") + _facing)
 	if sprite.animation != anim and sprite.sprite_frames.has_animation(anim):
@@ -447,6 +466,10 @@ func set_state(new_state: State) -> void:
 	_out_of_sight_time = 0.0
 	_chase_sight_time = 0.0  # every new chase starts at the slow start speed
 	_path_target = Vector2.INF
+	if new_state == State.CHASING and not _cried_this_hunt:
+		# It's spotted the player: a cry, only the first time each hunt.
+		_cried_this_hunt = true
+		Sfx.play("ghost/ghost_cry", global_position)
 	if old_state != new_state:
 		behavior.on_state_changed(old_state, new_state)
 
@@ -458,6 +481,7 @@ func start_hunt() -> void:
 		return
 	_hold_time_left = 0.0
 	end_possession()
+	_cried_this_hunt = false
 	is_manifested = true
 	if OS.is_debug_build():
 		print("[debug] Ghost: hunt started in the %s" % _room_name())
@@ -480,8 +504,11 @@ func get_current_chase_speed() -> float:
 	return behavior.get_chase_speed(player.walk_speed * factor)
 
 
-## True if nothing solid (walls, furniture) is between the ghost and player.
+## True if nothing solid (walls, furniture) is between the ghost and player -
+## and the player is in the house at all (it never sees them outside).
 func can_see_player() -> bool:
+	if not player.is_in_house():
+		return false
 	var query := PhysicsRayQueryParameters2D.create(global_position, player.global_position, WORLD_LAYER)
 	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
@@ -548,8 +575,56 @@ func end_possession() -> void:
 	set_state(State.IDLE)
 
 
+# --- The ritual (see Game.start_ritual) ----------------------------------------
+
+## The player has started the ritual: whatever the ghost was doing stops
+## (it vanishes if it was showing), and from now on only the ritual moves it
+## (appear_for_ritual, ritual_attack, evaporate).
+func begin_ritual() -> void:
+	end_possession()
+	appearance = Appearance.NONE
+	is_manifested = false
+	_hold_time_left = 0.0
+	_frozen_time_left = 0.0
+	$Sprite.modulate = Color.WHITE
+	$Sprite.play()
+	velocity = Vector2.ZERO
+	set_state(State.RITUAL)
+
+
+## The ritual pulls it to `spot`, where it fades in facing `look_at`.
+func appear_for_ritual(spot: Vector2, look_at: Vector2) -> void:
+	modulate.a = 0.0
+	global_position = spot
+	is_manifested = true  # fades in (see _update_fade)
+	face_toward(Rect2(look_at, Vector2.ZERO))
+	Sfx.play("ghost/appear", global_position)
+
+
+## The ritual failed: it flies straight at `target` (the player) in its
+## chase animation, and emits caught_player when it gets there.
+func ritual_attack(target: Vector2) -> void:
+	face_toward(Rect2(target, Vector2.ZERO))
+	_ritual_attack_target = target
+	Sfx.play("ghost/hunt_start")
+
+
+## The ritual worked: it flares white, swells and fades away for good over
+## `time` seconds. (It isn't freed - other things still look it up - just
+## stopped and hidden.)
+func evaporate(time: float) -> void:
+	is_manifested = false
+	set_physics_process(false)
+	var tween := create_tween().set_parallel()
+	tween.tween_property($Sprite, "modulate", Color(3.0, 3.0, 3.0), time * 0.4)
+	tween.tween_property(self, "scale", Vector2(1.6, 1.6), time).set_ease(Tween.EASE_IN)
+	tween.tween_property(self, "modulate:a", 0.0, time).set_ease(Tween.EASE_IN)
+	tween.chain().tween_callback(hide)
+
+
 ## Starts a hunt on its own (while wandering or heading home) when ALL of
 ## these hold:
+##   0. the player is in the house (outside is safe - see Outside)
 ##   1. sanity is below the hunt threshold (hunt_sanity_threshold, or the
 ##      ghost type's own - GhostBehavior.get_hunt_sanity_threshold)
 ##   2. the hunt cooldown is over: a random min_hunt_cooldown-
@@ -561,6 +636,8 @@ func end_possession() -> void:
 func _try_start_hunt(delta: float) -> void:
 	if state == State.POSSESSING:
 		return  # it just went for the doll this frame
+	if not player.is_in_house():
+		return  # 0. outside, the player is safe
 	var threshold := behavior.get_hunt_sanity_threshold(hunt_sanity_threshold)
 	if player.sanity_ratio >= threshold:
 		_hunts_locked = true  # 1. the player's mind is still too strong
@@ -724,8 +801,9 @@ func _update_appearance(delta: float) -> void:
 		return
 	match appearance:
 		Appearance.FADING_IN:
-			appearance = Appearance.LUNGING
+			appearance = Appearance.LUNGING  # switches to its chase animation
 			_appearance_phase_left = _lunge_time
+			Sfx.play("ghost/ghost_cry", global_position)
 		Appearance.LUNGING:
 			appearance = Appearance.FADING_OUT
 			_appearance_phase_left = fade_time

@@ -42,6 +42,9 @@ static func drop(item: ItemInstance, world: Node2D, at: Vector2, raise := 0.0) -
 static func place(item: ItemInstance, world: Node2D, spot: Dictionary) -> Node2D:
 	var node := drop(item, world, spot.position, spot.elevation)
 	node.set_meta("place_tile", spot.cell)
+	# The tile outline shown when it was placed (lifted onto the table top for
+	# a table) - right click shows the same one to pick it up.
+	node.set_meta("place_rect", spot.rect)
 	node.add_to_group(House.PLACED_GROUP)
 	return node
 
@@ -54,6 +57,16 @@ func _physics_process(delta: float) -> void:
 func player_interact(player: Player) -> void:
 	if player.pick_up(item, self):
 		queue_free()
+
+
+## Where the item's picture is drawn, in global coordinates (clicking on it
+## picks it up - see Player.right_click_target).
+func get_art_rect() -> Rect2:
+	var up := global_position + Vector2(0, -elevation)
+	var art := item.data.floor_sprite
+	if art:
+		return Rect2(up + Vector2(-art.get_width() / 2, -art.get_height()), art.get_size())
+	return Rect2(up + Vector2(-FLOOR_ICON_SIZE / 2.0, -FLOOR_ICON_SIZE), Vector2.ONE * FLOOR_ICON_SIZE)
 
 
 func _draw() -> void:
