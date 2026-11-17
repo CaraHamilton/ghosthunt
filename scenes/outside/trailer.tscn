@@ -2,17 +2,17 @@
 
 [ext_resource type="Script" uid="uid://blrguj7j8engo" path="res://scripts/outside.gd" id="1_outside"]
 [ext_resource type="PackedScene" path="res://scenes/door.tscn" id="2_door"]
-[ext_resource type="PackedScene" path="res://scenes/potion_cabinet.tscn" id="3_cabinet"]
+[ext_resource type="PackedScene" uid="uid://kyfdy07yab5p" path="res://scenes/furniture/craft_table.tscn" id="4_k8nvu"]
 
 [node name="Trailer" type="Node2D" unique_id=421399813]
 script = ExtResource("1_outside")
 size = Vector2(160, 96)
 darkness = Color(0.78, 0.72, 0.62, 1)
 temperature = 18.0
+is_start_area = true
 ground_color = Color(0.29, 0.231, 0.18, 1)
 ground_color_dark = Color(0.263, 0.208, 0.165, 1)
 door_paths = false
-is_start_area = true
 
 [node name="TrailerDoor" parent="." unique_id=1963476286 instance=ExtResource("2_door")]
 position = Vector2(80, 0)
@@ -20,5 +20,6 @@ door_id = &"trailer"
 size = Vector2(16, 2)
 exit_offset = Vector2(0, 12)
 
-[node name="PotionCabinet" parent="." instance=ExtResource("3_cabinet")]
-position = Vector2(28, 16)
+[node name="CraftTable" parent="." unique_id=1572617577 instance=ExtResource("4_k8nvu")]
+position = Vector2(128, 16)
+surface = false

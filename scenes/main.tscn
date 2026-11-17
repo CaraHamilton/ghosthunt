@@ -8,9 +8,9 @@
 [ext_resource type="PackedScene" uid="uid://pfuqxolbbngk" path="res://scenes/journal_panel.tscn" id="8_journal"]
 [ext_resource type="Script" uid="uid://cqat3hj66g6aw" path="res://scripts/ui/thermometer_overlay.gd" id="9_thermo"]
 [ext_resource type="Script" uid="uid://cqdwroiwuhum4" path="res://scripts/ui/emf_overlay.gd" id="10_emf"]
-[ext_resource type="PackedScene" path="res://scenes/outside/yard.tscn" id="11_yard"]
+[ext_resource type="PackedScene" uid="uid://c71ep0l1no0js" path="res://scenes/outside/yard.tscn" id="11_yard"]
 [ext_resource type="PackedScene" path="res://scenes/door.tscn" id="12_door"]
-[ext_resource type="PackedScene" path="res://scenes/outside/trailer.tscn" id="13_trailer"]
+[ext_resource type="PackedScene" uid="uid://ctcgw18vqywkr" path="res://scenes/outside/trailer.tscn" id="13_trailer"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sanity_bg"]
 bg_color = Color(0.07, 0.05, 0.09, 0.85)
@@ -51,7 +51,7 @@ exit_offset = Vector2(0, -12)
 [node name="Yard" parent="." unique_id=1039390062 instance=ExtResource("11_yard")]
 position = Vector2(1200, 0)
 
-[node name="Trailer" parent="." instance=ExtResource("13_trailer")]
+[node name="Trailer" parent="." unique_id=171402049 instance=ExtResource("13_trailer")]
 position = Vector2(2400, 0)
 
 [node name="World" type="Node2D" parent="." unique_id=649530017]

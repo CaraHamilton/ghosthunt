@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b554482bv2s1u"
-path="res://.godot/imported/matches.png-95883c4e48834b8b4984662ce2b99d81.ctex"
+uid="uid://g8xom1st4y5b"
+path="res://.godot/imported/apothecary_table.png-4e9dcfdf1f4c9f82d50bae04146043f5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/toolbar_icons/matches.png"
-dest_files=["res://.godot/imported/matches.png-95883c4e48834b8b4984662ce2b99d81.ctex"]
+source_file="res://art/furniture/apothecary_table.png"
+dest_files=["res://.godot/imported/apothecary_table.png-4e9dcfdf1f4c9f82d50bae04146043f5.ctex"]
 
 [params]
 

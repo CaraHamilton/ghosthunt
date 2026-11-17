@@ -1,14 +1,14 @@
 class_name PotionMenu
 extends CenterContainer
-## The potion cabinet's window: one button per ghost type's potion. Picking
-## one puts it in the player's toolbar and empties the cabinet - only one
-## potion per game, so it says so. Built in code as a placeholder (Game adds
-## it to the HUD); close with Esc or Cancel.
+## The craft table's window: one button per ghost type's potion. Each
+## click puts that potion in the player's toolbar; the window stays open so
+## they can take several (as many as the toolbar holds). Built in code as a
+## placeholder (Game adds it to the HUD); close with Esc or Close.
 ##
 ## While it's open the player can't move or use items (the game keeps
 ## running, so the ghost carries on in the house).
 
-var _cabinet: PotionCabinet
+var _table: CraftTable
 var _player: Player
 var _note: Label
 
@@ -33,7 +33,7 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
 	var title := Label.new()
-	title.text = "Potion Cabinet"
+	title.text = "Craft Table"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	box.add_child(title)
@@ -58,7 +58,7 @@ func _ready() -> void:
 		grid.add_child(button)
 
 	var cancel := Button.new()
-	cancel.text = "Cancel"
+	cancel.text = "Close"
 	cancel.focus_mode = Control.FOCUS_NONE
 	cancel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel.custom_minimum_size = Vector2(140, 36)
@@ -66,10 +66,10 @@ func _ready() -> void:
 	box.add_child(cancel)
 
 
-func open(cabinet: PotionCabinet, player: Player) -> void:
-	_cabinet = cabinet
+func open(table: CraftTable, player: Player) -> void:
+	_table = table
 	_player = player
-	_note.text = "You can only take one. Choose carefully."
+	_note.text = "Use a potion in the ghost's favourite room."
 	_note.add_theme_color_override("font_color", Color(0.8, 0.78, 0.9))
 	visible = true
 	player.set_in_menu(true)
@@ -81,7 +81,7 @@ func close() -> void:
 	visible = false
 	if is_instance_valid(_player):
 		_player.set_in_menu(false)
-	_cabinet = null
+	_table = null
 	_player = null
 
 
@@ -97,8 +97,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_potion_pressed(type: GhostBehavior.Type) -> void:
-	if _cabinet.take_potion(type, _player):
-		close()
+	if _table.take_potion(type, _player):
+		_note.text = "Took the %s." % PotionItem.name_for(type)
+		_note.add_theme_color_override("font_color", PotionItem.color_for(type).lightened(0.35))
 	else:
 		_note.text = "Your toolbar is full - put something down first."
 		_note.add_theme_color_override("font_color", Color(0.95, 0.45, 0.45))

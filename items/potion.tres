@@ -2,11 +2,13 @@
 
 [ext_resource type="Script" uid="uid://cr08oxhik4axq" path="res://scripts/items/item_data.gd" id="1_data"]
 [ext_resource type="Script" path="res://scripts/tools/potion_item.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://dc87j8jmuqelk" path="res://art/toolbar_icons/potion.png" id="3_icon"]
 
 [resource]
 script = ExtResource("1_data")
 can_place = false
 id = &"potion"
 display_name = "Potion"
+icon = ExtResource("3_icon")
 description = "Captures one type of ghost. Use it anywhere in the house to start the ritual - if it's the wrong potion, the ghost attacks."
 instance_script = ExtResource("2_script")
