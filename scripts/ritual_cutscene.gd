@@ -1,16 +1,19 @@
 class_name RitualCutscene
 extends Node2D
 ## The ritual cutscene (scenes/ritual_cutscene.tscn). Game puts one where
-## the ghost will appear, a little in front of the player, when they use a
-## potion and plays its animations:
-##   build   - always first: the circle draws itself and the ghost is
-##             summoned. Its length is how long the ritual takes.
+## the ghost will appear, a little in front of the player, when they answer
+## Yes to "Use the X Potion?", and plays its animations:
+##   build   - always first: the circle draws itself, and the ghost is
+##             pulled in by the summon_ghost key (until then it carries on
+##             as normal - even hunting). Its length is how long the ritual
+##             takes.
 ##   success - the right potion: the ghost is calmed. The win screen shows
 ##             when it ends.
 ##   fail    - the wrong potion: the ghost attacks (game over when it
 ##             reaches the player).
-##   fizzle  - not in the ghost's favourite room: plays instead of build,
-##             and the player can move again when it ends.
+##   fizzle  - not in the ghost's favourite room (or outside, like the
+##             trailer): plays instead of build, and the player can move
+##             again when it ends.
 ##
 ## Edit them in the Animation panel: select the AnimationPlayer node. The
 ## node's origin is the ghost's feet (fizzle: where they would be). Floor art
@@ -69,9 +72,15 @@ func play_sound(sound: String) -> void:
 	Sfx.play(sound, global_position)
 
 
-## The ghost fades in here (in the middle of the circle), facing the player.
+## The ghost is pulled into the ritual: whatever it was doing stops (a hunt
+## too), and it fades in here (in the middle of the circle), facing the
+## player. Until this key, it carries on as normal.
 func summon_ghost() -> void:
-	Game.current.ghost.appear_for_ritual(global_position, Game.current.player.global_position)
+	var game := Game.current
+	if game.is_game_over:
+		return
+	game.ghost.begin_ritual()
+	game.ghost.appear_for_ritual(global_position, game.player.global_position)
 
 
 ## The ghost flares white and turns into its calmed form over `time` seconds.

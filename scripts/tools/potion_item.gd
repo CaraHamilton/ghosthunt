@@ -2,7 +2,8 @@ class_name PotionItem
 extends ItemInstance
 ## A potion for capturing one type of ghost, taken from the craft table in the
 ## trailer (see CraftTable). Using it (F / left mouse) in the ghost's
-## favourite room starts the ritual (see Game.start_ritual): if it matches the
+## favourite room (after a yes/no question - Game.ask_to_use_potion) starts
+## the ritual (see Game.start_ritual): if it matches the
 ## ghost, the ghost is captured; if not, the ghost attacks. In any other room
 ## the ritual fizzles out and the potion is wasted.
 ##
@@ -41,7 +42,7 @@ static func color_for(type: GhostBehavior.Type) -> Color:
 
 
 func start_use() -> void:
-	Game.current.start_ritual(self)
+	Game.current.ask_to_use_potion(self)
 
 
 ## Shown above the toolbar while the button is held: which potion it is.

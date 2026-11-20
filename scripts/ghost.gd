@@ -53,7 +53,7 @@ enum State {
 	VANISHING,     ## fading out at the end of a hunt
 	RETURNING,     ## invisible, heading back to its favourite room
 	POSSESSING,    ## invisible, standing on the doll and possessing it
-	RITUAL,        ## caught in the player's ritual: Game moves it (see begin_ritual)
+	RITUAL,        ## pulled into the player's ritual: the cutscene moves it (see begin_ritual)
 }
 
 const HUNT_STATES := [State.HUNT_START, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
@@ -580,8 +580,9 @@ func end_possession() -> void:
 
 # --- The ritual (see Game.start_ritual) ----------------------------------------
 
-## The player has started the ritual: whatever the ghost was doing stops
-## (it vanishes if it was showing), and from now on only the ritual moves it
+## The ritual pulls the ghost in (3s into it): whatever it was doing stops,
+## a hunt included (it vanishes if it was showing), and from now on only the
+## ritual moves it
 ## (appear_for_ritual, ritual_attack, calm).
 func begin_ritual() -> void:
 	end_possession()
@@ -684,8 +685,10 @@ func _try_start_hunt(delta: float) -> void:
 		return  # it just went for the doll this frame
 	if not player.is_in_house():
 		return  # 0. outside, the player is safe
-	if Game.current and Game.current.ritual_fizzling:
-		return  # the player is stuck in a failed ritual for a moment
+	if Game.current and (Game.current.ritual_fizzling or Game.current.ritual_started):
+		# The player is stuck in a ritual (a hunt already going carries on
+		# until the ritual pulls the ghost in - see RitualCutscene.summon_ghost).
+		return
 	var threshold := behavior.get_hunt_sanity_threshold(hunt_sanity_threshold)
 	if player.sanity_ratio >= threshold:
 		_hunts_locked = true  # 1. the player's mind is still too strong

@@ -48,7 +48,7 @@ Change Sound, Change Back Sound, and Loop Sound (loops while it's on, lit or roc
 ## Ritual
 | File | When |
 |---|---|
-| `ritual/start` | Starting the ritual with a potion |
+| `ritual/start` | Starting the ritual: Yes to "Use the X Potion?" |
 | `ritual/success` | The right potion: the ghost turns into its calmed form (in the world, at the ghost) |
 | `ritual/fail` | The wrong potion: the ghost attacks (in the world, at the ghost) |
-| `ritual/fizzle` | The ritual sputters out (not in the ghost's favourite room) |
+| `ritual/fizzle` | The ritual sputters out (not in the ghost's favourite room, or outside - e.g. the trailer) |
