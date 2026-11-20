@@ -29,8 +29,6 @@ const COLORS := {
 
 ## Which ghost this potion captures.
 var ghost_type := GhostBehavior.Type.BANSHEE
-## Why the ritual couldn't start the last time it was used ("" if it could).
-var _problem := ""
 
 
 ## "Banshee Potion", etc.
@@ -43,12 +41,9 @@ static func color_for(type: GhostBehavior.Type) -> Color:
 
 
 func start_use() -> void:
-	_problem = Game.current.start_ritual(self)
+	Game.current.start_ritual(self)
 
 
-## Shown above the toolbar while the button is held: which potion it is, and
-## why the ritual didn't start, if it didn't.
+## Shown above the toolbar while the button is held: which potion it is.
 func get_readout() -> String:
-	if _problem != "":
-		return "%s - %s" % [name_for(ghost_type), _problem]
 	return name_for(ghost_type)

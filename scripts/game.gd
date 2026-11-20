@@ -260,28 +260,26 @@ func _show_end_screen(title: String, stats: String, color: Color) -> void:
 
 # --- The ritual -----------------------------------------------------------------
 
-## Called when the player uses a potion. Starts the ritual if it can, and
-## returns "" - or, if it can't, why not (shown above the toolbar). The
+## Called when the player uses a potion: starts the ritual. The
 ## ritual is a cutscene (scenes/ritual_cutscene.tscn): the player stands in a
 ## glowing circle and the ghost is pulled in front of them. If the potion
 ## matches the ghost, it turns into its calmed form and the player wins; if
 ## not, it attacks - game over.
-## It only works in the ghost's favourite room. Anywhere else (another room,
-## or outside, like the trailer) the potion is used up but the ritual fizzles
-## out (see _fizzle_ritual) and nothing happens - with no text saying why.
-func start_ritual(potion: PotionItem) -> String:
+## It only works in the ghost's favourite room, and not during a hunt.
+## Anywhere else (another room, or outside, like the trailer) or mid-hunt, the
+## potion is used up but the ritual fizzles out (see _fizzle_ritual) and
+## nothing happens - with no text saying why. A hunt carries on meanwhile.
+func start_ritual(potion: PotionItem) -> void:
 	if is_game_over or ritual_started or ritual_fizzling:
-		return ""
-	var in_house := player.is_in_house()
-	if in_house and ghost.is_hunting:
-		return "not while the ghost is hunting"
+		return
 	journal_panel.close()
 	potion_menu.close()
 	player.inventory.remove_from_slot(player.inventory.slots.find(potion))
 	player.set_in_menu(true)  # the player can't move or use things now
-	if not in_house or house.room_at(player.global_position) != ghost.favorite_room:
+	if not player.is_in_house() or ghost.is_hunting \
+			or house.room_at(player.global_position) != ghost.favorite_room:
 		_fizzle_ritual(potion)
-		return ""
+		return
 	ritual_started = true
 	_ritual_guess = potion.ghost_type
 	ghost.begin_ritual()
@@ -289,7 +287,6 @@ func start_ritual(potion: PotionItem) -> String:
 		print("[debug] Ritual started with the %s (the ghost is a %s)" % [
 			PotionItem.name_for(_ritual_guess), GhostBehavior.type_name(ghost_type)])
 	_run_ritual()
-	return ""
 
 
 ## Puts a ritual cutscene where the ghost will appear (_ritual_ghost_spot):
@@ -308,8 +305,12 @@ func _start_cutscene() -> RitualCutscene:
 func _fizzle_ritual(potion: PotionItem) -> void:
 	ritual_fizzling = true
 	if OS.is_debug_build():
-		print("[debug] The %s fizzled out: not in the ghost's favourite room (%s)" % [
-			PotionItem.name_for(potion.ghost_type), ghost.favorite_room])
+		var why := "not in the ghost's favourite room (%s)" % ghost.favorite_room
+		if not player.is_in_house():
+			why = "outside the house"
+		elif ghost.is_hunting:
+			why = "mid-hunt"
+		print("[debug] The %s fizzled out: %s" % [PotionItem.name_for(potion.ghost_type), why])
 	var cutscene := _start_cutscene()
 	await cutscene.play(&"fizzle")
 	cutscene.queue_free()

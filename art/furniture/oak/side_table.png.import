@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ci81bexbowfju"
-path="res://.godot/imported/maroon_rug_large.png-54618ed45a9d2d0dbfd546e285464ba2.ctex"
+uid="uid://b7ffnqgpmdvit"
+path="res://.godot/imported/side_table.png-33f36474625297dccccccac9fcac653f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/furniture/maroon_rug_large.png"
-dest_files=["res://.godot/imported/maroon_rug_large.png-54618ed45a9d2d0dbfd546e285464ba2.ctex"]
+source_file="res://art/furniture/oak/side_table.png"
+dest_files=["res://.godot/imported/side_table.png-33f36474625297dccccccac9fcac653f.ctex"]
 
 [params]
 

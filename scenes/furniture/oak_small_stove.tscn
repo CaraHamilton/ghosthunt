@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://c23bd6j021gpc"]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_djikt"]
+[ext_resource type="Texture2D" uid="uid://6gw36pohol3g" path="res://art/furniture/oak/small_stove.png" id="2_djikt"]
+
+[node name="OakSmallStove" type="StaticBody2D" unique_id=1572617577]
+script = ExtResource("1_djikt")
+art = ExtResource("2_djikt")
+footprint = Vector2(16, 16)
+side_footprint = Vector2(16, 16)
+surface_height = 13.0
+metadata/_custom_type_script = "uid://cd1tei14g3hwn"

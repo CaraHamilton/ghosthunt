@@ -216,7 +216,6 @@ tracks/4/keys = {
 
 [sub_resource type="Animation" id="Animation_fizzle"]
 resource_name = "fizzle"
-length = 2.0
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -224,7 +223,7 @@ tracks/0/path = NodePath("Circle:modulate:a")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.3, 1.6, 1.68, 1.76, 1.84, 1.92, 2),
+"times": PackedFloat32Array(0, 0.24, 0.6, 0.68, 0.76, 0.84, 0.92, 1),
 "transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
 "update": 0,
 "values": [0.0, 1.0, 1.0, 0.2, 0.8, 0.1, 0.5, 0.0]
@@ -236,7 +235,7 @@ tracks/1/path = NodePath("Glow:energy")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 1.6, 2),
+"times": PackedFloat32Array(0, 0.6, 1),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [0.4, 0.6, 0.0]
@@ -248,7 +247,7 @@ tracks/2/path = NodePath(".")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
-"times": PackedFloat32Array(0, 1.6),
+"times": PackedFloat32Array(0, 0.6),
 "transitions": PackedFloat32Array(1, 1),
 "values": [{
 "args": ["ritual/start"],
@@ -265,10 +264,10 @@ tracks/3/path = NodePath("Circle:frame")
 tracks/3/interp = 1
 tracks/3/loop_wrap = true
 tracks/3/keys = {
-"times": PackedFloat32Array(0, 0.4, 0.8, 1.2),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
+"times": PackedFloat32Array(0, 0.32, 0.64),
+"transitions": PackedFloat32Array(1, 1, 1),
 "update": 1,
-"values": [0, 1, 2, 3]
+"values": [0, 1, 2]
 }
 
 [sub_resource type="Animation" id="Animation_success"]
@@ -378,7 +377,7 @@ y_sort_enabled = true
 script = ExtResource("1_cutscene")
 
 [node name="Glow" type="PointLight2D" parent="." unique_id=79490173]
-color = Color(0.75, 0.55, 1, 1)
+color = Color(1, 0.78431374, 0.3529412, 1)
 energy = 0.0
 texture = SubResource("GradientTexture2D_glow")
 
