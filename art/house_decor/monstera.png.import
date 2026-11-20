@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b554482bv2s1u"
-path="res://.godot/imported/matches.png-95883c4e48834b8b4984662ce2b99d81.ctex"
+uid="uid://wbb3snytbim2"
+path="res://.godot/imported/monstera.png-b63f7edfa08097f54fbf862950c26b59.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/toolbar_icons/matches.png"
-dest_files=["res://.godot/imported/matches.png-95883c4e48834b8b4984662ce2b99d81.ctex"]
+source_file="res://art/house_decor/monstera.png"
+dest_files=["res://.godot/imported/monstera.png-b63f7edfa08097f54fbf862950c26b59.ctex"]
 
 [params]
 

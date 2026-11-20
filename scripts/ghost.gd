@@ -53,7 +53,7 @@ enum State {
 	VANISHING,     ## fading out at the end of a hunt
 	RETURNING,     ## invisible, heading back to its favourite room
 	POSSESSING,    ## invisible, standing on the doll and possessing it
-	RITUAL,        ## caught in the player's ritual: Game moves it (see begin_ritual)
+	RITUAL,        ## pulled into the player's ritual: the cutscene moves it (see begin_ritual)
 }
 
 const HUNT_STATES := [State.HUNT_START, State.INVESTIGATING, State.CHASING, State.SEARCHING, State.VANISHING]
@@ -422,7 +422,10 @@ func _run_state(delta: float) -> void:
 func _update_animation() -> void:
 	var sprite := $Sprite as AnimatedSprite2D
 	var move := get_real_velocity()
-	if move.length() >= 2.0:
+	# (In the ritual the ritual turns it - see appear_for_ritual and
+	# ritual_attack. It doesn't walk then, so the last walking velocity is
+	# stale.)
+	if move.length() >= 2.0 and state != State.RITUAL:
 		if absf(move.x) > absf(move.y):
 			_facing = "side"
 			sprite.flip_h = move.x > 0.0
@@ -577,9 +580,10 @@ func end_possession() -> void:
 
 # --- The ritual (see Game.start_ritual) ----------------------------------------
 
-## The player has started the ritual: whatever the ghost was doing stops
-## (it vanishes if it was showing), and from now on only the ritual moves it
-## (appear_for_ritual, ritual_attack, evaporate).
+## The ritual pulls the ghost in (3s into it): whatever it was doing stops,
+## a hunt included (it vanishes if it was showing), and from now on only the
+## ritual moves it
+## (appear_for_ritual, ritual_attack, calm).
 func begin_ritual() -> void:
 	end_possession()
 	appearance = Appearance.NONE
@@ -606,20 +610,63 @@ func appear_for_ritual(spot: Vector2, look_at: Vector2) -> void:
 func ritual_attack(target: Vector2) -> void:
 	face_toward(Rect2(target, Vector2.ZERO))
 	_ritual_attack_target = target
-	Sfx.play("ghost/hunt_start")
+	Sfx.play("ghost/ghost_cry", global_position)
 
 
-## The ritual worked: it flares white, swells and fades away for good over
-## `time` seconds. (It isn't freed - other things still look it up - just
-## stopped and hidden.)
-func evaporate(time: float) -> void:
-	is_manifested = false
+## The ritual worked: it flares white and, at the brightest moment, turns
+## into its calmed form (calm_texture), which then fades from white to its
+## own colours and keeps playing its animation. Takes `time` seconds. It
+## stops moving for good. (It isn't freed - other things still look it up.)
+func calm(time: float) -> void:
 	set_physics_process(false)
-	var tween := create_tween().set_parallel()
-	tween.tween_property($Sprite, "modulate", Color(3.0, 3.0, 3.0), time * 0.4)
-	tween.tween_property(self, "scale", Vector2(1.6, 1.6), time).set_ease(Tween.EASE_IN)
-	tween.tween_property(self, "modulate:a", 0.0, time).set_ease(Tween.EASE_IN)
-	tween.chain().tween_callback(hide)
+	velocity = Vector2.ZERO
+	var calmed := _make_calm_sprite()
+	var white := Color(3.0, 3.0, 3.0)
+	calmed.modulate = white
+	calmed.visible = false
+	var tween := create_tween()
+	tween.tween_property($Sprite, "modulate", white, time * 0.4)
+	tween.tween_callback(func() -> void:
+		$Sprite.visible = false
+		calmed.visible = true
+		calmed.play())
+	tween.tween_property(calmed, "modulate", Color.WHITE, time * 0.6)
+
+
+## Frames of a calmed ghost's sheet are this many px wide, side by side.
+const CALM_FRAME_WIDTH := 16
+## Frames per second of the calmed animation.
+const CALM_FPS := 6.0
+## Used for any ghost type without its own calmed art yet.
+const DEFAULT_CALM_ART := "res://art/ghosts/poltergeist.png"
+
+
+## The art for this ghost's calmed form: res://art/ghosts/<type>.png (e.g.
+## hell_hound.png, high_priest.png) - a row of CALM_FRAME_WIDTH-px frames,
+## any height - or the poltergeist's if that type has none yet.
+func calm_texture() -> Texture2D:
+	var path := "res://art/ghosts/%s.png" % GhostBehavior.Type.keys()[type].to_lower()
+	return load(path if ResourceLoader.exists(path) else DEFAULT_CALM_ART)
+
+
+## Builds the calmed-form sprite (hidden until calm() swaps it in), standing
+## with its bottom on the ghost's feet.
+func _make_calm_sprite() -> AnimatedSprite2D:
+	var sheet := calm_texture()
+	var frames := SpriteFrames.new()
+	frames.set_animation_speed(&"default", CALM_FPS)
+	for i in maxi(1, sheet.get_width() / CALM_FRAME_WIDTH):
+		var frame := AtlasTexture.new()
+		frame.atlas = sheet
+		frame.region = Rect2(i * CALM_FRAME_WIDTH, 0, CALM_FRAME_WIDTH, sheet.get_height())
+		frames.add_frame(&"default", frame)
+	var sprite := AnimatedSprite2D.new()
+	sprite.name = "CalmSprite"
+	sprite.sprite_frames = frames
+	sprite.position = Vector2(0, -sheet.get_height() / 2.0)
+	sprite.light_mask = $Sprite.light_mask  # lit by its own glow, like the ghost
+	add_child(sprite)
+	return sprite
 
 
 ## Starts a hunt on its own (while wandering or heading home) when ALL of
@@ -638,6 +685,10 @@ func _try_start_hunt(delta: float) -> void:
 		return  # it just went for the doll this frame
 	if not player.is_in_house():
 		return  # 0. outside, the player is safe
+	if Game.current and (Game.current.ritual_fizzling or Game.current.ritual_started):
+		# The player is stuck in a ritual (a hunt already going carries on
+		# until the ritual pulls the ghost in - see RitualCutscene.summon_ghost).
+		return
 	var threshold := behavior.get_hunt_sanity_threshold(hunt_sanity_threshold)
 	if player.sanity_ratio >= threshold:
 		_hunts_locked = true  # 1. the player's mind is still too strong

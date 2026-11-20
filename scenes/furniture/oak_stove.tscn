@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://b2nibqtksq1qk"]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_5rn0j"]
+[ext_resource type="Texture2D" uid="uid://boae4pfe0clja" path="res://art/furniture/oak/stove.png" id="2_5rn0j"]
+
+[node name="OakStove" type="StaticBody2D" unique_id=1572617577]
+script = ExtResource("1_5rn0j")
+art = ExtResource("2_5rn0j")
+surface_height = 13.0
+metadata/_custom_type_script = "uid://cd1tei14g3hwn"

@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://1vshd3cgqaor"]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_prop"]
+[ext_resource type="Texture2D" uid="uid://dvrhn4y5e08si" path="res://art/furniture/yellow_rug_med.png" id="2_art"]
+
+[node name="YellowRugLarge" type="StaticBody2D" unique_id=152215709]
+z_index = -1
+script = ExtResource("1_prop")
+art = ExtResource("2_art")
+footprint = Vector2(64, 64)
+solid = false
+flat = true

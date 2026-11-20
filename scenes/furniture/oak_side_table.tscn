@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://qh1ia462a5jq"]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_prop"]
+[ext_resource type="Texture2D" uid="uid://b7ffnqgpmdvit" path="res://art/furniture/oak/side_table.png" id="2_5g7cu"]
+
+[node name="OakSideTable" type="StaticBody2D" unique_id=628299050]
+script = ExtResource("1_prop")
+art = ExtResource("2_5g7cu")
+footprint = Vector2(16, 16)
+surface = true
+surface_height = 10.0

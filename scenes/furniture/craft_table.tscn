@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://kyfdy07yab5p"]
+
+[ext_resource type="Script" path="res://scripts/craft_table.gd" id="1_craft"]
+[ext_resource type="Texture2D" uid="uid://g8xom1st4y5b" path="res://art/furniture/apothecary_table.png" id="2_qmxn7"]
+
+[node name="CraftTable" type="StaticBody2D" unique_id=1572617577]
+script = ExtResource("1_craft")
+art = ExtResource("2_qmxn7")
+surface = true
+surface_height = 13.0

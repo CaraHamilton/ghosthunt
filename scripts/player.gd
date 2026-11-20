@@ -239,6 +239,14 @@ func lose_sanity(amount: float) -> void:
 		sanity_depleted.emit()
 
 
+## Turns to look at `point` (world space) - up, down, left or right,
+## whichever is closest. Works while frozen (e.g. in the ritual).
+func face_toward(point: Vector2) -> void:
+	var to := point - global_position
+	if to != Vector2.ZERO:
+		facing = to.normalized()
+
+
 ## Called by windows like the journal when they open and close.
 func set_in_menu(value: bool) -> void:
 	in_menu = value
@@ -383,7 +391,7 @@ func _covered_at(thing: Node2D, point: Vector2) -> bool:
 ## Left click at `point`: uses the house object there, if any (see
 ## house_object_at) and it's within reach (can_reach). Things outside the
 ## house the player can click (group "player_clickables", like the trailer's
-## PotionCabinet) work the same way. Returns true if the
+## CraftTable) work the same way. Returns true if the
 ## click was on a house object - then the held tool isn't used for this
 ## click, even if the object was too far away to use.
 func left_click(point: Vector2) -> bool:
@@ -579,7 +587,7 @@ func can_reach(thing: GhostInteractable) -> bool:
 
 ## What E / Space uses: the closest of
 ##   - a house object she can use (a sink, a book stack...) within reach
-##     (can_reach), or a "player_clickables" thing (the potion cabinet)
+##     (can_reach), or a "player_clickables" thing (the trailer's craft table)
 ##   - a placed tool on her tile or the 8 around it, to pick up - the same
 ##     tools right click can pick up
 ## Null if there's nothing.

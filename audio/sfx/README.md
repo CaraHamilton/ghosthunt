@@ -42,12 +42,13 @@ Change Sound, Change Back Sound, and Loop Sound (loops while it's on, lit or roc
 | File | When |
 |---|---|
 | `ghost/appear` | The ghost appears (after breaking something) |
-| `ghost/ghost_cry` | The ghost cries as it switches to its chase animation during an appearance (in the world, at the ghost) |
+| `ghost/ghost_cry` | The ghost cries: as it switches to its chase animation during an appearance, the first time it chases you in each hunt, and as it charges you when the ritual fails (in the world, at the ghost) |
 | `ghost/hunt_start` | A hunt starts (heard everywhere) |
 
 ## Ritual
 | File | When |
 |---|---|
-| `ritual/start` | Starting the ritual with a potion |
-| `ritual/success` | The right potion: the ghost evaporates (in the world, at the ghost) |
+| `ritual/start` | Starting the ritual: Yes to "Use the X Potion?" |
+| `ritual/success` | The right potion: the ghost turns into its calmed form (in the world, at the ghost) |
 | `ritual/fail` | The wrong potion: the ghost attacks (in the world, at the ghost) |
+| `ritual/fizzle` | The ritual sputters out (not in the ghost's favourite room, or outside - e.g. the trailer) |

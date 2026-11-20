@@ -71,20 +71,23 @@ const DOOR_FADE_TIME := 0.3
 ## start standing on one.
 const DOOR_START_GRACE := 0.5
 
-## How long (s) the ritual's cutscene lasts, from starting it to the outcome.
-const RITUAL_TIME := 5.0
-## When (s into the ritual) the ghost appears in front of the player.
-const RITUAL_GHOST_TIME := 1.5
+## The ritual's cutscene: its animations decide what happens when (see
+## RitualCutscene).
+const RITUAL_CUTSCENE := preload("res://scenes/ritual_cutscene.tscn")
 ## How far (px) from the player the ghost appears during the ritual.
 const RITUAL_GHOST_DISTANCE := 36.0
 
-## The potion cabinet's window (see PotionCabinet), built in _ready.
+## The craft table's potion window (see CraftTable), built in _ready.
 var potion_menu: PotionMenu
+## The "Use the X Potion?" question (see ask_to_use_potion), built in _ready.
+var confirm_menu: ConfirmMenu
 ## True from starting the ritual on (it can only happen once).
 var ritual_started := false
+## True while a ritual outside the ghost's favourite room is fizzling out.
+var ritual_fizzling := false
 ## The ghost type the ritual's potion was for.
 var _ritual_guess := GhostBehavior.Type.BANSHEE
-var _ritual_circle: RitualCircle
+var _cutscene: RitualCutscene
 
 var _fade: ColorRect
 var _traveling := false
@@ -140,6 +143,9 @@ func _ready() -> void:
 	potion_menu = PotionMenu.new()
 	$HUD.add_child(potion_menu)
 	$HUD.move_child(potion_menu, game_over_panel.get_index())  # under the end screen
+	confirm_menu = ConfirmMenu.new()
+	$HUD.add_child(confirm_menu)
+	$HUD.move_child(confirm_menu, game_over_panel.get_index())
 	_enter_current_area()
 	var furniture: Array[Rect2] = []
 	for obstacle in get_tree().get_nodes_in_group("nav_obstacles"):
@@ -235,9 +241,10 @@ func _on_ghost_caught_player() -> void:
 	_flash_hurt()
 	ghost.set_physics_process(false)
 	player.die()
-	if ritual_started:
-		if is_instance_valid(_ritual_circle):
-			_ritual_circle.fade_out(0.5)
+	if is_instance_valid(_cutscene) and ghost.state != Ghost.State.RITUAL:
+		# Caught mid-hunt before the ritual could pull the ghost in.
+		_cutscene.animation_player.pause()
+	if ghost.state == Ghost.State.RITUAL:
 		_show_end_screen("THE RITUAL FAILED", "That wasn't a %s - it was a %s." % [
 			GhostBehavior.type_name(_ritual_guess), GhostBehavior.type_name(ghost_type)], LOSE_COLOR)
 	else:
@@ -253,6 +260,7 @@ func _show_end_screen(title: String, stats: String, color: Color) -> void:
 	is_game_over = true
 	journal_panel.close()
 	potion_menu.close()
+	confirm_menu.close()
 	game_over_title.text = title
 	game_over_title.add_theme_color_override("font_color", color)
 	game_over_stats.text = stats
@@ -261,67 +269,106 @@ func _show_end_screen(title: String, stats: String, color: Color) -> void:
 
 # --- The ritual -----------------------------------------------------------------
 
-## Called when the player uses a potion. Starts the ritual if it can, and
-## returns "" - or, if it can't, why not (shown above the toolbar). The
-## ritual is a RITUAL_TIME second cutscene: the player stands in a glowing
-## circle and the ghost is pulled in front of them. If the potion matches the
-## ghost, it evaporates and the player wins; if not, it attacks - game over.
-func start_ritual(potion: PotionItem) -> String:
-	if is_game_over or ritual_started:
-		return ""
-	if not player.is_in_house():
-		return "start the ritual inside the house"
-	if ghost.is_hunting:
-		return "not while the ghost is hunting"
-	ritual_started = true
-	_ritual_guess = potion.ghost_type
+## Called when the player uses a potion: asks "Use the X Potion?" (see
+## ConfirmMenu) and starts the ritual on Yes. The game keeps running while
+## the question is up - a hunting ghost keeps coming.
+func ask_to_use_potion(potion: PotionItem) -> void:
+	if is_game_over or ritual_started or ritual_fizzling or confirm_menu.visible:
+		return
+	journal_panel.close()
+	potion_menu.close()
+	confirm_menu.open("Use the %s?" % PotionItem.name_for(potion.ghost_type), player,
+		start_ritual.bind(potion), PotionItem.color_for(potion.ghost_type).lightened(0.35))
+
+
+## Starts the ritual with `potion` (used up). The ritual is a cutscene
+## (scenes/ritual_cutscene.tscn): a glowing circle draws itself in front of
+## the player, and the ghost is pulled into it (the "build" animation's
+## summon_ghost key, 3s in). If the potion matches the ghost, it turns into
+## its calmed form and the player wins; if not, it attacks - game over.
+## It can be started during a hunt: the ghost keeps hunting until it's
+## pulled in, so it can still catch the player (who can't move) first.
+## It only works in the ghost's favourite room. Anywhere else (another room,
+## or outside, like the trailer) the potion is used up but the ritual fizzles
+## out (see _fizzle_ritual) and nothing happens - with no text saying why.
+func start_ritual(potion: PotionItem) -> void:
+	if is_game_over or ritual_started or ritual_fizzling:
+		return
 	journal_panel.close()
 	potion_menu.close()
 	player.inventory.remove_from_slot(player.inventory.slots.find(potion))
 	player.set_in_menu(true)  # the player can't move or use things now
-	ghost.begin_ritual()
+	if not player.is_in_house() or house.room_at(player.global_position) != ghost.favorite_room:
+		_fizzle_ritual(potion)
+		return
+	ritual_started = true
+	_ritual_guess = potion.ghost_type
 	if OS.is_debug_build():
 		print("[debug] Ritual started with the %s (the ghost is a %s)" % [
 			PotionItem.name_for(_ritual_guess), GhostBehavior.type_name(ghost_type)])
 	_run_ritual()
-	return ""
 
 
+## Puts a ritual cutscene where the ghost will appear (_ritual_ghost_spot):
+## the circle goes around the ghost, near the player, who turns to face it.
+func _start_cutscene() -> RitualCutscene:
+	var cutscene: RitualCutscene = RITUAL_CUTSCENE.instantiate()
+	world.add_child(cutscene)
+	cutscene.global_position = _ritual_ghost_spot()
+	player.face_toward(cutscene.global_position)
+	return cutscene
+
+
+## The ritual outside the ghost's favourite room (another room, or outside):
+## the cutscene's "fizzle" animation plays, then the player can move again.
+## The ghost isn't pulled in: a hunt already going carries on, but no new
+## one starts meanwhile.
+func _fizzle_ritual(potion: PotionItem) -> void:
+	ritual_fizzling = true
+	if OS.is_debug_build():
+		var why := "not in the ghost's favourite room (%s)" % ghost.favorite_room
+		if not player.is_in_house():
+			why = "outside the house"
+		print("[debug] The %s fizzled out: %s" % [PotionItem.name_for(potion.ghost_type), why])
+	var cutscene := _start_cutscene()
+	await cutscene.play(&"fizzle")
+	cutscene.queue_free()
+	ritual_fizzling = false
+	if not is_game_over:
+		player.set_in_menu(false)
+
+
+## The ritual's cutscene: "build", then "success" (and the win screen) or
+## "fail" (its ghost_attack sends the ghost at the player: caught_player ->
+## game over).
 func _run_ritual() -> void:
-	_ritual_circle = RitualCircle.new()
-	_ritual_circle.build_time = RITUAL_TIME
-	_ritual_circle.global_position = player.global_position - Vector2(0, RitualCircle.FEET_OFFSET)
-	add_child(_ritual_circle)
-	Sfx.play("ritual/start")
-	await get_tree().create_timer(RITUAL_GHOST_TIME, false, true).timeout
-	ghost.appear_for_ritual(_ritual_ghost_spot(), player.global_position)
-	await get_tree().create_timer(RITUAL_TIME - RITUAL_GHOST_TIME, false, true).timeout
+	_cutscene = _start_cutscene()
+	await _cutscene.play(&"build")
 	if is_game_over:
 		return
-	_ritual_circle.flash()
-	if is_correct_guess(_ritual_guess):
-		Sfx.play("ritual/success", ghost.global_position)
-		ghost.evaporate(1.5)
-		await get_tree().create_timer(2.0, false, true).timeout
-		_ritual_circle.fade_out(1.0)
+	if not is_correct_guess(_ritual_guess):
+		_cutscene.play(&"fail")
+		return
+	await _cutscene.play(&"success")
+	if not is_game_over:
 		_show_end_screen("YOU CAPTURED THE GHOST", "It was a %s. You caught it in %d seconds." % [
 			GhostBehavior.type_name(ghost_type), int(survived_time)], WIN_COLOR)
-	else:
-		Sfx.play("ritual/fail", ghost.global_position)
-		ghost.ritual_attack(player.global_position)  # caught_player -> game over
 
 
 ## Where the ghost appears during the ritual: RITUAL_GHOST_DISTANCE px from
 ## the player, on open floor they can see (above them if possible, then
-## around them), closer if there's no room.
+## around them), closer if there's no room. Outside (a fizzle in the
+## trailer...) open floor is anywhere inside that area's edges.
 func _ritual_ghost_spot() -> Vector2:
 	var from := player.global_position
 	var space := get_world_2d().direct_space_state
+	var outside := outside_area_at(from)
 	for distance in [RITUAL_GHOST_DISTANCE, RITUAL_GHOST_DISTANCE * 0.66, RITUAL_GHOST_DISTANCE * 0.4]:
 		for i in 8:
 			var dir := Vector2.UP.rotated(TAU * i / 8.0)
 			var spot: Vector2 = from + dir * distance
-			if not house.is_walkable(spot):
+			var open := outside.get_bounds().grow(-16.0).has_point(spot) if outside else house.is_walkable(spot)
+			if not open:
 				continue
 			var query := PhysicsRayQueryParameters2D.create(from, spot, Ghost.WORLD_LAYER)
 			if space.intersect_ray(query).is_empty():
