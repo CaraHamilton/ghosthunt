@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://d1bt4apcgc4em"]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_ncvxf"]
+[ext_resource type="Texture2D" uid="uid://xhxutq5n8nnd" path="res://art/furniture/purple/couch_med.png" id="2_ncvxf"]
+
+[node name="CouchMed" type="StaticBody2D" unique_id=796872995]
+script = ExtResource("1_ncvxf")
+art = ExtResource("2_ncvxf")
+footprint = Vector2(48, 16)
+side_footprint = Vector2(16, 48)

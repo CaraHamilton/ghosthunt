@@ -29,6 +29,8 @@ extends GhostInteractable
 ## A tag with several frames loops as an animation. A facing with no tag of
 ## its own uses the one for the frame it shows (a "left" one showing "right"
 ## uses "right_knocked").
+## With none of these tags (or just a plain picture) nobody can use it - for
+## still-life decor like a plate, use Decor instead.
 ## `show_while_changed` (e.g. a fire's light) is only shown in the other look.
 ##
 ## Placing it: with `snap_to_tile` on (small decor), just drop it on a tile,
@@ -138,9 +140,6 @@ extends GhostInteractable
 ## The sounds used when change_sound / change_back_sound are empty, by tag:
 ## [changing to the other look, changing back]. Names of files in
 ## res://audio/sfx/ (see Sfx). "" = no sound.
-## The footprint of snapped decor (snap_to_tile): one whole tile.
-const TILE_FOOTPRINT := Vector2(16, 16)
-
 const DEFAULT_SOUNDS := {
 	"_on": ["objects/switch_on", "objects/switch_off"],
 	"_knocked": ["objects/knock_over", "objects/set_right"],
@@ -209,40 +208,21 @@ func _notification(what: int) -> void:
 		_update_art()
 
 
-## Where it snaps to (see House.get_place_spot): on a table if one covers
-## its tile, else standing on the floor with its origin at the bottom-centre
-## of the tile. Empty if it isn't in a house.
+## Where it snaps to (see DecorSnap.spot_for): on a table if one covers its
+## tile, else standing on the floor. Empty if it isn't in a house.
 func snap_spot() -> Dictionary:
-	var house := _house()
-	if house == null or house.floor_layer == null:
-		return {}
-	# 2px up: an origin on a tile's bottom edge (like furniture's), or
-	# just below it, means that tile, not the one below.
-	var cell := house.tile_at(global_position - Vector2(0, 2))
-	# The house's furniture, straight from the scene (furniture only
-	# registers itself as an obstacle once the game runs).
-	var props := house.find_children("*", "Prop", true, false).filter(
-		func(p: Prop) -> bool: return p.solid and not p.flat)
-	# ...and hand-placed Switchables (a sink, a fireplace).
-	for other: Switchable in house.find_children("*", "Switchable", true, false):
-		if other != self and other.solid and not other.snap_to_tile and other.raise == 0.0:
-			props.append(other)
-	var spot := house.get_place_spot(cell, true, props)
-	return spot
+	return DecorSnap.spot_for(self)
 
 
 func _house() -> House:
-	var node := get_parent()
-	while node and not node is House:
-		node = node.get_parent()
-	return node as House
+	return DecorSnap.house_of(self)
 
 
 ## The footprint for the way it's facing. Snapped decor (snap_to_tile) always
-## takes exactly one tile, TILE_FOOTPRINT, whatever size its art is.
+## takes exactly one tile, DecorSnap.TILE_FOOTPRINT, whatever size its art is.
 func current_footprint() -> Vector2:
 	if snap_to_tile:
-		return TILE_FOOTPRINT
+		return DecorSnap.TILE_FOOTPRINT
 	if (facing == Prop.Facing.RIGHT or facing == Prop.Facing.LEFT) and side_footprint != Vector2.ZERO:
 		return side_footprint
 	return footprint
@@ -276,7 +256,7 @@ func is_breakable() -> bool:
 ## True if the player can switch it with a click or E: not fires (the
 ## lantern lights those) or breakables (only the ghost touches those).
 func player_can_switch() -> bool:
-	return not is_lit_type() and not is_breakable()
+	return change_tag() != "" and not is_lit_type() and not is_breakable()
 
 
 ## True for a fire (a "_lit" tag): only the player's lantern lights it.
@@ -284,10 +264,12 @@ func is_lit_type() -> bool:
 	return change_tag().ends_with("_lit")
 
 
-## The ghost never touches fires. (When it may knock things over or break
-## them - sanity, the break cooldown - is the ghost's call: see Ghost.may_use.)
+## The ghost never touches fires, or anything with no other look (nothing to
+## switch to - still-life decor should use Decor). (When it
+## may knock things over or break them - sanity, the break cooldown - is the
+## ghost's call: see Ghost.may_use.)
 func ghost_can_use(_ghost: Ghost) -> bool:
-	return not is_lit_type()
+	return change_tag() != "" and not is_lit_type()
 
 
 ## True if `player` can light it with the lantern: within Player.USE_REACH
@@ -461,14 +443,7 @@ func _draw() -> void:
 		return
 	var size := current_footprint()
 	var r := Rect2(_shift + Vector2(-size.x / 2.0, -size.y), size)
-	if not _snap_ok:
-		draw_rect(r, Color(1, 0.2, 0.2, 0.9), false, 1.0)  # can't go here
-	elif _lift == 0.0:
-		draw_rect(r, Color(1, 1, 1, 0.4), false, 1.0)  # what it blocks
-	else:
-		# Where it rests up on the table.
-		draw_rect(Rect2(r.position - Vector2(0, _lift), r.size), Color(0.4, 0.8, 1, 0.7), false, 1.0)
-		draw_line(_shift, _shift - Vector2(0, _lift), Color(0.4, 0.8, 1, 0.4), 1.0)
+	DecorSnap.draw_preview(self, size, _shift, _lift, _snap_ok)
 	if art == null:
 		draw_rect(Rect2(r.position - Vector2(0, _lift + 8), Vector2(r.size.x, r.size.y + 8)),
 			Color(0.6, 0.5, 0.4))
