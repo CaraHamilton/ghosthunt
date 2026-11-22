@@ -225,12 +225,12 @@ side_footprint = Vector2(32, 64)
 position = Vector2(168, 144)
 
 [node name="OakChair3" parent="Furniture" unique_id=2057486810 instance=ExtResource("14_11kvn")]
-position = Vector2(128, 192)
-facing = 3
+position = Vector2(120, 192)
+facing = 2
 
 [node name="OakChair4" parent="Furniture" unique_id=382964523 instance=ExtResource("14_11kvn")]
 position = Vector2(160, 192)
-facing = 3
+facing = 2
 
 [node name="OakChair5" parent="Furniture" unique_id=991387345 instance=ExtResource("14_11kvn")]
 position = Vector2(136, 144)
@@ -401,7 +401,7 @@ position = Vector2(16, 376)
 position = Vector2(112, 384)
 
 [node name="DriftwoodPlant2" parent="Furniture" unique_id=1225378117 instance=ExtResource("35_jesb6")]
-position = Vector2(280, 272)
+position = Vector2(376, 192)
 
 [node name="CouchMed" parent="Furniture" unique_id=796872995 instance=ExtResource("35_yy0c0")]
 position = Vector2(280, 336)
