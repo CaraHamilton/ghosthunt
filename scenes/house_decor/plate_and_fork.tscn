@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://jhd5h3p0e2o1"]
+
+[ext_resource type="Script" uid="uid://da02esggvwy6f" path="res://scripts/decor.gd" id="1_go6xr"]
+[ext_resource type="Texture2D" uid="uid://slfygkyreekq" path="res://art/house_decor/plate_fork.png" id="2_muxqj"]
+
+[node name="PlateAndFork" type="StaticBody2D" unique_id=1441249990]
+script = ExtResource("1_go6xr")
+art = ExtResource("2_muxqj")
+footprint = Vector2(16, 16)

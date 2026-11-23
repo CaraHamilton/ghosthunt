@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://d2ifakl3w88bw"]
+
+[ext_resource type="Script" uid="uid://cd1tei14g3hwn" path="res://scripts/prop.gd" id="1_riqwn"]
+[ext_resource type="Texture2D" uid="uid://bootx0r33v352" path="res://art/house_decor/driftwood.png" id="2_riqwn"]
+
+[node name="DriftwoodPlant" type="StaticBody2D" unique_id=1441249990]
+script = ExtResource("1_riqwn")
+art = ExtResource("2_riqwn")
+footprint = Vector2(16, 16)
