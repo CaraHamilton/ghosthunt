@@ -9,8 +9,9 @@ extends ItemPickup
 ## machine and the fog. Each frame it just checks whether the ghost's feet are
 ## inside a fog tile. If they are, the ghost is invisible, and its type shows
 ## in fog (see GhostBehavior.shows_in_fog), the figure outline fades in where
-## the ghost is, and follows it until it leaves the fog. Not while the ghost
-## is visible (hunting or appearing) - you can already see it then.
+## the ghost is, and follows it until it leaves the fog. Only while the ghost
+## is wandering about (IDLE): not while it's hunting, heading home after a
+## hunt, possessing the doll or appearing.
 ##
 ## Each fog tile is its own Y-sorted sprite, so the player and furniture sort
 ## in front of or behind each tile properly.
@@ -105,8 +106,11 @@ func _process(delta: float) -> void:
 				inside = true
 				in_rect = r
 				break
-	# No figure while the ghost is visible anyway (hunting or appearing).
-	var shows := inside and ghost.behavior.shows_in_fog() and not ghost.is_manifested
+	# Only while it's just wandering about (IDLE) - not while it's hunting,
+	# heading home after a hunt, possessing the doll or in the ritual - and
+	# not while it's appearing (you can already see it then).
+	var shows := inside and ghost.behavior.shows_in_fog() and ghost.state == Ghost.State.IDLE \
+			and not ghost.is_manifested
 	if inside != _ghost_in_fog:
 		_ghost_in_fog = inside
 		if inside and OS.is_debug_build():

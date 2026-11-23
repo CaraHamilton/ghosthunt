@@ -24,7 +24,7 @@ extends StaticBody2D
 ## Chance (0-1) per ghost check that the ghost interacts while in reach.
 ## Rolled about once a second, so even small values add up: 0.1 means ~65%
 ## odds within 10s of the ghost hanging around it.
-@export_range(0.0, 1.0) var ghost_interaction_chance := 0.1
+@export_range(0.0, 1.0) var ghost_interaction_chance := 0.2
 ## Seconds after an interaction before the ghost can trigger this again.
 @export var cooldown := 15.0
 

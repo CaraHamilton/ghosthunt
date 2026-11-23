@@ -14,5 +14,5 @@ description = "Put it down (right click or Q) and it fills the tiles on all four
 icon = ExtResource("2_icon")
 held_sheet = ExtResource("4_held")
 floor_sprite = ExtResource("1_fjfhq")
-footprint = Vector2(8, 8)
+footprint = Vector2(10, 10)
 world_scene = ExtResource("3_world")

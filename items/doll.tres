@@ -15,6 +15,6 @@ description = "Some ghosts can't resist a doll left near them."
 icon = ExtResource("1_f6h5f")
 held_sheet = ExtResource("2_held")
 floor_sprite = ExtResource("1_w2jn5")
-footprint = Vector2(14, 14)
+footprint = Vector2(10, 10)
 instance_script = ExtResource("3_script")
 world_scene = ExtResource("4_world")

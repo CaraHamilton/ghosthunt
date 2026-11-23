@@ -175,7 +175,7 @@ const GLOW_LIGHT_LAYER := 4
 @export var interact_check_interval := 1.0
 ## Chance (0-1) that a wander trip heads to an object (e.g. a sink) in the
 ## chosen room instead of a random spot, so the ghost actually goes near them.
-@export var visit_object_chance := 0.2
+@export var visit_object_chance := 0.3
 
 @export_group("Holy water")
 ## How long (seconds) a ghost type that reacts to holy water stands frozen
