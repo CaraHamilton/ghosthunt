@@ -27,13 +27,24 @@ extends Area2D
 		exit_offset = value
 		queue_redraw()
 
+## A locked door won't let the player through (Game locks the house's doors
+## during a hunt - see Game.is_door_locked). A wall just past the trigger
+## stops them walking out past it.
+var locked := false:
+	set(value):
+		locked = value
+		if _blocker:
+			_blocker.set_deferred("disabled", not locked)
+
 var _shape: CollisionShape2D
+var _blocker: CollisionShape2D
 
 
 func _ready() -> void:
 	_update_shape()
 	if Engine.is_editor_hint():
 		return
+	_build_blocker()
 	add_to_group("doors")
 	collision_layer = 0
 	collision_mask = 2  # the player
@@ -53,6 +64,27 @@ func get_partner() -> Door:
 ## Where the player arrives when coming through to this door.
 func get_exit_point() -> Vector2:
 	return global_position + exit_offset
+
+
+## The wall used while locked: 8px thick, just beyond the trigger on the far
+## side from where the player arrives (exit_offset points into the room).
+func _build_blocker() -> void:
+	var outward := -exit_offset.normalized()
+	var rect := RectangleShape2D.new()
+	var body := StaticBody2D.new()
+	body.collision_layer = 1  # walls - the player bumps into it
+	body.collision_mask = 0
+	_blocker = CollisionShape2D.new()
+	if absf(outward.y) >= absf(outward.x):
+		rect.size = Vector2(size.x, 8.0)
+		_blocker.position = Vector2(0, signf(outward.y) * (size.y / 2.0 + 4.0))
+	else:
+		rect.size = Vector2(8.0, size.y)
+		_blocker.position = Vector2(signf(outward.x) * (size.x / 2.0 + 4.0), 0)
+	_blocker.shape = rect
+	_blocker.disabled = not locked
+	body.add_child(_blocker)
+	add_child(body, false, INTERNAL_MODE_BACK)
 
 
 func _update_shape() -> void:

@@ -33,9 +33,22 @@ func _process(_delta: float) -> void:
 		var c := _light_at(light, global_position)
 		if c.get_luminance() > best.get_luminance():
 			best = c
-	color = best
+	# The area's own light (the Darkness colour - bright in the trailer, dim
+	# in the house) already lights her, so it counts as one of the lights
+	# too: only light her by however much the brightest light beats it.
+	var ambient := _ambient()
+	var extra := Color(maxf(best.r - ambient.r, 0.0), maxf(best.g - ambient.g, 0.0), maxf(best.b - ambient.b, 0.0))
+	color = extra
 	energy = 1.0
-	visible = best.get_luminance() > 0.0
+	visible = extra.get_luminance() > 0.0
+
+
+## The light everything gets anyway: the Darkness colour where she is.
+func _ambient() -> Color:
+	var game := Game.current
+	if game == null or not is_instance_valid(game) or not game.darkness.visible:
+		return Color.BLACK
+	return game.darkness.color
 
 
 ## How much `light` lights `point` (its colour x energy x texture there).

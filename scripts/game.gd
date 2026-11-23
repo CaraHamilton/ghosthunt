@@ -91,6 +91,9 @@ var _cutscene: RitualCutscene
 
 var _fade: ColorRect
 var _traveling := false
+## The "The door won't open!" message (see _show_locked_message).
+var _locked_label: Label
+var _locked_tween: Tween
 ## The Darkness colour indoors (from the scene); outdoor areas have their own.
 var _inside_darkness := Color.BLACK
 
@@ -185,6 +188,7 @@ func _process(delta: float) -> void:
 	var now := game_time()
 	emf_sources = emf_sources.filter(func(s: EMFSource) -> bool: return s.is_active(now))
 	_update_sanity_bar()
+	_update_door_locks()
 
 
 ## Stops the camera scrolling far past the edges of `bounds` (the house, or
@@ -225,6 +229,18 @@ func _spawn_ghost() -> void:
 
 func _on_ghost_hunt_started() -> void:
 	hunts += 1
+
+
+## Locks the house's doors while the ghost hunts, and unlocks them after. If
+## the player is still standing on one when it unlocks, out they go.
+func _update_door_locks() -> void:
+	for door: Door in get_tree().get_nodes_in_group("doors"):
+		var lock := is_door_locked(door)
+		if lock == door.locked:
+			continue
+		door.locked = lock
+		if not lock and door.overlaps_body(player):
+			go_through(door)
 
 
 func _on_ghost_interacted(item: GhostInteractable) -> void:
@@ -463,6 +479,9 @@ func go_through(door: Door) -> void:
 	if to == null:
 		push_warning("Door %s has no other door with door_id \"%s\"" % [door.name, door.door_id])
 		return
+	if is_door_locked(door):
+		_show_locked_message()
+		return
 	_traveling = true
 	player.set_in_menu(true)  # no walking or using things mid-fade
 	var tween := create_tween()
@@ -480,6 +499,40 @@ func go_through(door: Door) -> void:
 	if OS.is_debug_build():
 		var area := outside_area_at(player.global_position)
 		print("[debug] The player went to the %s" % (area.name.to_lower() if area else "house"))
+
+
+## True if `door` won't open right now: the house's doors (any door that isn't
+## out in the yard or another outdoor area) lock while the ghost is hunting,
+## so the player can't just run outside. They unlock once it has vanished.
+func is_door_locked(door: Door) -> bool:
+	return ghost != null and ghost.is_hunting and outside_area_at(door.global_position) == null
+
+
+## Shows "The door won't open!" at the bottom of the screen for a moment.
+func _show_locked_message() -> void:
+	if _locked_label == null:
+		_locked_label = Label.new()
+		_locked_label.text = "The door won't open!"
+		_locked_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_locked_label.add_theme_font_size_override("font_size", 24)
+		_locked_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.35))
+		_locked_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		_locked_label.add_theme_constant_override("outline_size", 6)
+		_locked_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_locked_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		_locked_label.offset_top = -140.0
+		_locked_label.offset_bottom = -110.0
+		_locked_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		$HUD.add_child(_locked_label)
+		$HUD.move_child(_locked_label, game_over_panel.get_index())  # under the end screen
+	if _locked_tween:
+		_locked_tween.kill()
+	_locked_label.modulate.a = 1.0
+	_locked_tween = create_tween()
+	_locked_tween.tween_interval(1.2)
+	_locked_tween.tween_property(_locked_label, "modulate:a", 0.0, 0.6)
+	if OS.is_debug_build():
+		print("[debug] The door is locked - the ghost is hunting")
 
 
 ## Sets the camera limits and the darkness for wherever the player is: the
