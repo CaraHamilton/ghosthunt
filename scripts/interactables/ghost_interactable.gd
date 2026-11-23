@@ -22,9 +22,11 @@ extends StaticBody2D
 ## table, the tile it sits on) to interact. The same 12 px for everything.
 @export var ghost_reach := 12.0
 ## Chance (0-1) per ghost check that the ghost interacts while in reach.
-@export_range(0.0, 1.0) var ghost_interaction_chance := 0.35
+## Rolled about once a second, so even small values add up: 0.1 means ~65%
+## odds within 10s of the ghost hanging around it.
+@export_range(0.0, 1.0) var ghost_interaction_chance := 0.1
 ## Seconds after an interaction before the ghost can trigger this again.
-@export var cooldown := 6.0
+@export var cooldown := 15.0
 
 @export_group("Player")
 ## If true, the player can also use this object - left click or E, within

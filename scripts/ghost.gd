@@ -81,7 +81,7 @@ const GLOW_LIGHT_LAYER := 4
 @export_group("Hunting")
 ## Chase speed when a chase begins, as a multiple of the player's walking speed
 ## (<1 = slower than the player).
-@export var chase_start_speed_factor := 0.92
+@export var chase_start_speed_factor := 0.75
 ## Top chase speed, reached after keeping sight of the player for
 ## `chase_ramp_time` seconds (>1 = faster than the player).
 @export var chase_max_speed_factor := 1.15
@@ -175,7 +175,7 @@ const GLOW_LIGHT_LAYER := 4
 @export var interact_check_interval := 1.0
 ## Chance (0-1) that a wander trip heads to an object (e.g. a sink) in the
 ## chosen room instead of a random spot, so the ghost actually goes near them.
-@export var visit_object_chance := 0.35
+@export var visit_object_chance := 0.2
 
 @export_group("Holy water")
 ## How long (seconds) a ghost type that reacts to holy water stands frozen
