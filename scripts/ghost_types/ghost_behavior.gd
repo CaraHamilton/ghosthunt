@@ -140,9 +140,10 @@ func get_return_home_chance(base_chance: float) -> float:
 
 
 ## What freezing ghost types (Banshee, Sentry, Marionette, Wraith, Wendigo, Fury)
-## chill their favourite room towards, in °C - cold enough that it reliably reads below
+## chill their favourite room towards at most, in °C. Each visit only goes part of the way
+## there (see RoomTemperatures.freezing_warmest_low), but always below
 ## zero.
-const FREEZING_TEMPERATURE := -8.0
+const FREEZING_TEMPERATURE := -6.0
 
 
 ## Temperature (°C) the ghost's current room cools towards. `base_temperature`
