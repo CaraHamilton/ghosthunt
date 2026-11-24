@@ -10,7 +10,17 @@ extends GhostInteractable
 ## the rest after, split at random. The ghost moves along with it. On a
 ## table, or with no free floor tile next to it, it just sits and blinks.
 ## When the possession ends the doll goes still (sit). The ghost's last touch is kept on `item` so it survives being
-## picked up. Ghosts never leave UV residue on the doll.
+## picked up. Ghosts never leave UV residue on the doll, and possessing it
+## gives off no EMF.
+##
+## The same script runs toys that start out on the map (scenes/teddy_bear.tscn):
+## drop one on a tile in the house scene and it snaps to that tile when the
+## game starts (like Decor), and gets possessed and walks just like the doll.
+## Those have no `item`, so the player can't pick them up. Keep `solid` off
+## for them: on the floor they get a box only the player bumps into, sized
+## by `footprint` (a placed doll's box is the doll item's footprint, in
+## items/doll.tres). Each toy's sheet
+## says which row each animation is on (the Sheet rows settings).
 
 ## The item this node represents (set before it's added to the scene).
 var item: DollItem:
@@ -38,18 +48,22 @@ var elevation := 0.0
 @export var walk_fps := 8.0
 ## How fast (frames/s) sit_and_blink plays.
 @export var blink_fps := 6.0
+@export_group("Sheet rows")
+## Which row of the art sheet (the picture the `sit` frame comes from) each
+## animation is on, counting from 0 at the top. Rows are 32px tall, frames
+## 16px wide - exported from Aseprite by rows, in the order of the tags.
+@export var down_walk_row := 2
+@export var left_walk_row := 3
+@export var right_walk_row := 4
+@export var up_walk_row := 5
+@export var sit_and_blink_row := 6
 @export_group("")
+## What the debug output calls it ("the ghost possessed the doll").
+@export var display_name := "doll"
 
-## Animations built from doll_overworld.png when the scene's SpriteFrames
-## doesn't have them: name -> (row, frame count). Rows are 32px tall, frames
-## 16px wide, top row 0 - the order of the Aseprite tags.
-const SHEET_ANIMS := {
-	&"down_walk": Vector2i(2, 4),
-	&"left_walk": Vector2i(3, 4),
-	&"right_walk": Vector2i(4, 4),
-	&"up_walk": Vector2i(5, 4),
-	&"sit_and_blink": Vector2i(6, 7),
-}
+## How many frames each animation built from the sheet has (see Sheet rows).
+const WALK_FRAMES := 4
+const BLINK_FRAMES := 7
 const SHEET_FRAME_SIZE := Vector2(16, 32)
 
 ## The ghost possessing the doll right now (null when it's just a doll).
@@ -82,6 +96,8 @@ func _init() -> void:
 func _ready() -> void:
 	super()
 	if not Engine.is_editor_hint():
+		if item == null:
+			_snap_to_tile()
 		# Always put down sitting, whichever animation the scene was saved on.
 		_add_sheet_animations()
 		sprite.play(&"sit")
@@ -137,12 +153,17 @@ func on_released() -> void:
 	_save_traces()
 
 
+## Possessing a doll (or teddy) gives off no EMF.
+func gives_emf() -> bool:
+	return false
+
+
 func describe_last_interaction() -> String:
-	return "possessed the doll"
+	return "possessed the %s" % display_name
 
 
 func _on_player_interact(player: Player) -> void:
-	if not player.pick_up(item):
+	if item == null or not player.pick_up(item):
 		return
 	if possessed_by:
 		possessed_by.end_possession()
@@ -222,8 +243,40 @@ func _player_on(rect: Rect2) -> bool:
 	return player != null and rect.grow(2.0).has_point(player.global_position)
 
 
-## Builds the walk and blink animations from doll_overworld.png (see
-## SHEET_ANIMS) - unless the scene's SpriteFrames already has them, e.g. made
+## Starting out on the map (no `item`): sits exactly on the tile it was
+## dropped on - on the floor, or up on a table's top - and takes that tile,
+## the same as the doll when the player puts it down.
+func _snap_to_tile() -> void:
+	var spot := DecorSnap.spot_for(self)
+	if not spot.get("ok", false):
+		if not spot.is_empty():
+			push_warning("%s can't snap to its tile (wall, furniture or no floor)" % name)
+		return
+	global_position = spot.position
+	elevation = spot.elevation
+	set_meta("place_tile", spot.cell)
+	set_meta("place_rect", spot.rect)
+	add_to_group(House.PLACED_GROUP)
+	# On the floor, the same player-only box a placed doll gets (ghosts pass
+	# through it): `footprint` sized, in the middle of the tile. It's a
+	# child, so it walks along with the toy. (On a table, the table blocks.)
+	if spot.surface == null:
+		ItemPickup._add_blocker(self, footprint)
+
+
+## The animations built from the art sheet: name -> (row, frame count).
+func _sheet_anims() -> Dictionary:
+	return {
+		&"down_walk": Vector2i(down_walk_row, WALK_FRAMES),
+		&"left_walk": Vector2i(left_walk_row, WALK_FRAMES),
+		&"right_walk": Vector2i(right_walk_row, WALK_FRAMES),
+		&"up_walk": Vector2i(up_walk_row, WALK_FRAMES),
+		&"sit_and_blink": Vector2i(sit_and_blink_row, BLINK_FRAMES),
+	}
+
+
+## Builds the walk and blink animations from the art sheet (see Sheet rows)
+## - unless the scene's SpriteFrames already has them, e.g. made
 ## in the editor.
 func _add_sheet_animations() -> void:
 	var frames := sprite.sprite_frames
@@ -233,10 +286,11 @@ func _add_sheet_animations() -> void:
 	if sit_frame == null:
 		return
 	frames = frames.duplicate()
-	for anim: StringName in SHEET_ANIMS:
+	var anims := _sheet_anims()
+	for anim: StringName in anims:
 		if frames.has_animation(anim):
 			continue
-		var row_and_count: Vector2i = SHEET_ANIMS[anim]
+		var row_and_count: Vector2i = anims[anim]
 		frames.add_animation(anim)
 		frames.set_animation_speed(anim, blink_fps if anim == &"sit_and_blink" else walk_fps)
 		frames.set_animation_loop(anim, true)

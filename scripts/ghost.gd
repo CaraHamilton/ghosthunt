@@ -560,7 +560,7 @@ func end_hunt() -> void:
 
 
 ## Goes and stands on `doll` and possesses it for `duration` seconds (the
-## doll stands up and waves while possessed). The ghost stays invisible and
+## doll walks about while possessed). The ghost stays invisible and
 ## won't hunt until it lets go.
 func possess(doll: Doll, duration: float) -> void:
 	_doll = doll

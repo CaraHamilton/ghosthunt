@@ -129,9 +129,14 @@ func ghost_interact(ghost: Ghost) -> void:
 		has_residue = true
 		_residue_glow.fades_at = Game.game_time() + lasts
 	_on_ghost_interact(ghost)
-	if Game.current:
+	if Game.current and gives_emf():
 		var levels := emf_levels()
 		Game.current.add_emf_source(self, levels.x, levels.y, emf_5_chance())
+
+
+## Whether the ghost touching this gives off EMF at all (not the doll).
+func gives_emf() -> bool:
+	return true
 
 
 ## The EMF this gives off after the ghost touches it (min, max): 1-2 for
