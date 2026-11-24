@@ -396,9 +396,11 @@ func _run_state(delta: float) -> void:
 				_follow_path_to(_doll.global_position, wander_speed, delta, false)
 				if _arrived_or_stuck(_doll.global_position, 2.0, delta):
 					velocity = Vector2.ZERO
-					_doll.on_possessed(self)
+					_doll.on_possessed(self, _possess_time_left)
 			else:
 				velocity = Vector2.ZERO
+				# Riding along while the doll walks.
+				global_position = _doll.global_position
 				_possess_time_left -= delta
 				if _possess_time_left <= 0.0:
 					end_possession()
