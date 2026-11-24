@@ -81,7 +81,7 @@ const GLOW_LIGHT_LAYER := 4
 @export_group("Hunting")
 ## Chase speed when a chase begins, as a multiple of the player's walking speed
 ## (<1 = slower than the player).
-@export var chase_start_speed_factor := 0.92
+@export var chase_start_speed_factor := 0.75
 ## Top chase speed, reached after keeping sight of the player for
 ## `chase_ramp_time` seconds (>1 = faster than the player).
 @export var chase_max_speed_factor := 1.15
@@ -175,7 +175,7 @@ const GLOW_LIGHT_LAYER := 4
 @export var interact_check_interval := 1.0
 ## Chance (0-1) that a wander trip heads to an object (e.g. a sink) in the
 ## chosen room instead of a random spot, so the ghost actually goes near them.
-@export var visit_object_chance := 0.35
+@export var visit_object_chance := 0.3
 
 @export_group("Holy water")
 ## How long (seconds) a ghost type that reacts to holy water stands frozen
@@ -396,9 +396,11 @@ func _run_state(delta: float) -> void:
 				_follow_path_to(_doll.global_position, wander_speed, delta, false)
 				if _arrived_or_stuck(_doll.global_position, 2.0, delta):
 					velocity = Vector2.ZERO
-					_doll.on_possessed(self)
+					_doll.on_possessed(self, _possess_time_left)
 			else:
 				velocity = Vector2.ZERO
+				# Riding along while the doll walks.
+				global_position = _doll.global_position
 				_possess_time_left -= delta
 				if _possess_time_left <= 0.0:
 					end_possession()
@@ -558,7 +560,7 @@ func end_hunt() -> void:
 
 
 ## Goes and stands on `doll` and possesses it for `duration` seconds (the
-## doll stands up and waves while possessed). The ghost stays invisible and
+## doll walks about while possessed). The ghost stays invisible and
 ## won't hunt until it lets go.
 func possess(doll: Doll, duration: float) -> void:
 	_doll = doll

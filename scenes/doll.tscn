@@ -67,9 +67,10 @@ animations = [{
 
 [node name="Doll" type="StaticBody2D" unique_id=457485756]
 script = ExtResource("1_doll")
-footprint = Vector2(8, 4)
+footprint = Vector2(8, 8)
 solid = false
-cooldown = 15.0
+ghost_interaction_chance = 0.1
+cooldown = 30.0
 player_can_use = true
 
 [node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1044440230]

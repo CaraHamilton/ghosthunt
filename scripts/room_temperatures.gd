@@ -18,6 +18,11 @@ extends Node
 ## freezing at a glance. (Freezing types go below 0 instead - see
 ## GhostBehavior.get_cold_temperature.)
 @export var ghost_cold_temperature := 1.0
+## Freezing types: each time the ghost goes into its favourite room, that
+## visit's low is picked at random between this (°C) and the coldest a
+## freezing ghost can get (GhostBehavior.FREEZING_TEMPERATURE, -6) - so it
+## doesn't always reach the very bottom. Keep it below 0.
+@export var freezing_warmest_low := -3.0
 ## The temperature (°C) any other room heads towards while the ghost is in it.
 @export var passing_cold_temperature := 10.0
 ## The favourite room never warms above this (°C): a lingering chill.
@@ -39,6 +44,10 @@ var ghost: Ghost
 
 var _temps := {}
 var _base := {}
+## How far (0-1) this visit's freezing low goes, from freezing_warmest_low to
+## the coldest. Rolled each time the ghost walks into a room.
+var _freeze_roll := 1.0
+var _last_ghost_room := ""
 
 
 ## Call once the ghost has been placed.
@@ -49,6 +58,7 @@ func setup(new_house: House, new_ghost: Ghost) -> void:
 		_base[room] = base_temperature + randf_range(-base_variation, base_variation)
 		_temps[room] = _base[room]
 	var fav: String = ghost.favorite_room
+	_freeze_roll = randf()
 	_temps[fav] = lerpf(_rest_target(fav), _cold_target(fav), favorite_room_head_start)
 
 
@@ -56,6 +66,10 @@ func _process(delta: float) -> void:
 	if ghost == null:
 		return
 	var ghost_room := house.room_at(ghost.global_position)
+	if ghost_room != _last_ghost_room:
+		_last_ghost_room = ghost_room
+		if ghost_room != "":
+			_freeze_roll = randf()  # a new visit: a new low
 	for room in _temps:
 		if room == ghost_room:
 			var cold := _cold_target(room)
@@ -77,7 +91,12 @@ func get_temperature(room: String) -> float:
 func _cold_target(room: String) -> float:
 	var is_favorite := room == ghost.favorite_room
 	var cold := ghost_cold_temperature if is_favorite else passing_cold_temperature
-	return ghost.behavior.get_cold_temperature(cold, is_favorite)
+	var target := ghost.behavior.get_cold_temperature(cold, is_favorite)
+	if target < 0.0:
+		# Freezing: this visit's low, somewhere between freezing_warmest_low
+		# and the coldest.
+		target = lerpf(maxf(freezing_warmest_low, target), target, _freeze_roll)
+	return target
 
 
 ## What a room warms back up to once the ghost leaves.

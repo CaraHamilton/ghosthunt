@@ -9,8 +9,9 @@ extends ItemPickup
 ## machine and the fog. Each frame it just checks whether the ghost's feet are
 ## inside a fog tile. If they are, the ghost is invisible, and its type shows
 ## in fog (see GhostBehavior.shows_in_fog), the figure outline fades in where
-## the ghost is, and follows it until it leaves the fog. Not while the ghost
-## is visible (hunting or appearing) - you can already see it then.
+## the ghost is, and follows it until it leaves the fog. Only while the ghost
+## is wandering about (IDLE): not while it's hunting, heading home after a
+## hunt, possessing the doll or appearing.
 ##
 ## Each fog tile is its own Y-sorted sprite, so the player and furniture sort
 ## in front of or behind each tile properly.
@@ -26,6 +27,10 @@ const FOG_FRAMES_PER_SIDE := 3
 const FOG_FRAME_SIZE := Vector2(16, 24)
 const FIGURE_FRAME_SIZE := Vector2(16, 24)
 const SIDES: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT, Vector2i.DOWN]
+## How far (px) below its tile's bottom edge the fog sorts, so it covers
+## whatever stands on the tile (see _ready). The figure sorts twice as far, in
+## front of the fog.
+const FOG_SORT_NUDGE := 0.25
 
 @export var machine_art: Texture2D = preload("res://art/overworld/fog_machine_overworld.png")
 ## Which 16x16 frame of `machine_art` is the machine (counting from 0).
@@ -79,8 +84,12 @@ func _ready() -> void:
 		fog.texture = fog_art
 		fog.region_enabled = true
 		fog.centered = false
-		fog.offset = _fog_offset(side)
-		fog.position = Vector2(side) * 16.0  # the tile's bottom-centre
+		# Sorts a hair below the tile's bottom edge, so it covers anything
+		# standing on the tile - things placed on a tile have their origin
+		# exactly on that edge, and would otherwise tie with it (and the one
+		# put down last would win). Drawn in the same place all the same.
+		fog.position = Vector2(side) * 16.0 + Vector2(0, FOG_SORT_NUDGE)
+		fog.offset = _fog_offset(side) - Vector2(0, FOG_SORT_NUDGE)
 		fog.modulate.a = fog_opacity
 		add_child(fog)
 		_fog_sprites[side] = fog
@@ -105,8 +114,11 @@ func _process(delta: float) -> void:
 				inside = true
 				in_rect = r
 				break
-	# No figure while the ghost is visible anyway (hunting or appearing).
-	var shows := inside and ghost.behavior.shows_in_fog() and not ghost.is_manifested
+	# Only while it's just wandering about (IDLE) - not while it's hunting,
+	# heading home after a hunt, possessing the doll or in the ritual - and
+	# not while it's appearing (you can already see it then).
+	var shows := inside and ghost.behavior.shows_in_fog() and ghost.state == Ghost.State.IDLE \
+			and not ghost.is_manifested
 	if inside != _ghost_in_fog:
 		_ghost_in_fog = inside
 		if inside and OS.is_debug_build():
@@ -115,7 +127,7 @@ func _process(delta: float) -> void:
 		# Sort just in front of the fog tile the ghost is in, but draw the
 		# figure with its feet where the ghost's feet are.
 		var feet := (ghost.global_position - global_position).round()
-		_figure.position = Vector2(feet.x, in_rect.end.y - global_position.y + 0.1)
+		_figure.position = Vector2(feet.x, in_rect.end.y - global_position.y + FOG_SORT_NUDGE * 2.0)
 		_figure.offset = Vector2(-FIGURE_FRAME_SIZE.x / 2.0, feet.y - _figure.position.y - FIGURE_FRAME_SIZE.y)
 	var step := delta / maxf(figure_fade_time, 0.01)
 	_figure_alpha = clampf(_figure_alpha + (step if shows else -step), 0.0, 1.0)

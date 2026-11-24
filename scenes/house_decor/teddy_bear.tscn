@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://b24sk7chj4873"]
+
+[ext_resource type="Script" uid="uid://5i4iafxlxxr" path="res://scripts/interactables/doll.gd" id="1_doll"]
+[ext_resource type="Texture2D" uid="uid://bjcp1pgua7wya" path="res://art/house_decor/teddy_bear.png" id="2_art"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sit"]
+atlas = ExtResource("2_art")
+region = Rect2(0, 0, 16, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_teddy"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sit")
+}],
+"loop": 1,
+"name": &"sit",
+"speed": 10.0
+}]
+
+[node name="TeddyBear" type="StaticBody2D" unique_id=1131091306]
+script = ExtResource("1_doll")
+left_walk_row = 4
+right_walk_row = 3
+sit_and_blink_row = 1
+display_name = "teddy bear"
+footprint = Vector2(8, 8)
+solid = false
+ghost_interaction_chance = 0.1
+cooldown = 30.0
+
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=813509497]
+position = Vector2(0, -16)
+sprite_frames = SubResource("SpriteFrames_teddy")
+animation = &"sit"
